@@ -32,8 +32,8 @@ class DataMonitoring(Application):
         adapter = self.adapter_factory.create(
             platform.type, platform.url, platform.key, platform.name
         )
-        datasets_count = adapter.fetch_datasets()
-        platform.sync(datasets_count)
+        payload = adapter.fetch_datasets()
+        platform.sync(**payload)
         self.save(platform)
 
     def save(self, aggregate):

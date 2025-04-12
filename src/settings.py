@@ -16,8 +16,8 @@ os.environ["SQLITE_LOCK_TIMEOUT"] = "10"  # seconds
 
 if ENV == "PROD":
     print(f"App environment = {ENV}")
-    os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/writes.db"
-    READS_DB_NAME = f"{BASE_DIR}/reads.json"
+    os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/prod/writes.db"
+    READS_DB_NAME = f"{BASE_DIR}/prod/reads.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
     app = DataMonitoring(
         adapter_factory=AdapterFactory, repository=repository
@@ -25,15 +25,15 @@ if ENV == "PROD":
 elif ENV == "TEST":
     print(f"App environment = {ENV}")
     os.environ["SQLITE_DBNAME"] = ":memory:"
-    READS_DB_NAME = f"{BASE_DIR}/test.json"
+    READS_DB_NAME = f"{BASE_DIR}/test/test.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
     app = DataMonitoring(
         adapter_factory=AdapterFactory, repository=repository
     )
 else:
     print(f"App environment = {ENV}")
-    os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/writes-dev.db"
-    READS_DB_NAME = f"{BASE_DIR}/reads-dev.json"
+    os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/dev/writes-dev.db"
+    READS_DB_NAME = f"{BASE_DIR}/dev/reads-dev.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
     app = DataMonitoring(
         adapter_factory=AdapterFactory, repository=repository

@@ -1,8 +1,10 @@
+from dataclasses import asdict
 from pprint import pprint
+from uuid import UUID
 
 import click
 
-from application.handlers import create_platform
+from application.handlers import create_platform, sync_platform
 from settings import app
 
 
@@ -27,6 +29,7 @@ def cli_platform():
 @click.option("-u", "--url", required=True, help="Base URL")
 @click.option("-k", "--key", required=False, help="API Key")
 def cli_create_platform(name, type, url, key):
+    """Create new platform"""
     data = {"name": name, "type": type, "url": url, "key": key}
     platform_id = create_platform(app=app, data=data)
     pprint(platform_id)
@@ -35,5 +38,16 @@ def cli_create_platform(name, type, url, key):
 
 @cli_platform.command("all")
 def cli_get_all_platforms():
-    platformss = app.get_all_platforms()
-    pprint(platformss)
+    """Retrieve all platforms"""
+    platforms = app.get_all_platforms()
+    pprint(platforms)
+
+
+@cli_platform.command("sync")
+@click.argument("id")
+def cli_sync_platform(id):
+    """Sync platform and project stats"""
+    platform_id = UUID(id)
+    sync_platform(app, platform_id=platform_id)
+    platform = app.get_platform(platform_id=platform_id)
+    pprint(platform.__dict__)
