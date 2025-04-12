@@ -4,13 +4,6 @@ from datetime import datetime
 from eventsourcing.domain import Aggregate, event
 
 
-@dataclass
-class Sync(Aggregate):
-    timestamp: datetime
-    status: str
-    datasets_count: int
-
-
 class Platform(Aggregate):
     @event("Created")
     def __init__(self, name: str, slug: str, type: str, url: str, organization_id: str, key: str):

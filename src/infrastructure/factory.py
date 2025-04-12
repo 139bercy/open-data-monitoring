@@ -1,8 +1,8 @@
 from infrastructure.adapters.ods import (
-    OpendatasoftAdapter,
+    OpendatasoftAdapter, OpendatasoftDatasetAdapter,
 )
-from infrastructure.adapters.in_memory import InMemoryAdapter
-from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
+from infrastructure.adapters.in_memory import InMemoryAdapter, InMemoryDatasetAdapter
+from infrastructure.adapters.datagouvfr import DataGouvFrAdapter, DatagouvDatasetAdapter
 
 
 class AdapterFactory:
@@ -16,3 +16,17 @@ class AdapterFactory:
             return InMemoryAdapter(url=url, key=key, slug=slug)
         else:
             raise ValueError("Unsupported platform type")
+
+
+class DatasetAdapterFactory:
+    @staticmethod
+    def create(platform_type: str):
+        if platform_type == "opendatasoft":
+            return OpendatasoftDatasetAdapter()
+        elif platform_type == "datagouvfr":
+            return DatagouvDatasetAdapter()
+        elif platform_type == "test":
+            return InMemoryDatasetAdapter()
+        else:
+            raise ValueError("Unsupported platform type")
+

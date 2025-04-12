@@ -3,7 +3,8 @@ import os
 
 import requests
 
-from domain.platform.ports import PlatformAdapter
+from domain.platform.ports import PlatformAdapter, DatasetAdapter
+from infrastructure.dtos.dataset import DatasetDTO
 
 
 class OpendatasoftAdapter(PlatformAdapter):
@@ -26,3 +27,15 @@ class OpendatasoftAdapter(PlatformAdapter):
         return sync_data
 
 
+class OpendatasoftDatasetAdapter(DatasetAdapter):
+    @staticmethod
+    def map(uid, dataset_id, metadata, created_at, updated_at, *args, **kwargs):
+        dataset = DatasetDTO(
+            buid=uid,
+            slug=dataset_id,
+            page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
+            publisher=metadata["default"]["publisher"]["value"],
+            created=created_at,
+            modified=updated_at
+        )
+        return dataset
