@@ -25,7 +25,7 @@ setup(
     description="Description here",
     entry_points={
         'console_scripts': [
-            'cli=src.cli:cli'
+            'app=interfaces.cli:cli'
         ],
     },
     install_requires=requirements,
