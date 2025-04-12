@@ -1,6 +1,9 @@
 test:
 	py.test
 
+coverage:
+	pytest --cov=. --cov-report=html
+
 export-es:
 	sqlite3 db/writes-dev.db .dump > output.sql
 
