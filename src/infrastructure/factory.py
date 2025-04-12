@@ -1,4 +1,8 @@
-from infrastructure.adapters import OpendatasoftAdapter, DataGouvFrAdapter, InMemoryAdapter
+from infrastructure.adapters import (
+    OpendatasoftAdapter,
+    DataGouvFrAdapter,
+    InMemoryAdapter,
+)
 
 
 class AdapterFactory:

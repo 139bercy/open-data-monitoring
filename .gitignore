@@ -183,4 +183,4 @@ pyrightconfig.json
 docs
 dev
 tmp.py
-sqlite-db*
+db/*

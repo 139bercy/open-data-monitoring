@@ -22,7 +22,8 @@ class OpendatasoftAdapter(PlatformAdapter):
     def fetch_datasets(self) -> int:
         response = requests.get(
             f"{self.base_url}/api/v2/catalog/datasets",
-            headers={"Authorization": f"Apikey {self.api_key}"}, params={"offset+limit": 1000}
+            headers={"Authorization": f"Apikey {self.api_key}"},
+            params={"offset+limit": 1000},
         )
         return response.json()["total_count"]
 
