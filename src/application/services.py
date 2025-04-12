@@ -2,7 +2,7 @@ from eventsourcing.application import Application
 from eventsourcing.system import NotificationLogReader
 from tinydb import Query
 
-from domain.platform.aggregate import Platform
+from domain.aggregate import Platform
 
 
 class DataMonitoring(Application):

@@ -29,8 +29,9 @@ def cli_platform():
 def cli_create_platform(name, type, url, key):
     data = {"name": name, "type": type, "url": url, "key": key}
     platform_id = create_platform(app=app, data=data)
-    print(platform_id)
+    pprint(platform_id)
     click.echo("Success !")
+
 
 @cli_platform.command("all")
 def cli_get_all_platforms():

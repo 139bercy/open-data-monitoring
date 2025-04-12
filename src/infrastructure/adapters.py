@@ -1,6 +1,6 @@
 import requests
 
-from domain.platform.ports import PlatformAdapter
+from domain.ports import PlatformAdapter
 
 
 class InMemoryAdapter(PlatformAdapter):

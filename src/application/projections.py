@@ -1,6 +1,6 @@
 from tinydb import TinyDB, Query
 
-from domain.platform.aggregate import Platform
+from domain.aggregate import Platform
 
 
 class TinyDbPlatformRepository:
