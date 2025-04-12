@@ -8,7 +8,7 @@ from settings import app
 
 @click.group()
 def cli():
-    """Application adapters.cli"""
+    """Application manager"""
 
 
 @cli.group("platform")
