@@ -1,7 +1,13 @@
 import os
 
-# Use SQLite for persistence.
-os.environ["PERSISTENCE_MODULE"] = "eventsourcing.sqlite"
+import pytest
 
-# or use an in-memory DB with cache not shared, only works with single thread;
-os.environ["SQLITE_DBNAME"] = ":memory:"
+os.environ["ENV"] = "TEST"
+
+
+@pytest.fixture
+def testfile():
+    file_path = "test.json"
+    yield file_path
+    if os.path.exists(file_path):
+        os.remove(file_path)

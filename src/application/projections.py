@@ -25,6 +25,7 @@ class TinyDbPlatformRepository:
                     "name": event.name,
                     "type": event.type,
                     "url": event.url,
+                    "key": event.key,
                     "datasets_count": 0,
                 }
             )

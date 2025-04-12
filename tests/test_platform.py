@@ -2,7 +2,8 @@ import os
 from uuid import UUID
 
 import pytest
-from tinydb import TinyDB
+
+from settings import *
 
 from application.projections import TinyDbPlatformRepository
 from application.services import DataMonitoring
@@ -13,7 +14,7 @@ platform_1 = {
     "name": "data.mydomain.net",
     "type": "test",
     "url": "https://data.mydomain.net",
-    "key": "azertyuiop",
+    "key": "TEST_API_KEY",
 }
 
 
@@ -23,17 +24,24 @@ def app():
     return DataMonitoring(adapter_factory=AdapterFactory, repository=repository)
 
 
-def test_create_platform(app: DataMonitoring):
+def test_create_platform(app: DataMonitoring, testfile):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
     platform = app.get_platform(platform_id=platform_id)
     assert platform.version == 1
     assert isinstance(platform.id, UUID)
-    os.remove("test.json")
 
 
-def test_sync_platform(app: DataMonitoring):
+def test_api_key_should_be_hidden(app: DataMonitoring, testfile):
+    # Arrange & Act
+    platform_id = create_platform(app, platform_1)
+    # Assert
+    platform = app.get_platform(platform_id=platform_id)
+    assert os.environ[platform.key] == "azertyuiop"
+
+
+def test_sync_platform(app: DataMonitoring, testfile):
     # Arrange
     platform_id = create_platform(app, platform_1)
     # Act
@@ -41,10 +49,9 @@ def test_sync_platform(app: DataMonitoring):
     # Assert
     result = app.get_platform(platform_id)
     assert result.version == 2
-    os.remove("test.json")
 
 
-def test_should_return_all_platforms(app: DataMonitoring):
+def test_should_return_all_platforms(app: DataMonitoring, testfile):
     # Arrange
     platform_id = create_platform(app, platform_1)
     app.sync_platform(platform_id=platform_id)
@@ -52,10 +59,9 @@ def test_should_return_all_platforms(app: DataMonitoring):
     result = app.get_all_platforms()
     # Assert
     assert len(result) == 1
-    os.remove("test.json")
 
 
-def test_projections(app: DataMonitoring):
+def test_projections(app: DataMonitoring, testfile):
     # Arrange
     platform_id = create_platform(app, platform_1)
     app.sync_platform(platform_id=platform_id)
@@ -64,4 +70,3 @@ def test_projections(app: DataMonitoring):
     # Assert
     assert len(results) == 1
     assert results[0]["datasets_count"] == 10
-    os.remove("test.json")
