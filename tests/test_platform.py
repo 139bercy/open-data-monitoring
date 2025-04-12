@@ -11,7 +11,9 @@ from application.handlers import create_platform
 from infrastructure.factory import AdapterFactory
 
 platform_1 = {
-    "name": "data.mydomain.net",
+    "name": "My Platform",
+    "slug": "my-platform",
+    "organization_id": "azertyuiop",
     "type": "test",
     "url": "https://data.mydomain.net",
     "key": "TEST_API_KEY",

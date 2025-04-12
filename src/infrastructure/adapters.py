@@ -21,10 +21,10 @@ class InMemoryAdapter(PlatformAdapter):
 
 
 class OpendatasoftAdapter(PlatformAdapter):
-    def __init__(self, base_url: str, api_key: str, name: str):
+    def __init__(self, base_url: str, api_key: str, slug: str):
         self.base_url = base_url
         self.api_key = os.environ[api_key]
-        self.name = name
+        self.slug = slug
 
     def fetch_datasets(self) -> dict:
         response = requests.get(
@@ -41,14 +41,14 @@ class OpendatasoftAdapter(PlatformAdapter):
 
 
 class DataGouvFrAdapter(PlatformAdapter):
-    def __init__(self, base_url: str, api_key: str, name: str):
+    def __init__(self, base_url: str, api_key: str, slug: str):
         self.base_url = base_url
         self.api_key = api_key
-        self.name = name
+        self.slug = slug
 
-    def fetch_datasets(self) -> int:
+    def fetch_datasets(self) -> dict:
         response = requests.get(
-            f"{self.base_url}/api/1/organizations/{self.name}/datasets/",
+            f"{self.base_url}/api/1/organizations/{self.slug}/datasets/",
         )
         sync_data = {
             "timestamp": datetime.datetime.now(),

@@ -26,7 +26,6 @@ class TinyDbPlatformRepository:
 
     def _create_platform(self, event, aggregate_id):
         if not self.db.contains(self.query.id == aggregate_id):
-            print(event)
             self.db.insert(
                 {
                     "id": aggregate_id,
