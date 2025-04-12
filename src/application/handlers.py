@@ -1,17 +1,10 @@
-from eventsourcing.application import Application
+from click import UUID
 
-from domain.platform.aggregate import Platform
+from application.commands import CreatePlatform
+from application.services import DataMonitoring
 
 
-class DataMonitoring(Application):
-
-    def register_platform(self, name: str, type: str, url: str, key: str):
-        platform = Platform(name, type, url, key)
-        self.save(platform)
-        return platform.id
-
-    def get_platform(self, platform_id):
-        platform = self.repository.get(platform_id)
-        assert isinstance(platform, Platform)
-        return platform
-
+def create_platform(app: DataMonitoring, data: dict) -> UUID:
+    cmd = CreatePlatform(**data)
+    platform_id = app.register_platform(name=cmd.name, type=cmd.type, url=cmd.url, key=cmd.key)
+    return platform_id

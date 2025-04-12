@@ -2,21 +2,21 @@ from uuid import UUID
 
 import pytest
 
-from application.commands import CreatePlatform
-from application.handlers import DataMonitoring
-from application.usecases import create_platform
+from application.services import DataMonitoring
+from application.handlers import create_platform
+from infrastructure.factory import AdapterFactory
 
 data_eco = {
-    "name": "data.economie.gouv.fr",
-    "type": "opendatasoft",
-    "url": "https://data.economie.gouv.fr",
+    "name": "data.mydomain.net",
+    "type": "test",
+    "url": "https://data.mydomain.net",
     "key": "azertyuiop"
 }
 
 
 @pytest.fixture
 def app():
-    return DataMonitoring()
+    return DataMonitoring(adapter_factory=AdapterFactory)
 
 
 def test_create_platform(app: DataMonitoring):
@@ -26,3 +26,13 @@ def test_create_platform(app: DataMonitoring):
     platform = app.get_platform(platform_id=platform_id)
     assert platform.version == 1
     assert isinstance(platform.id, UUID)
+
+
+def test_sync_platform(app: DataMonitoring):
+    # Arrange
+    platform_id = create_platform(app, data_eco)
+    # Act
+    app.sync_platform(platform_id=platform_id)
+    # Assert
+    result = app.get_platform(platform_id)
+    assert result.version == 2

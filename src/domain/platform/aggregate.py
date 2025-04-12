@@ -12,3 +12,8 @@ class Platform(Aggregate):
         self.key = key
         self.datasets_count = None
         self.last_sync: datetime = None
+
+    @event("Synced")
+    def sync(self, datasets_count):
+        self.datasets_count = datasets_count
+        self.last_sync = datetime.now()
