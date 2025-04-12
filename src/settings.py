@@ -9,7 +9,7 @@ from infrastructure.factory import AdapterFactory
 load_dotenv(".env")
 
 BASE_DIR = "db"
-ENV = os.environ["ENV"]
+ENV = os.environ["OPEN_DATA_MONITORING_ENV"]
 
 os.environ["PERSISTENCE_MODULE"] = "eventsourcing.sqlite"
 os.environ["SQLITE_LOCK_TIMEOUT"] = "10"  # seconds

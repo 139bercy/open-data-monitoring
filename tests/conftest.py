@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-os.environ["ENV"] = "TEST"
+os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
 
 @pytest.fixture
