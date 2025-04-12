@@ -1,15 +1,13 @@
 from tinydb import TinyDB, Query
-
-from domain.aggregate import Platform
-
-from tinydb import TinyDB, Query
 from tinydb.storages import JSONStorage
 from tinydb_serialization import SerializationMiddleware
 from tinydb_serialization.serializers import DateTimeSerializer
 
+from domain.aggregate import Platform
+
 # Configuration de la sérialisation
 serialization = SerializationMiddleware(JSONStorage)
-serialization.register_serializer(DateTimeSerializer(), 'TinyDate')
+serialization.register_serializer(DateTimeSerializer(), "TinyDate")
 
 
 class TinyDbPlatformRepository:
@@ -37,7 +35,7 @@ class TinyDbPlatformRepository:
                     "url": event.url,
                     "key": event.key,
                     "datasets_count": 0,
-                    "sync": []
+                    "sync": [],
                 }
             )
 
@@ -47,17 +45,20 @@ class TinyDbPlatformRepository:
             raise ValueError(f"Aucune plateforme trouvée pour l'ID {aggregate_id}")
 
         existing_data = data[0]
-        sync_history = existing_data.get("sync", []) or []  # Garantit une liste
+        sync_history = existing_data.get("sync", []) or []
         datasets_changes = event.datasets_count - existing_data["datasets_count"]
         payload = {
             "timestamp": event.timestamp,
             "status": event.status,
             "datasets_count": event.datasets_count,
-            "datasets_changes": datasets_changes
+            "datasets_changes": datasets_changes,
         }
         new_sync_history = sync_history + [payload]
-        self.db.update({
-            "last_sync": event.timestamp,
-            "datasets_count": event.datasets_count,
-            "sync": new_sync_history
-        }, self.query.id == str(aggregate_id))
+        self.db.update(
+            {
+                "last_sync": event.timestamp,
+                "datasets_count": event.datasets_count,
+                "sync": new_sync_history,
+            },
+            self.query.id == str(aggregate_id),
+        )

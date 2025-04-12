@@ -19,22 +19,16 @@ if ENV == "PROD":
     os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/prod/writes.db"
     READS_DB_NAME = f"{BASE_DIR}/prod/reads.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
-    app = DataMonitoring(
-        adapter_factory=AdapterFactory, repository=repository
-    )
+    app = DataMonitoring(adapter_factory=AdapterFactory, repository=repository)
 elif ENV == "TEST":
     print(f"App environment = {ENV}")
     os.environ["SQLITE_DBNAME"] = ":memory:"
     READS_DB_NAME = f"{BASE_DIR}/test/test.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
-    app = DataMonitoring(
-        adapter_factory=AdapterFactory, repository=repository
-    )
+    app = DataMonitoring(adapter_factory=AdapterFactory, repository=repository)
 else:
     print(f"App environment = {ENV}")
     os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/dev/writes-dev.db"
     READS_DB_NAME = f"{BASE_DIR}/dev/reads-dev.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
-    app = DataMonitoring(
-        adapter_factory=AdapterFactory, repository=repository
-    )
+    app = DataMonitoring(adapter_factory=AdapterFactory, repository=repository)

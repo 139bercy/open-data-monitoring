@@ -16,7 +16,7 @@ class InMemoryAdapter(PlatformAdapter):
         return {
             "timestamp": datetime.datetime.now(),
             "status": "Success",
-            "datasets_count": 10
+            "datasets_count": 10,
         }
 
 
@@ -35,7 +35,7 @@ class OpendatasoftAdapter(PlatformAdapter):
         sync_data = {
             "timestamp": datetime.datetime.now(),
             "status": "Success" if response.status_code == 200 else "Failed",
-            "datasets_count": response.json()["total_count"]
+            "datasets_count": response.json()["total_count"],
         }
         return sync_data
 
@@ -53,6 +53,6 @@ class DataGouvFrAdapter(PlatformAdapter):
         sync_data = {
             "timestamp": datetime.datetime.now(),
             "status": "Success" if response.status_code == 200 else "Failed",
-            "datasets_count": response.json()["total"]
+            "datasets_count": response.json()["total"],
         }
         return sync_data
