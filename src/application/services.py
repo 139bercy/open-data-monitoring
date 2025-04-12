@@ -3,10 +3,11 @@ from eventsourcing.system import NotificationLogReader
 from tinydb import Query
 
 from domain.aggregate import Platform
+from infrastructure.factory import AdapterFactory
 
 
 class DataMonitoring(Application):
-    def __init__(self, adapter_factory, repository):
+    def __init__(self, adapter_factory: AdapterFactory, repository):
         super().__init__()
         self.reads = repository
         self.adapter_factory = adapter_factory
@@ -30,7 +31,7 @@ class DataMonitoring(Application):
     def sync_platform(self, platform_id):
         platform = self.get_platform(platform_id=platform_id)
         adapter = self.adapter_factory.create(
-            platform.type, platform.url, platform.key, platform.slug
+            platform_type=platform.type, url=platform.url, key=platform.key, slug=platform.slug
         )
         payload = adapter.fetch_datasets()
         platform.sync(**payload)

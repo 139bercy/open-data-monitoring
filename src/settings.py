@@ -14,7 +14,7 @@ ENV = os.environ["OPEN_DATA_MONITORING_ENV"]
 os.environ["PERSISTENCE_MODULE"] = "eventsourcing.sqlite"
 os.environ["SQLITE_LOCK_TIMEOUT"] = "10"  # seconds
 
-if ENV == "PROD":
+if ENV == "PROD":                                                                           # pragma: no cover
     print(f"App environment = {ENV}")
     os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/prod/writes.db"
     READS_DB_NAME = f"{BASE_DIR}/prod/reads.json"
@@ -26,7 +26,7 @@ elif ENV == "TEST":
     READS_DB_NAME = f"{BASE_DIR}/test/test.json"
     repository = TinyDbPlatformRepository(READS_DB_NAME)
     app = DataMonitoring(adapter_factory=AdapterFactory, repository=repository)
-else:
+else:                                                                                       # pragma: no cover
     print(f"App environment = {ENV}")
     os.environ["SQLITE_DBNAME"] = f"{BASE_DIR}/dev/writes-dev.db"
     READS_DB_NAME = f"{BASE_DIR}/dev/reads-dev.json"
