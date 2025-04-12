@@ -3,17 +3,20 @@ from eventsourcing.system import NotificationLogReader
 from tinydb import Query
 
 from domain.aggregate import Platform
-from infrastructure.factory import AdapterFactory
 
 
 class DataMonitoring(Application):
-    def __init__(self, adapter_factory: AdapterFactory, repository):
+    def __init__(self, adapter_factory, repository):
         super().__init__()
         self.reads = repository
         self.adapter_factory = adapter_factory
         self.reader = NotificationLogReader(self.notification_log)
         self.PlatformQuery = Query()
-        self.last_processed_id = self.get_last_processed_id()  # Charge depuis TinyDB
+        self.last_processed_id = self.get_last_processed_id()
+
+    def save(self, aggregate):
+        super().save(aggregate)
+        self.process_new_events()
 
     def get_platform(self, platform_id):
         platform = self.repository.get(platform_id)
@@ -36,10 +39,6 @@ class DataMonitoring(Application):
         payload = adapter.fetch_datasets()
         platform.sync(**payload)
         self.save(platform)
-
-    def save(self, aggregate):
-        super().save(aggregate)
-        self.process_new_events()
 
     def process_new_events(self):
         """Traite les nouveaux événements depuis la dernière notification"""

@@ -27,4 +27,3 @@ class Platform(Aggregate):
     def sync(self, timestamp, status, datasets_count):
         self.datasets_count = datasets_count
         self.last_sync = datetime.now()
-
