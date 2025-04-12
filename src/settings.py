@@ -2,8 +2,8 @@ import os
 
 from dotenv import load_dotenv
 
-from application.projections import TinyDbPlatformRepository
-from application.services import DataMonitoring
+from application.queries.platform import TinyDbPlatformRepository
+from application.services.platform import DataMonitoring
 from infrastructure.factory import AdapterFactory
 
 load_dotenv(".env")

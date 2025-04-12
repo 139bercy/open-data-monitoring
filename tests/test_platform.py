@@ -1,13 +1,14 @@
-import os
 from uuid import UUID
 
 import pytest
 
-from infrastructure.adapters import OpendatasoftAdapter, DataGouvFrAdapter, InMemoryAdapter
+from infrastructure.adapters.ods import OpendatasoftAdapter
+from infrastructure.adapters.in_memory import InMemoryAdapter
+from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 from settings import *
 
-from application.projections import TinyDbPlatformRepository
-from application.services import DataMonitoring
+from application.queries.platform import TinyDbPlatformRepository
+from application.services.platform import DataMonitoring
 from application.handlers import create_platform, sync_platform
 from infrastructure.factory import AdapterFactory
 

@@ -1,7 +1,7 @@
 from click import UUID
 
-from application.commands import CreatePlatform, SyncPlatform
-from application.services import DataMonitoring
+from application.commands.platform import CreatePlatform, SyncPlatform
+from application.services.platform import DataMonitoring
 
 
 def create_platform(app: DataMonitoring, data: dict) -> UUID:

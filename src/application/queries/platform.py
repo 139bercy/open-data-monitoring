@@ -3,7 +3,7 @@ from tinydb.storages import JSONStorage
 from tinydb_serialization import SerializationMiddleware
 from tinydb_serialization.serializers import DateTimeSerializer
 
-from domain.aggregate import Platform
+from domain.platform.aggregate import Platform
 
 # Configuration de la sérialisation
 serialization = SerializationMiddleware(JSONStorage)
