@@ -12,7 +12,7 @@ class DataGouvFrAdapter(PlatformAdapter):
         self.key = key
         self.slug = slug
 
-    def fetch_datasets(self) -> dict:
+    def fetch(self) -> dict:
         response = requests.get(
             f"{self.url}/api/1/organizations/{self.slug}/datasets/",
         )

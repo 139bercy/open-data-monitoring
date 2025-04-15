@@ -13,7 +13,7 @@ class OpendatasoftAdapter(PlatformAdapter):
         self.key = os.environ[key]
         self.slug = slug
 
-    def fetch_datasets(self) -> dict:
+    def fetch(self) -> dict:
         response = requests.get(
             f"{self.url}/api/v2/catalog/datasets",
             headers={"Authorization": f"Apikey {self.key}"},

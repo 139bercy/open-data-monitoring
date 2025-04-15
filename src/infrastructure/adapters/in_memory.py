@@ -10,7 +10,7 @@ class InMemoryAdapter(PlatformAdapter):
         self.key = key
         self.slug = slug
 
-    def fetch_datasets(self) -> dict:
+    def fetch(self) -> dict:
         return {
             "timestamp": datetime.datetime.now(),
             "status": "Success",

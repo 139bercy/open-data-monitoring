@@ -36,7 +36,7 @@ class PlatformMonitoring(Application):
         adapter = self.adapter_factory.create(
             platform_type=platform.type, url=platform.url, key=platform.key, slug=platform.slug
         )
-        payload = adapter.fetch_datasets()
+        payload = adapter.fetch()
         platform.sync(**payload)
         self.save(platform)
 
