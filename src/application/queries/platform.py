@@ -5,7 +5,6 @@ from tinydb_serialization.serializers import DateTimeSerializer
 
 from domain.platform.aggregate import Platform
 
-# Configuration de la sérialisation
 serialization = SerializationMiddleware(JSONStorage)
 serialization.register_serializer(DateTimeSerializer(), "TinyDate")
 

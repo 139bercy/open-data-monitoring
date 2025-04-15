@@ -183,5 +183,6 @@ pyrightconfig.json
 docs
 dev
 tmp.py
-db/*
+db/**/*.json
+db/**/*.db*
 *.json
