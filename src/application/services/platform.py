@@ -5,7 +5,7 @@ from tinydb import Query
 from domain.platform.aggregate import Platform
 
 
-class DataMonitoring(Application):
+class PlatformMonitoring(Application):
     def __init__(self, adapter_factory, repository):
         super().__init__()
         self.reads = repository

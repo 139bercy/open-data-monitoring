@@ -10,7 +10,7 @@ from infrastructure.factories.platform import PlatformAdapterFactory
 from settings import *
 
 from application.queries.platform import TinyDbPlatformRepository
-from application.services.platform import DataMonitoring
+from application.services.platform import PlatformMonitoring
 from application.handlers import create_platform, sync_platform
 
 platform_1 = {
@@ -26,10 +26,10 @@ platform_1 = {
 @pytest.fixture
 def app():
     repository = TinyDbPlatformRepository("test.json")
-    return DataMonitoring(adapter_factory=PlatformAdapterFactory, repository=repository)
+    return PlatformMonitoring(adapter_factory=PlatformAdapterFactory, repository=repository)
 
 
-def test_create_platform(app: DataMonitoring, testfile):
+def test_create_platform(app: PlatformMonitoring, testfile):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
@@ -38,7 +38,7 @@ def test_create_platform(app: DataMonitoring, testfile):
     assert isinstance(platform.id, UUID)
 
 
-def test_api_key_should_be_hidden(app: DataMonitoring, testfile):
+def test_api_key_should_be_hidden(app: PlatformMonitoring, testfile):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
@@ -46,7 +46,7 @@ def test_api_key_should_be_hidden(app: DataMonitoring, testfile):
     assert os.environ[platform.key] == "azertyuiop"
 
 
-def test_sync_platform(app: DataMonitoring, testfile):
+def test_sync_platform(app: PlatformMonitoring, testfile):
     # Arrange
     platform_id = create_platform(app, platform_1)
     # Act
@@ -56,7 +56,7 @@ def test_sync_platform(app: DataMonitoring, testfile):
     assert result.version == 2
 
 
-def test_should_return_all_platforms(app: DataMonitoring, testfile):
+def test_should_return_all_platforms(app: PlatformMonitoring, testfile):
     # Arrange
     platform_id = create_platform(app, platform_1)
     app.sync_platform(platform_id=platform_id)
@@ -66,7 +66,7 @@ def test_should_return_all_platforms(app: DataMonitoring, testfile):
     assert len(result) == 1
 
 
-def test_projections(app: DataMonitoring, testfile):
+def test_projections(app: PlatformMonitoring, testfile):
     # Arrange
     platform_id = create_platform(app, platform_1)
     app.sync_platform(platform_id=platform_id)
