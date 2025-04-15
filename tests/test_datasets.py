@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from application.services.datasets import DatasetsMonitoring
-from infrastructure.factory import DatasetAdapterFactory
+from infrastructure.factories.dataset import DatasetAdapterFactory
 
 
 def test_create_opendatasoft_dataset(ods_dataset):

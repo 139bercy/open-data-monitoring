@@ -5,13 +5,13 @@ import pytest
 from infrastructure.adapters.ods import OpendatasoftAdapter
 from infrastructure.adapters.in_memory import InMemoryAdapter
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
+from infrastructure.factories.platform import PlatformAdapterFactory
 
 from settings import *
 
 from application.queries.platform import TinyDbPlatformRepository
 from application.services.platform import DataMonitoring
 from application.handlers import create_platform, sync_platform
-from infrastructure.factory import AdapterFactory
 
 platform_1 = {
     "name": "My Platform",
@@ -26,7 +26,7 @@ platform_1 = {
 @pytest.fixture
 def app():
     repository = TinyDbPlatformRepository("test.json")
-    return DataMonitoring(adapter_factory=AdapterFactory, repository=repository)
+    return DataMonitoring(adapter_factory=PlatformAdapterFactory, repository=repository)
 
 
 def test_create_platform(app: DataMonitoring, testfile):
@@ -79,7 +79,7 @@ def test_projections(app: DataMonitoring, testfile):
 
 def test_factory_should_return_opendatasoft():
     # Arrange & Act
-    factory = AdapterFactory.create(
+    factory = PlatformAdapterFactory.create(
         platform_type="opendatasoft",
         url="https://mydomain.net",
         key="TEST_API_KEY",
@@ -90,7 +90,7 @@ def test_factory_should_return_opendatasoft():
 
 def test_factory_should_return_data_gouv_fr():
     # Arrange & Act
-    factory = AdapterFactory.create(
+    factory = PlatformAdapterFactory.create(
         platform_type="datagouvfr",
         url="https://mydomain.net",
         key="TEST_API_KEY",
@@ -101,7 +101,7 @@ def test_factory_should_return_data_gouv_fr():
 
 def test_factory_should_return_in_memory():
     # Arrange & Act
-    factory = AdapterFactory.create(
+    factory = PlatformAdapterFactory.create(
         platform_type="test",
         url="https://mydomain.net",
         key="TEST_API_KEY",
@@ -113,7 +113,7 @@ def test_factory_should_return_in_memory():
 def test_factory_wrong_platform_type_should_raise_exception():
     # Arrange & Act & Assert
     with pytest.raises(ValueError):
-        AdapterFactory.create(
+        PlatformAdapterFactory.create(
             platform_type="whoops",
             url="https://mydomain.net",
             key="TEST_API_KEY",
