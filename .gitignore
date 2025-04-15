@@ -181,8 +181,7 @@ pyrightconfig.json
 
 ##
 docs
-dev
+dev/*
 tmp.py
-db/**/*.json
-db/**/*.db*
 *.json
+*.db*
