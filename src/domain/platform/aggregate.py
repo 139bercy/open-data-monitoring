@@ -6,7 +6,9 @@ from eventsourcing.domain import Aggregate, event
 
 class Platform(Aggregate):
     @event("Created")
-    def __init__(self, name: str, slug: str, type: str, url: str, organization_id: str, key: str):
+    def __init__(
+        self, name: str, slug: str, type: str, url: str, organization_id: str, key: str
+    ):
         self.name = name
         self.slug = slug
         self.organization_id = organization_id

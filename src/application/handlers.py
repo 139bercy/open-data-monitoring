@@ -7,7 +7,12 @@ from application.services.platform import PlatformMonitoring
 def create_platform(app: PlatformMonitoring, data: dict) -> UUID:
     cmd = CreatePlatform(**data)
     platform_id = app.register_platform(
-        name=cmd.name, slug=cmd.slug, organization_id=cmd.organization_id, type=cmd.type, url=cmd.url, key=cmd.key
+        name=cmd.name,
+        slug=cmd.slug,
+        organization_id=cmd.organization_id,
+        type=cmd.type,
+        url=cmd.url,
+        key=cmd.key,
     )
     return platform_id
 

@@ -36,6 +36,6 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
             publisher=metadata["default"]["publisher"]["value"],
             created=created_at,
-            modified=updated_at
+            modified=updated_at,
         )
         return dataset

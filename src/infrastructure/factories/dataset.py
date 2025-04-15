@@ -14,4 +14,3 @@ class DatasetAdapterFactory:
             return InMemoryDatasetAdapter()
         else:
             raise ValueError("Unsupported platform type")
-

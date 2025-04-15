@@ -26,7 +26,9 @@ platform_1 = {
 @pytest.fixture
 def app():
     repository = TinyDbPlatformRepository("test.json")
-    return PlatformMonitoring(adapter_factory=PlatformAdapterFactory, repository=repository)
+    return PlatformMonitoring(
+        adapter_factory=PlatformAdapterFactory, repository=repository
+    )
 
 
 def test_create_platform(app: PlatformMonitoring, testfile):

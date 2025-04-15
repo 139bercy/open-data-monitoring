@@ -26,15 +26,33 @@ class PlatformMonitoring(Application):
     def get_all_platforms(self):
         return self.reads.db.all()
 
-    def register_platform(self, name: str, slug: str, organization_id: str, type: str, url: str, key: str = None):
-        platform = Platform(name=name, slug=slug, organization_id=organization_id, type=type, url=url, key=key)
+    def register_platform(
+        self,
+        name: str,
+        slug: str,
+        organization_id: str,
+        type: str,
+        url: str,
+        key: str = None,
+    ):
+        platform = Platform(
+            name=name,
+            slug=slug,
+            organization_id=organization_id,
+            type=type,
+            url=url,
+            key=key,
+        )
         self.save(platform)
         return platform.id
 
     def sync_platform(self, platform_id):
         platform = self.get_platform(platform_id=platform_id)
         adapter = self.adapter_factory.create(
-            platform_type=platform.type, url=platform.url, key=platform.key, slug=platform.slug
+            platform_type=platform.type,
+            url=platform.url,
+            key=platform.key,
+            slug=platform.slug,
         )
         payload = adapter.fetch()
         platform.sync(**payload)

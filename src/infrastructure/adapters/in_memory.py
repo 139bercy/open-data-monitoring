@@ -27,6 +27,6 @@ class InMemoryDatasetAdapter(DatasetAdapter):
             page=page,
             publisher="",
             created=created_at,
-            modified=last_update
+            modified=last_update,
         )
         return dataset

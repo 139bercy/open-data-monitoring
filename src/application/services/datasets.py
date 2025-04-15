@@ -17,7 +17,7 @@ class DatasetsMonitoring(Application):
             page=dto.page,
             publisher=dto.publisher,
             created=dto.created,
-            modified=dto.modified
+            modified=dto.modified,
         )
         self.save(dataset)
         return dataset.id

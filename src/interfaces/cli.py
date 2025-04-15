@@ -21,12 +21,24 @@ def cli_platform():
 @click.option("-n", "--name", required=True, help="Entity name")
 @click.option("-s", "--slug", required=False, help="Entity slug")
 @click.option("-o", "--organization-id", required=False, help="Entity ID")
-@click.option("-t", "--type", required=True, type=click.Choice(["opendatasoft", "datagouvfr", "test"]))
+@click.option(
+    "-t",
+    "--type",
+    required=True,
+    type=click.Choice(["opendatasoft", "datagouvfr", "test"]),
+)
 @click.option("-u", "--url", required=True, help="Base URL")
 @click.option("-k", "--key", required=False, help="API Key")
 def cli_create_platform(name, slug, organization_id, type, url, key):
     """Create new platform"""
-    data = {"name": name, "slug": slug, "organization_id": organization_id, "type": type, "url": url, "key": key}
+    data = {
+        "name": name,
+        "slug": slug,
+        "organization_id": organization_id,
+        "type": type,
+        "url": url,
+        "key": key,
+    }
     platform_id = create_platform(app=app, data=data)
     pprint(platform_id)
     click.echo("Success !")
