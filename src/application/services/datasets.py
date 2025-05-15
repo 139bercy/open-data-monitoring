@@ -1,17 +1,16 @@
-from eventsourcing.application import Application
-
 from domain.datasets.aggregate import Dataset
+from uuid import uuid4
 
 
-class DatasetsMonitoring(Application):
+class DatasetsMonitoring:
     def __init__(self, factory):
-        super().__init__()
         self.adapter = factory
 
     def create_dataset(self, platform_type, **dataset):
         adapter = self.adapter.create(platform_type)
         dto = adapter.map(**dataset)
         dataset = Dataset(
+            id=uuid4(),
             buid=dto.buid,
             slug=dto.slug,
             page=dto.page,
@@ -19,5 +18,4 @@ class DatasetsMonitoring(Application):
             created=dto.created,
             modified=dto.modified,
         )
-        self.save(dataset)
-        return dataset.id
+        return dataset

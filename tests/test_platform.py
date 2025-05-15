@@ -5,7 +5,6 @@ import pytest
 from infrastructure.adapters.ods import OpendatasoftAdapter
 from infrastructure.adapters.in_memory import InMemoryAdapter
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
-from infrastructure.factories.platform import PlatformAdapterFactory
 
 from settings import *
 
