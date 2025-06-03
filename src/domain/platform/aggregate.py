@@ -1,14 +1,12 @@
-from dataclasses import dataclass
+import uuid
 from datetime import datetime
 
-from eventsourcing.domain import Aggregate, event
 
-
-class Platform(Aggregate):
-    @event("Created")
+class Platform:
     def __init__(
-        self, name: str, slug: str, type: str, url: str, organization_id: str, key: str
+        self, id: uuid, name: str, slug: str, type: str, url: str, organization_id: str, key: str
     ):
+        self.id = id
         self.name = name
         self.slug = slug
         self.organization_id = organization_id
@@ -18,7 +16,9 @@ class Platform(Aggregate):
         self.datasets_count: int = 0
         self.last_sync: datetime = None
 
-    @event("Synced")
     def sync(self, timestamp, status, datasets_count):
         self.datasets_count = datasets_count
         self.last_sync = datetime.now()
+
+    def __str__(self):
+        return f"<Platform: {self.name}>"

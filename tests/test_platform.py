@@ -3,14 +3,13 @@ from uuid import UUID
 import pytest
 
 from infrastructure.adapters.ods import OpendatasoftAdapter
-from infrastructure.adapters.in_memory import InMemoryAdapter
+from infrastructure.adapters.in_memory import InMemoryAdapter, InMemoryPlatformRepository
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 
 from settings import *
 
-from application.queries.platform import TinyDbPlatformRepository
 from application.services.platform import PlatformMonitoring
-from application.handlers import create_platform, sync_platform
+from application.handlers import create_platform
 
 platform_1 = {
     "name": "My Platform",
@@ -24,58 +23,35 @@ platform_1 = {
 
 @pytest.fixture
 def app():
-    repository = TinyDbPlatformRepository("test.json")
+    repository = InMemoryPlatformRepository([])
     return PlatformMonitoring(
         adapter_factory=PlatformAdapterFactory, repository=repository
     )
 
 
-def test_create_platform(app: PlatformMonitoring, testfile):
+def test_create_platform(app, testfile):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
-    platform = app.get_platform(platform_id=platform_id)
-    assert platform.version == 1
+    platform = app.get(platform_id=platform_id)
     assert isinstance(platform.id, UUID)
 
 
-def test_api_key_should_be_hidden(app: PlatformMonitoring, testfile):
+def test_api_key_should_be_hidden(app, testfile):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
-    platform = app.get_platform(platform_id=platform_id)
+    platform = app.get(platform_id=platform_id)
     assert os.environ[platform.key] == "azertyuiop"
-
-
-def test_sync_platform(app: PlatformMonitoring, testfile):
-    # Arrange
-    platform_id = create_platform(app, platform_1)
-    # Act
-    sync_platform(app=app, platform_id=platform_id)
-    # Assert
-    result = app.get_platform(platform_id)
-    assert result.version == 2
 
 
 def test_should_return_all_platforms(app: PlatformMonitoring, testfile):
     # Arrange
-    platform_id = create_platform(app, platform_1)
-    app.sync_platform(platform_id=platform_id)
+    create_platform(app, platform_1)
     # Act
     result = app.get_all_platforms()
     # Assert
     assert len(result) == 1
-
-
-def test_projections(app: PlatformMonitoring, testfile):
-    # Arrange
-    platform_id = create_platform(app, platform_1)
-    app.sync_platform(platform_id=platform_id)
-    # Act
-    results = app.get_all_platforms()
-    # Assert
-    assert len(results) == 1
-    assert results[0]["datasets_count"] == 10
 
 
 def test_factory_should_return_opendatasoft():

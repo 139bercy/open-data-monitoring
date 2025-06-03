@@ -1,7 +1,22 @@
 import datetime
+import uuid
 
-from domain.platform.ports import PlatformAdapter, DatasetAdapter
+from domain.platform.ports import PlatformAdapter, DatasetAdapter, PlatformRepository
 from infrastructure.dtos.dataset import DatasetDTO
+
+
+class InMemoryPlatformRepository(PlatformRepository):
+    def __init__(self, db):
+        self.db = db
+
+    def save(self, data):
+        self.db.append(data)
+
+    def get(self, platform_id: uuid):
+        return next((item for item in self.db if item.id == platform_id), None)
+
+    def all(self):
+        return self.db
 
 
 class InMemoryAdapter(PlatformAdapter):
