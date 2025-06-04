@@ -3,7 +3,7 @@ import os
 
 import requests
 
-from domain.platform.ports import PlatformAdapter, DatasetAdapter
+from domain.platform.ports import DatasetAdapter, PlatformAdapter
 from infrastructure.dtos.dataset import DatasetDTO
 
 
@@ -28,6 +28,20 @@ class OpendatasoftAdapter(PlatformAdapter):
 
 
 class OpendatasoftDatasetAdapter(DatasetAdapter):
+    @staticmethod
+    def find_dataset_id(url: str):
+        if url.endswith("/"):
+            return url.split("/")[-2]
+        return url.split("/")[-1]
+
+    def fetch(self, url: str, key: str, dataset_id):
+        key = os.environ[key]
+        response = requests.get(f"{url}/api/explore/v2.1/catalog/datasets/{dataset_id}/", headers={"Authorization": f"Apikey {key}"})
+        data = response.json()
+        dataset_uid = data.get("dataset_uid")
+        response = requests.get(f"{url}/api/automation/v1.0/datasets/{dataset_uid}/", headers={"Authorization": f"Apikey {key}"})
+        return response.json()
+
     @staticmethod
     def map(uid, dataset_id, metadata, created_at, updated_at, *args, **kwargs):
         dataset = DatasetDTO(

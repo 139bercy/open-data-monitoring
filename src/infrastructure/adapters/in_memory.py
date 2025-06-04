@@ -1,9 +1,12 @@
 import datetime
 import uuid
 
+from domain.datasets.aggregate import Dataset
+from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
-from domain.platform.ports import PlatformAdapter, DatasetAdapter, PlatformRepository
-from infrastructure.dtos.dataset import DatasetDTO
+from domain.platform.ports import (DatasetAdapter, PlatformAdapter,
+                                   PlatformRepository)
+from infrastructure.dtos.dataset import DatasetDTO, DatasetRawDTO
 
 
 class InMemoryPlatformRepository(PlatformRepository):
@@ -21,6 +24,9 @@ class InMemoryPlatformRepository(PlatformRepository):
             for sync in syncs:
                 platform.add_sync(sync)
         return platform
+
+    def get_by_domain(self, domain) -> Platform:
+        return next((item for item in self.db if domain in item.url), None)
 
     def all(self):
         return self.db
@@ -55,3 +61,15 @@ class InMemoryDatasetAdapter(DatasetAdapter):
             modified=last_update,
         )
         return dataset
+
+
+class InMemoryDatasetRepository(DatasetRepository):
+    def __init__(self, db):
+        self.db = db
+
+    def add(self, dataset: Dataset):
+        self.db.append(dataset)
+
+    def get(self, dataset_id):
+        dataset = next((item for item in self.db if item.id == dataset_id), None)
+        return DatasetRawDTO(dataset_id=dataset.id, snapshot=dataset.raw)

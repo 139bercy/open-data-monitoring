@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 
 @dataclass
@@ -9,3 +10,9 @@ class DatasetDTO:
     publisher: str
     created: str
     modified: str
+
+
+@dataclass
+class DatasetRawDTO:
+    dataset_id: UUID
+    snapshot: dict

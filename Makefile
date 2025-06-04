@@ -11,9 +11,12 @@ coverage:
 export-es:
 	sqlite3 db/writes-dev.db .dump > output.sql
 
+clean:
+	black src tests
+	isort .
+
 clean-db:
 	rm -rf db/dev/*
-
 
 docker-up:
 	docker-compose up --build -d

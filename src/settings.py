@@ -2,29 +2,39 @@ import os
 
 from dotenv import load_dotenv
 
+from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.in_memory import InMemoryPlatformRepository
-from infrastructure.adapters.postgres import PostgresPlatformRepository
-from infrastructure.factories.platform import PlatformAdapterFactory
+from infrastructure.adapters.in_memory import (InMemoryDatasetRepository,
+                                               InMemoryPlatformRepository)
+from infrastructure.adapters.postgres import PostgresPlatformRepository, PostgresDatasetRepository
 from infrastructure.database.client import PostgresClient
-
+from infrastructure.factories.dataset import DatasetAdapterFactory
+from infrastructure.factories.platform import PlatformAdapterFactory
 
 load_dotenv(".env")
 
 BASE_DIR = "db"
 ENV = os.environ["OPEN_DATA_MONITORING_ENV"]
 
-os.environ["PERSISTENCE_MODULE"] = "eventsourcing.sqlite"
-os.environ["SQLITE_LOCK_TIMEOUT"] = "10"  # seconds
+
+class App:
+    def __init__(self, platform, dataset):
+        self.platform = platform
+        self.dataset = dataset
+
 
 if ENV == "PROD":  # pragma: no cover
     raise NotImplementedError
 elif ENV == "TEST":
     print(f"App environment = {ENV}")
-    repository = InMemoryPlatformRepository([])
-    app = PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory, repository=repository
+    platform = PlatformMonitoring(
+        adapter_factory=PlatformAdapterFactory,
+        repository=InMemoryPlatformRepository([]),
     )
+    dataset = DatasetMonitoring(
+        factory=DatasetAdapterFactory, repository=InMemoryDatasetRepository([])
+    )
+    app = App(platform=platform, dataset=dataset)
 else:  # pragma: no cover
     print(f"App environment = {ENV}")
     client = PostgresClient(
@@ -34,7 +44,8 @@ else:  # pragma: no cover
         host="localhost",
         port=5432,
     )
-    repository = PostgresPlatformRepository(client=client)
-    app = PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory, repository=repository
+    platform = PlatformMonitoring(
+        adapter_factory=PlatformAdapterFactory, repository=PostgresPlatformRepository(client=client)
     )
+    dataset = DatasetMonitoring(factory=DatasetAdapterFactory, repository=PostgresDatasetRepository(client=client))
+    app = App(platform=platform, dataset=dataset)

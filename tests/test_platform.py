@@ -2,20 +2,14 @@ from datetime import datetime
 from uuid import UUID
 
 import pytest
-
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from infrastructure.adapters.ods import OpendatasoftAdapter
-from infrastructure.adapters.in_memory import (
-    InMemoryAdapter,
-)
-from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
-
-from settings import *
-
-from application.services.platform import PlatformMonitoring
 from application.handlers import create_platform, sync_platform
+from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
+from infrastructure.adapters.in_memory import InMemoryAdapter
+from infrastructure.adapters.ods import OpendatasoftAdapter
+from settings import *
 
 platform_1 = {
     "name": "My Platform",
@@ -102,6 +96,13 @@ def test_factory_wrong_platform_type_should_raise_exception():
             key="TEST_API_KEY",
             slug="slug",
         )
+
+
+def test_get_platform_by_domain(app, testfile):
+    # Arrange & Act
+    create_platform(app, platform_1)
+    result = app.repository.get_by_domain("mydomain.net")
+    assert result.slug == "my-platform"
 
 
 def test_sync_platform(app):

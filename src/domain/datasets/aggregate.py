@@ -15,6 +15,7 @@ class Dataset:
         publisher: str,
         created: datetime,
         modified: datetime,
+        raw: dict,
     ):
         self.id = id
         self.buid = buid
@@ -23,6 +24,10 @@ class Dataset:
         self.publisher = publisher
         self.created = created
         self.modified = modified
+        self.raw = raw
+
+    def is_modified_since(self, date: datetime) -> bool:
+        return self.modified > date
 
     def __repr__(self):
         return f"<Dataset: {self.slug}>"

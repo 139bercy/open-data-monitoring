@@ -1,7 +1,8 @@
-from click import UUID
+from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
 from application.services.platform import PlatformMonitoring
+from domain.datasets.aggregate import Dataset
 
 
 def create_platform(app, data: dict) -> UUID:
@@ -22,3 +23,9 @@ def sync_platform(app: PlatformMonitoring, platform_id: UUID) -> None:
     cmd = SyncPlatform(id=platform_id)
     app.sync_platform(platform_id=cmd.id)
     return
+
+
+def add_dataset(app, platform_type: str, dataset: Dataset):
+    dataset = app.add_dataset(platform_type=platform_type, dataset=dataset)
+    app.repository.add(dataset=dataset)
+    return dataset.id

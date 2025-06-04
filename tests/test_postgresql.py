@@ -5,18 +5,28 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import create_platform
+from application.handlers import add_dataset, create_platform
+from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.postgres import PostgresPlatformRepository
+from infrastructure.adapters.postgres import (PostgresDatasetRepository,
+                                              PostgresPlatformRepository)
+from infrastructure.factories.dataset import DatasetAdapterFactory
 from infrastructure.factories.platform import PlatformAdapterFactory
 
 
 @pytest.fixture
-def app(db_transaction):
+def platform(db_transaction):
     return PlatformMonitoring(
         adapter_factory=PlatformAdapterFactory,
-        repository=PostgresPlatformRepository(db_transaction),
+        repository=PostgresPlatformRepository(client=db_transaction),
     )
+
+
+@pytest.fixture
+def datasets(db_transaction):
+    repository = PostgresDatasetRepository(client=db_transaction)
+    factory = DatasetAdapterFactory()
+    return DatasetMonitoring(factory=factory, repository=repository)
 
 
 platform_1 = {
@@ -29,31 +39,54 @@ platform_1 = {
 }
 
 
-def test_postgresql_create_platform(app, testfile):
-    platform_id = create_platform(app, platform_1)
-    platform = app.get(platform_id=platform_id)
+def test_postgresql_create_platform(platform, testfile):
+    platform_id = create_platform(platform, platform_1)
+    platform = platform.get(platform_id=platform_id)
     assert isinstance(platform.id, UUID)
 
 
-def test_postgresl_sync_platform(app):
+def test_postgresql_get_platform_by_domain(platform, testfile):
     # Arrange
-    platform_id = create_platform(app, platform_1)
+    create_platform(platform, platform_1)
+    # Act
+    result = platform.repository.get_by_domain("mydomain.net")
+    # Assert
+    assert result.slug == "my-platform"
+
+
+def test_postgresl_sync_platform(platform):
+    # Arrange
+    platform_id = create_platform(platform, platform_1)
     # Act
     cmd = SyncPlatform(id=platform_id)
-    app.sync_platform(platform_id=cmd.id)
+    platform.sync_platform(platform_id=cmd.id)
     # Assert
-    result = app.repository.get(platform_id)
+    result = platform.repository.get(platform_id)
     assert isinstance(result.last_sync, datetime)
 
 
 @freeze_time("2025-01-01 12:00:00")
-def test_postgresl_retrieve_platform_with_syncs(app):
+def test_postgresl_retrieve_platform_with_syncs(platform):
     # Arrange
-    platform_id = create_platform(app, platform_1)
+    platform_id = create_platform(platform, platform_1)
     cmd = SyncPlatform(id=platform_id)
-    app.sync_platform(platform_id=cmd.id)
+    platform.sync_platform(platform_id=cmd.id)
     # Act
-    result = app.repository.get(platform_id)
+    result = platform.repository.get(platform_id)
     # Assert
     assert result.last_sync
     assert len(result.syncs) == 1
+
+
+def test_postgresql_create_dataset(datasets, ods_dataset):
+    # Arrange
+    dataset_id = add_dataset(
+        app=datasets,
+        platform_type="opendatasoft",
+        dataset=ods_dataset,
+    )
+    # Act
+    result = datasets.repository.get(dataset_id=dataset_id)
+    # Assert
+    assert isinstance(result.dataset_id, UUID)
+    assert result.dataset_id == dataset_id

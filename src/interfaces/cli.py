@@ -3,7 +3,8 @@ from uuid import UUID
 
 import click
 
-from application.handlers import create_platform, sync_platform
+from application.handlers import add_dataset, create_platform, sync_platform
+from common import get_base_url
 from settings import app
 
 
@@ -39,7 +40,7 @@ def cli_create_platform(name, slug, organization_id, type, url, key):
         "url": url,
         "key": key,
     }
-    platform_id = create_platform(app=app, data=data)
+    platform_id = create_platform(app=app.platform, data=data)
     pprint(platform_id)
     click.echo("Success !")
 
@@ -47,7 +48,7 @@ def cli_create_platform(name, slug, organization_id, type, url, key):
 @cli_platform.command("all")
 def cli_get_all_platforms():
     """Retrieve all platforms"""
-    platforms = app.get_all_platforms()
+    platforms = app.platform.get_all_platforms()
     pprint(platforms)
 
 
@@ -56,6 +57,23 @@ def cli_get_all_platforms():
 def cli_sync_platform(id):
     """Sync platform and project stats"""
     platform_id = UUID(id)
-    sync_platform(app, platform_id=platform_id)
-    platform = app.get(platform_id=platform_id)
-    pprint(platform.__dict__)
+    sync_platform(app=app.platform, platform_id=platform_id)
+    result = app.platform.get(platform_id=platform_id)
+    pprint(result.__dict__)
+
+
+@cli.group("dataset")
+def cli_platform():
+    """Dataset management"""
+
+
+@cli_platform.command("add")
+@click.argument("url")
+def cli_add_dataset(url):
+    """Create new platform"""
+    base_url = get_base_url(url=url)
+    platform = app.platform.repository.get_by_domain(base_url)
+    app.dataset.set_adapter(platform_type=platform.type)
+    dataset_id = app.dataset.adapter.find_dataset_id(url=url)
+    dataset = app.dataset.adapter.fetch(platform.url, platform.key, dataset_id)
+    add_dataset(app=app.dataset, platform_type=platform.type, dataset=dataset)

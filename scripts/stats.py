@@ -10,12 +10,10 @@ python stats.py
 
 import calendar
 import csv
+import os
 from datetime import datetime
 
-import os
-
 import requests
-
 
 DATASET_ID = ""
 START = 2024, 5

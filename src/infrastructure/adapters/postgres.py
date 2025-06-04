@@ -1,9 +1,14 @@
 import uuid
 from typing import Optional
 
+from psycopg2.extras import Json
+
+from domain.datasets.aggregate import Dataset
+from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
 from infrastructure.database.client import PostgresClient
+from infrastructure.dtos.dataset import DatasetRawDTO
 
 
 class PostgresPlatformRepository(PlatformRepository):
@@ -51,15 +56,21 @@ class PostgresPlatformRepository(PlatformRepository):
             return None
 
         # Conversion UUID si besoin
-        row['id'] = uuid.UUID(row['id'])
-        platform = Platform(**{k: v for k, v in row.items() if k != 'syncs'})
+        row["id"] = uuid.UUID(row["id"])
+        platform = Platform(**{k: v for k, v in row.items() if k != "syncs"})
 
         # Ajout des synchronisations
-        if row['syncs']:
-            for sync in row['syncs']:
+        if row["syncs"]:
+            for sync in row["syncs"]:
                 platform.add_sync(sync)
 
         return platform
+
+    def get_by_domain(self, domain) -> Platform:
+        query = "SELECT * FROM platforms WHERE position(%s in url) > 0;"
+        row = self.client.fetchone(query=query, params=(domain,))
+        row["id"] = uuid.UUID(row["id"])
+        return Platform(**{k: v for k, v in row.items()})
 
     def save_sync(self, platform_id, payload):
         self.client.execute(
@@ -79,3 +90,23 @@ class PostgresPlatformRepository(PlatformRepository):
 
     def all(self):
         pass
+
+
+class PostgresDatasetRepository(DatasetRepository):
+    def __init__(self, client: PostgresClient):
+        self.client = client
+
+    def add(self, dataset) -> None:
+        self.client.execute(
+            """INSERT INTO dataset_versions (dataset_id, snapshot) VALUES (%s, %s)""",
+            (str(dataset.id), Json(dataset.raw)),
+        )
+        self.client.commit()
+
+    def get(self, dataset_id) -> DatasetRawDTO:
+        data = self.client.fetchone(
+            """SELECT dataset_id, snapshot from dataset_versions WHERE dataset_id = %s""",
+            (str(dataset_id),),
+        )
+        data["dataset_id"] = uuid.UUID(data["dataset_id"])
+        return DatasetRawDTO(**data)

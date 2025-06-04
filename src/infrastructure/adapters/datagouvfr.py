@@ -2,7 +2,7 @@ import datetime
 
 import requests
 
-from domain.platform.ports import PlatformAdapter, DatasetAdapter
+from domain.platform.ports import DatasetAdapter, PlatformAdapter
 from infrastructure.dtos.dataset import DatasetDTO
 
 

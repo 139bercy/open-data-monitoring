@@ -43,3 +43,37 @@ CREATE INDEX IF NOT EXISTS idx_platform_sync_timestamp ON platform_sync_historie
 
 -- Contrainte de temporalité (optionnel)
 CREATE INDEX IF NOT EXISTS idx_platform_sync_chrono ON platform_sync_histories(platform_id, timestamp DESC);
+
+
+CREATE TABLE IF NOT EXISTS datasets (
+    id UUID PRIMARY KEY,
+    buid VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL UNIQUE,
+    page TEXT NOT NULL,
+    publisher VARCHAR(255) NOT NULL,
+    created TIMESTAMPTZ NOT NULL,
+    modified TIMESTAMPTZ NOT NULL,
+    last_sync TIMESTAMPTZ
+);
+
+COMMENT ON TABLE datasets IS 'Stockage central des métadonnées de datasets';
+COMMENT ON COLUMN datasets.buid IS 'Identifiant unique métier de la source';
+COMMENT ON COLUMN datasets.slug IS 'Identifiant lisible pour les URLs';
+COMMENT ON COLUMN datasets.last_sync IS 'Dernière synchronisation avec la source';
+
+-- Indexes stratégiques
+CREATE INDEX IF NOT EXISTS idx_datasets_slug ON datasets(slug);
+CREATE INDEX IF NOT EXISTS idx_datasets_publisher ON datasets(publisher);
+CREATE INDEX IF NOT EXISTS idx_datasets_modified ON datasets(modified);
+CREATE INDEX IF NOT EXISTS idx_datasets_created ON datasets(created);
+
+-- Table de liaison pour le versioning
+CREATE TABLE IF NOT EXISTS dataset_versions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    dataset_id UUID NOT NULL,
+--     dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    snapshot JSONB NOT NULL
+);
+
+COMMENT ON TABLE dataset_versions IS 'Historique des versions des métadonnées';
