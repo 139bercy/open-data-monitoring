@@ -1,6 +1,7 @@
 import datetime
 import uuid
 
+from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformAdapter, DatasetAdapter, PlatformRepository
 from infrastructure.dtos.dataset import DatasetDTO
 
@@ -8,15 +9,24 @@ from infrastructure.dtos.dataset import DatasetDTO
 class InMemoryPlatformRepository(PlatformRepository):
     def __init__(self, db):
         self.db = db
+        self.syncs = []
 
     def save(self, data):
         self.db.append(data)
 
-    def get(self, platform_id: uuid):
-        return next((item for item in self.db if item.id == platform_id), None)
+    def get(self, platform_id: uuid) -> Platform:
+        syncs = [item for item in self.syncs if item["platform_id"] == platform_id]
+        platform = next((item for item in self.db if item.id == platform_id), None)
+        if len(syncs) is not None:
+            for sync in syncs:
+                platform.add_sync(sync)
+        return platform
 
     def all(self):
         return self.db
+
+    def save_sync(self, platform_id, payload):
+        self.syncs.append({"platform_id": platform_id, **payload})
 
 
 class InMemoryAdapter(PlatformAdapter):
@@ -28,7 +38,7 @@ class InMemoryAdapter(PlatformAdapter):
     def fetch(self) -> dict:
         return {
             "timestamp": datetime.datetime.now(),
-            "status": "Success",
+            "status": "success",
             "datasets_count": 10,
         }
 

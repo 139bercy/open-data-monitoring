@@ -21,7 +21,7 @@ class OpendatasoftAdapter(PlatformAdapter):
         )
         sync_data = {
             "timestamp": datetime.datetime.now(),
-            "status": "Success" if response.status_code == 200 else "Failed",
+            "status": "success" if response.status_code == 200 else "failed",
             "datasets_count": response.json()["total_count"],
         }
         return sync_data

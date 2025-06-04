@@ -14,6 +14,9 @@ class PlatformRepository:  # pragma: no cover
     def all(self):
         raise NotImplementedError
 
+    def save_sync(self, platform_id, payload):
+        raise NotImplementedError
+
 
 class PlatformAdapter(Protocol):
     def fetch(self) -> dict:  # pragma: no cover

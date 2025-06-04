@@ -35,7 +35,7 @@ def datagouv_dataset():
         return json.load(f)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def setup_test_database():
     postgres = PostgresClient(
         dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=5433

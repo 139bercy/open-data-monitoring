@@ -1,18 +1,21 @@
+from datetime import datetime
 from uuid import UUID
 
 import pytest
 
+from freezegun import freeze_time
+
+from application.commands.platform import SyncPlatform
 from infrastructure.adapters.ods import OpendatasoftAdapter
 from infrastructure.adapters.in_memory import (
     InMemoryAdapter,
-    InMemoryPlatformRepository,
 )
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 
 from settings import *
 
 from application.services.platform import PlatformMonitoring
-from application.handlers import create_platform
+from application.handlers import create_platform, sync_platform
 
 platform_1 = {
     "name": "My Platform",
@@ -99,3 +102,26 @@ def test_factory_wrong_platform_type_should_raise_exception():
             key="TEST_API_KEY",
             slug="slug",
         )
+
+
+def test_sync_platform(app):
+    # Arrange
+    platform_id = create_platform(app, platform_1)
+    # Act
+    sync_platform(app, platform_id=platform_id)
+    # Assert
+    result = app.repository.get(platform_id)
+    assert isinstance(result.last_sync, datetime)
+
+
+@freeze_time("2025-01-01 12:00:00")
+def test_retrieve_platform_with_syncs(app):
+    # Arrange
+    platform_id = create_platform(app, platform_1)
+    cmd = SyncPlatform(id=platform_id)
+    app.sync_platform(platform_id=cmd.id)
+    # Act
+    result = app.repository.get(platform_id)
+    # Assert
+    assert result.last_sync == datetime(2025, 1, 1, 12, 0)
+    assert len(result.syncs) == 1

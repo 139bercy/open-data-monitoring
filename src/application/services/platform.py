@@ -15,6 +15,9 @@ class PlatformMonitoring:
     def save(self, aggregate):
         self.repository.save(aggregate)
 
+    def get(self, platform_id):
+        return self.repository.get(platform_id=platform_id)
+
     def get_all_platforms(self):
         return self.repository.all()
 
@@ -38,5 +41,14 @@ class PlatformMonitoring:
         )
         return platform
 
-    def get(self, platform_id):
-        return self.repository.get(platform_id=platform_id)
+    def sync_platform(self, platform_id):
+        platform = self.repository.get(platform_id=platform_id)
+        adapter = self.adapter_factory.create(
+            platform_type=platform.type,
+            url=platform.url,
+            key=platform.key,
+            slug=platform.slug,
+        )
+        payload = adapter.fetch()
+        platform.sync(**payload)
+        self.repository.save_sync(platform_id=platform_id, payload=payload)

@@ -1,9 +1,8 @@
 black==25.1.0
 click==8.1.8
-eventsourcing==9.3.5
 flake8==7.2.0
 pytest==8.3.5
 python-dotenv==1.1.0
 requests==2.32.3
-tinydb-serialization==2.2.0
-tinydb==4.8.2
+psycopg2-binary==2.9.10
+freezegun==1.5.2

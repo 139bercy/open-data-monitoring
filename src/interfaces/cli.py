@@ -3,7 +3,7 @@ from uuid import UUID
 
 import click
 
-from application.handlers import create_platform
+from application.handlers import create_platform, sync_platform
 from settings import app
 
 
@@ -56,6 +56,6 @@ def cli_get_all_platforms():
 def cli_sync_platform(id):
     """Sync platform and project stats"""
     platform_id = UUID(id)
-    # sync_platform(app, platform_id=platform_id)
-    platform = app.get_platform(platform_id=platform_id)
+    sync_platform(app, platform_id=platform_id)
+    platform = app.get(platform_id=platform_id)
     pprint(platform.__dict__)
