@@ -1,9 +1,6 @@
-from uuid import uuid4
-
 from click import UUID
 
-from application.commands.platform import CreatePlatform, SyncPlatform
-from application.services.platform import PlatformMonitoring
+from application.commands.platform import CreatePlatform
 
 
 def create_platform(app, data: dict) -> UUID:

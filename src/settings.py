@@ -4,7 +4,10 @@ from dotenv import load_dotenv
 
 from application.services.platform import PlatformMonitoring
 from infrastructure.adapters.in_memory import InMemoryPlatformRepository
+from infrastructure.adapters.postgres import PostgresPlatformRepository
 from infrastructure.factories.platform import PlatformAdapterFactory
+from infrastructure.database.client import PostgresClient
+
 
 load_dotenv(".env")
 
@@ -15,7 +18,6 @@ os.environ["PERSISTENCE_MODULE"] = "eventsourcing.sqlite"
 os.environ["SQLITE_LOCK_TIMEOUT"] = "10"  # seconds
 
 if ENV == "PROD":  # pragma: no cover
-    print(f"App environment = {ENV}")
     raise NotImplementedError
 elif ENV == "TEST":
     print(f"App environment = {ENV}")
@@ -25,4 +27,14 @@ elif ENV == "TEST":
     )
 else:  # pragma: no cover
     print(f"App environment = {ENV}")
-    raise NotImplementedError
+    client = PostgresClient(
+        dbname=os.environ["DB_NAME"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        host="localhost",
+        port=5432,
+    )
+    repository = PostgresPlatformRepository(client=client)
+    app = PlatformMonitoring(
+        adapter_factory=PlatformAdapterFactory, repository=repository
+    )

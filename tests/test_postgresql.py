@@ -3,8 +3,8 @@ from uuid import UUID
 import pytest
 
 from application.handlers import create_platform
-from application.queries.postgresql import PostgresPlatformRepository
 from application.services.platform import PlatformMonitoring
+from infrastructure.adapters.postgres import PostgresPlatformRepository
 from infrastructure.factories.platform import PlatformAdapterFactory
 
 

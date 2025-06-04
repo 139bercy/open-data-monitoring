@@ -19,4 +19,4 @@ docker-up:
 	docker-compose up --build -d
 
 docker-down:
-	docker-compose down --remove-orphans
+	docker-compose down --remove-orphans -v

@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS platforms (
      type VARCHAR(50) NOT NULL,
      url TEXT NOT NULL,
      organization_id VARCHAR(255) NOT NULL,
-     key VARCHAR(255) NOT NULL,
+     key VARCHAR(255),
      datasets_count INT NOT NULL DEFAULT 0,
      last_sync TIMESTAMPTZ,
      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
