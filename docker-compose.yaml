@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: open-data-monitoring-db
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=odm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  test:
+    container_name: odm-test-db
+    image: postgres:latest
+    command: -p 5433
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=odm_test
+    ports:
+      - "5433:5433"
+    volumes:
+      - test_data:/var/lib/postgresql/data:delegated
+      - ./db/init.sql:/docker-entrypoint-initdb.d/10-init.sql
+
+volumes:
+  postgres_data:
+  test_data:

@@ -22,3 +22,39 @@ TEST_API_KEY=azertyuiop
 ```
 $ app --help
 ```
+
+---
+
+## Objectifs
+
+- Agréger des datasets publics de plusieurs plateformes Open Data
+- Identifier les jeux de données communs sur les différentes plateformes
+- Historiser les changements pour donner une vision stateful
+- Fournir une interface de restitution aux métiers et aux correspondants Open Data
+
+## Architecture
+
+Domain Layer : 
+
+- `Platform` : Une plateforme / marketplace data
+- `Dataset` : Jeu de données brut sur une plateforme
+- `DatasetGroup` : Un même dataset réel sur plusieurs plateformes
+
+Application Layer : 
+
+- `FetchDataset`
+- `LinkDataset`
+
+Infrastructure layer : 
+
+- `DatasetFetcher`
+- `DatasetMatcherService`
+- `DatasetRepository`
+- `Scheduler`
+
+Schema : 
+
+- `Pkatforms`
+- `Dataset Raw`
+- `Dataset Group`
+- `Dataset Stats`

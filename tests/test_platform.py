@@ -3,7 +3,10 @@ from uuid import UUID
 import pytest
 
 from infrastructure.adapters.ods import OpendatasoftAdapter
-from infrastructure.adapters.in_memory import InMemoryAdapter, InMemoryPlatformRepository
+from infrastructure.adapters.in_memory import (
+    InMemoryAdapter,
+    InMemoryPlatformRepository,
+)
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 
 from settings import *

@@ -13,3 +13,10 @@ export-es:
 
 clean-db:
 	rm -rf db/dev/*
+
+
+docker-up:
+	docker-compose up --build -d
+
+docker-down:
+	docker-compose down --remove-orphans

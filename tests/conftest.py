@@ -1,9 +1,18 @@
 import json
 import os
 
+import psycopg2
 import pytest
 
+from infrastructure.database.postgresql import PostgresClient
+
 os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
+
+
+TEST_DB = "odm_test"
+TEST_USER = "postgres"
+TEST_PASSWORD = "password"
+HOST = "localhost"
 
 
 @pytest.fixture
@@ -24,3 +33,61 @@ def ods_dataset():
 def datagouv_dataset():
     with open("tests/fixtures/data-gouv-dataset.json", "r") as f:
         return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def setup_test_database():
+    postgres = PostgresClient(dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=5433)
+    postgres.connection.set_session(autocommit=True)
+    postgres.execute(f"DROP DATABASE IF EXISTS {TEST_DB};")
+    postgres.execute(f"CREATE DATABASE {TEST_DB};")
+
+    try:
+
+        # Run migrations
+        with psycopg2.connect(
+                dbname=TEST_DB,
+                user=TEST_USER,
+                password=TEST_PASSWORD,
+                host=HOST,
+                port=5433
+        ) as migration_conn, migration_conn.cursor() as cur:
+            cur.execute(open("db/init.sql").read())
+            migration_conn.commit()
+    finally:
+        postgres.close()
+
+    yield
+
+    # Teardown
+    conn = psycopg2.connect(
+        dbname="postgres",
+        user=TEST_USER,
+        password=TEST_PASSWORD,
+        host=HOST,
+        port=5433,
+    )
+    conn.set_session(autocommit=True)
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"DROP DATABASE {TEST_DB} WITH (FORCE)")
+    finally:
+        conn.close()
+
+
+@pytest.fixture
+def db_transaction(setup_test_database):
+    client = PostgresClient(
+        dbname=TEST_DB,
+        user=TEST_USER,
+        password=TEST_PASSWORD,
+        host=HOST,
+        port=5433,
+    )
+    try:
+        yield client
+    finally:
+        client.rollback()
+        client.close()
+
