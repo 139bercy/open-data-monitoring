@@ -178,6 +178,7 @@ pyrightconfig.json
 ## IDE
 .idea
 *.iml
+.cursor
 
 ##
 docs
