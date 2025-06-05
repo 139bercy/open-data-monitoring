@@ -2,8 +2,8 @@ import datetime
 
 import requests
 
+from application.dtos.dataset import DatasetDTO
 from domain.platform.ports import DatasetAdapter, PlatformAdapter
-from infrastructure.dtos.dataset import DatasetDTO
 
 
 class DataGouvFrAdapter(PlatformAdapter):

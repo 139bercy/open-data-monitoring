@@ -3,11 +3,11 @@ from typing import Optional
 
 from psycopg2.extras import Json
 
+from application.dtos.dataset import DatasetRawDTO
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
 from infrastructure.database.postgres import PostgresClient
-from infrastructure.dtos.dataset import DatasetRawDTO
 
 
 class PostgresPlatformRepository(PlatformRepository):
