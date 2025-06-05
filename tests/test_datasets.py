@@ -5,6 +5,7 @@ import pytest
 from application.handlers import add_dataset
 from application.services.dataset import DatasetMonitoring
 from infrastructure.adapters.in_memory import InMemoryDatasetRepository
+from infrastructure.adapters.ods import OpendatasoftDatasetAdapter
 from infrastructure.factories.dataset import DatasetAdapterFactory
 
 
@@ -29,22 +30,22 @@ def test_create_opendatasoft_dataset(datasets, ods_dataset):
     assert result.snapshot is not None
 
 
-def test_find_dataset_id_from_url_if_ends_with_dash(datasets):
+def test_find_dataset_id_from_url_if_ends_with_dash():
     # Arrange
     url = "https://ny-domain.net/explore/dataset/my-dataset/"
     # Act
-    datasets.set_adapter(platform_type="opendatasoft")
-    dataset_id = datasets.adapter.find_dataset_id(url=url)
+    adapter = OpendatasoftDatasetAdapter()
+    dataset_id = adapter.find_dataset_id(url=url)
     # Assert
     assert dataset_id == "my-dataset"
 
 
-def test_find_dataset_id_from_url_if_ends(datasets):
+def test_find_dataset_id_from_url_if_ends():
     # Arrange
     url = "https://ny-domain.net/explore/dataset/my-dataset"
     # Act
-    datasets.set_adapter(platform_type="opendatasoft")
-    dataset_id = datasets.adapter.find_dataset_id(url=url)
+    adapter = OpendatasoftDatasetAdapter()
+    dataset_id = adapter.find_dataset_id(url=url)
     # Assert
     assert dataset_id == "my-dataset"
 

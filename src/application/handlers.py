@@ -47,6 +47,3 @@ def add_dataset(app, platform_type: str, dataset: Dataset):
 def fetch_dataset(app, platform, dataset_id):
     dataset = app.dataset.adapter.fetch(platform.url, platform.key, dataset_id)
     return dataset
-
-
-

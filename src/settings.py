@@ -4,13 +4,16 @@ from dotenv import load_dotenv
 
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.in_memory import (InMemoryDatasetRepository,
-                                               InMemoryPlatformRepository)
-from infrastructure.adapters.postgres import (PostgresDatasetRepository,
-                                              PostgresPlatformRepository)
+from infrastructure.adapters.in_memory import (
+    InMemoryDatasetRepository,
+    InMemoryPlatformRepository,
+)
+from infrastructure.adapters.postgres import (
+    PostgresDatasetRepository,
+    PostgresPlatformRepository,
+)
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.factories.dataset import DatasetAdapterFactory
-from infrastructure.factories.platform import PlatformAdapterFactory
 
 load_dotenv(".env")
 
@@ -29,11 +32,10 @@ if ENV == "PROD":  # pragma: no cover
 elif ENV == "TEST":
     print(f"App environment = {ENV}")
     platform = PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory,
         repository=InMemoryPlatformRepository([]),
     )
     dataset = DatasetMonitoring(
-        factory=DatasetAdapterFactory, repository=InMemoryDatasetRepository([])
+        factory=DatasetAdapterFactory(), repository=InMemoryDatasetRepository([])
     )
     app = App(platform=platform, dataset=dataset)
 else:  # pragma: no cover
@@ -46,11 +48,10 @@ else:  # pragma: no cover
         port=5432,
     )
     platform = PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory,
         repository=PostgresPlatformRepository(client=client),
     )
     dataset = DatasetMonitoring(
-        factory=DatasetAdapterFactory,
+        factory=DatasetAdapterFactory(),
         repository=PostgresDatasetRepository(client=client),
     )
     app = App(platform=platform, dataset=dataset)

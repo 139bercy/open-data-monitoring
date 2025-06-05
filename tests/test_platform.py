@@ -9,6 +9,7 @@ from application.handlers import create_platform, sync_platform
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 from infrastructure.adapters.in_memory import InMemoryAdapter
 from infrastructure.adapters.ods import OpendatasoftAdapter
+from infrastructure.factories.platform import PlatformAdapterFactory
 from settings import *
 
 platform_1 = {
@@ -24,9 +25,7 @@ platform_1 = {
 @pytest.fixture
 def app():
     repository = InMemoryPlatformRepository([])
-    return PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory, repository=repository
-    )
+    return PlatformMonitoring(repository=repository)
 
 
 def test_create_platform(app, testfile):
@@ -56,41 +55,45 @@ def test_should_return_all_platforms(app: PlatformMonitoring, testfile):
 
 def test_factory_should_return_opendatasoft():
     # Arrange & Act
-    factory = PlatformAdapterFactory.create(
+    factory = PlatformAdapterFactory()
+    adapter = factory.create(
         platform_type="opendatasoft",
         url="https://mydomain.net",
         key="TEST_API_KEY",
         slug="slug",
     )
-    assert isinstance(factory, OpendatasoftAdapter)
+    assert isinstance(adapter, OpendatasoftAdapter)
 
 
 def test_factory_should_return_data_gouv_fr():
     # Arrange & Act
-    factory = PlatformAdapterFactory.create(
+    factory = PlatformAdapterFactory()
+    adapter = factory.create(
         platform_type="datagouvfr",
         url="https://mydomain.net",
         key="TEST_API_KEY",
         slug="slug",
     )
-    assert isinstance(factory, DataGouvFrAdapter)
+    assert isinstance(adapter, DataGouvFrAdapter)
 
 
 def test_factory_should_return_in_memory():
     # Arrange & Act
-    factory = PlatformAdapterFactory.create(
+    factory = PlatformAdapterFactory()
+    adapter = factory.create(
         platform_type="test",
         url="https://mydomain.net",
         key="TEST_API_KEY",
         slug="slug",
     )
-    assert isinstance(factory, InMemoryAdapter)
+    assert isinstance(adapter, InMemoryAdapter)
 
 
 def test_factory_wrong_platform_type_should_raise_exception():
     # Arrange & Act & Assert
     with pytest.raises(ValueError):
-        PlatformAdapterFactory.create(
+        factory = PlatformAdapterFactory()
+        factory.create(
             platform_type="whoops",
             url="https://mydomain.net",
             key="TEST_API_KEY",

@@ -4,12 +4,13 @@ from tinydb import Query
 
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
+from infrastructure.factories.platform import PlatformAdapterFactory
 
 
 class PlatformMonitoring:
-    def __init__(self, adapter_factory, repository: PlatformRepository):
-        self.adapter_factory = adapter_factory
+    def __init__(self, repository: PlatformRepository):
         self.PlatformQuery = Query()
+        self.factory = PlatformAdapterFactory()
         self.repository = repository
 
     def save(self, aggregate):
@@ -43,7 +44,7 @@ class PlatformMonitoring:
 
     def sync_platform(self, platform_id):
         platform = self.repository.get(platform_id=platform_id)
-        adapter = self.adapter_factory.create(
+        adapter = self.factory.create(
             platform_type=platform.type,
             url=platform.url,
             key=platform.key,

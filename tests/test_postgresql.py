@@ -8,8 +8,10 @@ from application.commands.platform import SyncPlatform
 from application.handlers import add_dataset, create_platform
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.postgres import (PostgresDatasetRepository,
-                                              PostgresPlatformRepository)
+from infrastructure.adapters.postgres import (
+    PostgresDatasetRepository,
+    PostgresPlatformRepository,
+)
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from infrastructure.factories.platform import PlatformAdapterFactory
 
@@ -17,8 +19,7 @@ from infrastructure.factories.platform import PlatformAdapterFactory
 @pytest.fixture
 def platform(db_transaction):
     return PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory,
-        repository=PostgresPlatformRepository(client=db_transaction),
+        repository=PostgresPlatformRepository(client=db_transaction)
     )
 
 

@@ -3,8 +3,14 @@ from uuid import UUID
 
 import click
 
-from application.handlers import add_dataset, create_platform, sync_platform, find_platform_from_url, \
-    find_dataset_id_from_url, fetch_dataset
+from application.handlers import (
+    add_dataset,
+    create_platform,
+    fetch_dataset,
+    find_dataset_id_from_url,
+    find_platform_from_url,
+    sync_platform,
+)
 from common import get_base_url
 from settings import app
 

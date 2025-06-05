@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.ports import DatasetAdapter
@@ -10,14 +11,10 @@ class DatasetMonitoring:
     def __init__(self, factory: DatasetAdapterFactory, repository: DatasetRepository):
         self.factory: DatasetAdapterFactory = factory
         self.repository: DatasetRepository = repository
-        self.adapter: DatasetAdapter or None = None
 
-    def set_adapter(self, platform_type):
-        self.adapter = self.factory.create(platform_type)
-
-    def add_dataset(self, platform_type, dataset):
-        adapter = self.factory.create(platform_type)
-        dto = adapter.map(**dataset)
+    def add_dataset(self, platform_type: str, dataset: dict) -> Dataset:
+        adapter: DatasetAdapter = self.factory.create(platform_type)
+        dto: DatasetDTO = adapter.map(**dataset)
         dataset = Dataset(
             id=uuid4(),
             buid=dto.buid,
