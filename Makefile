@@ -19,7 +19,7 @@ clean-db:
 	rm -rf db/dev/*
 
 docker-up:
-	docker-compose up --build -d
+	docker compose up --build -d
 
 docker-down:
-	docker-compose down --remove-orphans -v
+	docker compose down --remove-orphans -v

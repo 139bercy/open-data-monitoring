@@ -36,10 +36,16 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
 
     def fetch(self, url: str, key: str, dataset_id):
         key = os.environ[key]
-        response = requests.get(f"{url}/api/explore/v2.1/catalog/datasets/{dataset_id}/", headers={"Authorization": f"Apikey {key}"})
+        response = requests.get(
+            f"{url}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
+            headers={"Authorization": f"Apikey {key}"},
+        )
         data = response.json()
         dataset_uid = data.get("dataset_uid")
-        response = requests.get(f"{url}/api/automation/v1.0/datasets/{dataset_uid}/", headers={"Authorization": f"Apikey {key}"})
+        response = requests.get(
+            f"{url}/api/automation/v1.0/datasets/{dataset_uid}/",
+            headers={"Authorization": f"Apikey {key}"},
+        )
         return response.json()
 
     @staticmethod

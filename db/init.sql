@@ -73,7 +73,9 @@ CREATE TABLE IF NOT EXISTS dataset_versions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     dataset_id UUID NOT NULL,
 --     dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
-    snapshot JSONB NOT NULL
+    snapshot JSONB NOT NULL,
+    checksum VARCHAR(64) NOT NULL
 );
 
 COMMENT ON TABLE dataset_versions IS 'Historique des versions des métadonnées';
+COMMENT ON COLUMN dataset_versions.checksum IS 'Hash SHA-256 du snapshot pour détecter les changements';

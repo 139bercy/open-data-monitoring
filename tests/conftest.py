@@ -4,7 +4,7 @@ import os
 import psycopg2
 import pytest
 
-from infrastructure.database.client import PostgresClient
+from infrastructure.database.postgres import PostgresClient
 
 os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 

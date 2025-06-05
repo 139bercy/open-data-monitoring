@@ -72,4 +72,6 @@ class InMemoryDatasetRepository(DatasetRepository):
 
     def get(self, dataset_id):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
-        return DatasetRawDTO(dataset_id=dataset.id, snapshot=dataset.raw)
+        return DatasetRawDTO(
+            dataset_id=dataset.id, snapshot=dataset.raw, checksum=dataset.checksum
+        )

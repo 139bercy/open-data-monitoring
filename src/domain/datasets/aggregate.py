@@ -1,3 +1,4 @@
+import hashlib
 import json
 from datetime import datetime
 from uuid import UUID
@@ -25,9 +26,16 @@ class Dataset:
         self.created = created
         self.modified = modified
         self.raw = raw
+        self.checksum = None
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
+
+    def calculate_hash(self) -> str:
+        snapshot_str = json.dumps(self.raw, sort_keys=True)
+        checksum = hashlib.sha256(snapshot_str.encode()).hexdigest()
+        self.checksum = checksum
+        return checksum
 
     def __repr__(self):
         return f"<Dataset: {self.slug}>"

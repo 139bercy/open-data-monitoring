@@ -13,3 +13,6 @@ omit = [
     "setup.py",
     "tmp.py"
 ]
+[tool.mutmut]
+paths_to_mutate = [ "src/" ]
+tests_dir = [ "tests/" ]

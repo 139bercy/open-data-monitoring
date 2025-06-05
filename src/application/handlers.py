@@ -27,5 +27,6 @@ def sync_platform(app: PlatformMonitoring, platform_id: UUID) -> None:
 
 def add_dataset(app, platform_type: str, dataset: Dataset):
     dataset = app.add_dataset(platform_type=platform_type, dataset=dataset)
+    dataset.calculate_hash()
     app.repository.add(dataset=dataset)
     return dataset.id

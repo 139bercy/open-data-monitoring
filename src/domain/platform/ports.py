@@ -4,7 +4,7 @@ from typing import Protocol
 from domain.platform.aggregate import Platform
 
 
-class PlatformRepository:  # pragma: no cover
+class PlatformRepository(Protocol):  # pragma: no cover
     def save(self, platform: Platform) -> None:
         raise NotImplementedError
 

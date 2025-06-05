@@ -6,8 +6,9 @@ from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from infrastructure.adapters.in_memory import (InMemoryDatasetRepository,
                                                InMemoryPlatformRepository)
-from infrastructure.adapters.postgres import PostgresPlatformRepository, PostgresDatasetRepository
-from infrastructure.database.client import PostgresClient
+from infrastructure.adapters.postgres import (PostgresDatasetRepository,
+                                              PostgresPlatformRepository)
+from infrastructure.database.postgres import PostgresClient
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from infrastructure.factories.platform import PlatformAdapterFactory
 
@@ -45,7 +46,11 @@ else:  # pragma: no cover
         port=5432,
     )
     platform = PlatformMonitoring(
-        adapter_factory=PlatformAdapterFactory, repository=PostgresPlatformRepository(client=client)
+        adapter_factory=PlatformAdapterFactory,
+        repository=PostgresPlatformRepository(client=client),
     )
-    dataset = DatasetMonitoring(factory=DatasetAdapterFactory, repository=PostgresDatasetRepository(client=client))
+    dataset = DatasetMonitoring(
+        factory=DatasetAdapterFactory,
+        repository=PostgresDatasetRepository(client=client),
+    )
     app = App(platform=platform, dataset=dataset)

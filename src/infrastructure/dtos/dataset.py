@@ -16,3 +16,4 @@ class DatasetDTO:
 class DatasetRawDTO:
     dataset_id: UUID
     snapshot: dict
+    checksum: str

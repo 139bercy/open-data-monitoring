@@ -3,11 +3,10 @@ from typing import Optional
 
 from psycopg2.extras import Json
 
-from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
-from infrastructure.database.client import PostgresClient
+from infrastructure.database.postgres import PostgresClient
 from infrastructure.dtos.dataset import DatasetRawDTO
 
 
@@ -54,16 +53,11 @@ class PostgresPlatformRepository(PlatformRepository):
         row = self.client.fetchone(query, (str(platform_id),))
         if not row:
             return None
-
-        # Conversion UUID si besoin
         row["id"] = uuid.UUID(row["id"])
         platform = Platform(**{k: v for k, v in row.items() if k != "syncs"})
-
-        # Ajout des synchronisations
         if row["syncs"]:
             for sync in row["syncs"]:
                 platform.add_sync(sync)
-
         return platform
 
     def get_by_domain(self, domain) -> Platform:
@@ -98,14 +92,14 @@ class PostgresDatasetRepository(DatasetRepository):
 
     def add(self, dataset) -> None:
         self.client.execute(
-            """INSERT INTO dataset_versions (dataset_id, snapshot) VALUES (%s, %s)""",
-            (str(dataset.id), Json(dataset.raw)),
+            """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
+            (str(dataset.id), Json(dataset.raw), dataset.checksum),
         )
         self.client.commit()
 
     def get(self, dataset_id) -> DatasetRawDTO:
         data = self.client.fetchone(
-            """SELECT dataset_id, snapshot from dataset_versions WHERE dataset_id = %s""",
+            """SELECT dataset_id, snapshot, checksum from dataset_versions WHERE dataset_id = %s""",
             (str(dataset_id),),
         )
         data["dataset_id"] = uuid.UUID(data["dataset_id"])
