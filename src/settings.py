@@ -27,6 +27,15 @@ class App:
         self.dataset = dataset
 
 
+client = PostgresClient(
+        dbname=os.environ["DB_NAME"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        host="localhost",
+        port=5432,
+)
+
+
 if ENV == "PROD":  # pragma: no cover
     raise NotImplementedError
 elif ENV == "TEST":
@@ -34,24 +43,12 @@ elif ENV == "TEST":
     platform = PlatformMonitoring(
         repository=InMemoryPlatformRepository([]),
     )
-    dataset = DatasetMonitoring(
-        factory=DatasetAdapterFactory(), repository=InMemoryDatasetRepository([])
-    )
+    dataset = DatasetMonitoring(repository=InMemoryDatasetRepository([]))
     app = App(platform=platform, dataset=dataset)
 else:  # pragma: no cover
     print(f"App environment = {ENV}")
-    client = PostgresClient(
-        dbname=os.environ["DB_NAME"],
-        user=os.environ["DB_USER"],
-        password=os.environ["DB_PASSWORD"],
-        host="localhost",
-        port=5432,
-    )
     platform = PlatformMonitoring(
         repository=PostgresPlatformRepository(client=client),
     )
-    dataset = DatasetMonitoring(
-        factory=DatasetAdapterFactory(),
-        repository=PostgresDatasetRepository(client=client),
-    )
+    dataset = DatasetMonitoring(repository=PostgresDatasetRepository(client=client))
     app = App(platform=platform, dataset=dataset)

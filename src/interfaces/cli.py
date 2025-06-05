@@ -80,7 +80,7 @@ def cli_add_dataset(url):
     """Create new platform"""
     platform = find_platform_from_url(app=app, url=url)
     dataset_id = find_dataset_id_from_url(app=app, url=url)
-    dataset = fetch_dataset(app=app, platform=platform, dataset_id=dataset_id)
+    dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
     result = add_dataset(app=app, platform_type=platform.type, dataset=dataset)
     if result is not None:
         return click.echo("Success!")

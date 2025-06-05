@@ -12,8 +12,7 @@ from infrastructure.adapters.postgres import (
     PostgresDatasetRepository,
     PostgresPlatformRepository,
 )
-from infrastructure.factories.dataset import DatasetAdapterFactory
-from infrastructure.factories.platform import PlatformAdapterFactory
+from settings import app, client
 
 
 @pytest.fixture
@@ -26,8 +25,7 @@ def platform(db_transaction):
 @pytest.fixture
 def datasets(db_transaction):
     repository = PostgresDatasetRepository(client=db_transaction)
-    factory = DatasetAdapterFactory()
-    return DatasetMonitoring(factory=factory, repository=repository)
+    return DatasetMonitoring(repository=repository)
 
 
 platform_1 = {
@@ -79,15 +77,16 @@ def test_postgresl_retrieve_platform_with_syncs(platform):
     assert len(result.syncs) == 1
 
 
-def test_postgresql_create_dataset(datasets, ods_dataset):
+def test_postgresql_create_dataset(db_transaction, ods_dataset):
     # Arrange
+    app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
     dataset_id = add_dataset(
-        app=datasets,
+        app=app,
         platform_type="opendatasoft",
         dataset=ods_dataset,
     )
     # Act
-    result = datasets.repository.get(dataset_id=dataset_id)
+    result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
     assert isinstance(result.dataset_id, UUID)
     assert result.dataset_id == dataset_id

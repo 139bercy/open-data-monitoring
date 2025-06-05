@@ -8,8 +8,8 @@ from infrastructure.factories.dataset import DatasetAdapterFactory
 
 
 class DatasetMonitoring:
-    def __init__(self, factory: DatasetAdapterFactory, repository: DatasetRepository):
-        self.factory: DatasetAdapterFactory = factory
+    def __init__(self, repository: DatasetRepository):
+        self.factory: DatasetAdapterFactory = DatasetAdapterFactory()
         self.repository: DatasetRepository = repository
 
     def add_dataset(self, platform_type: str, dataset: dict) -> Dataset:

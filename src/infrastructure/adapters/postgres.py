@@ -4,6 +4,7 @@ from typing import Optional
 from psycopg2.extras import Json
 
 from application.dtos.dataset import DatasetRawDTO
+from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
@@ -90,7 +91,12 @@ class PostgresDatasetRepository(DatasetRepository):
     def __init__(self, client: PostgresClient):
         self.client = client
 
-    def add(self, dataset) -> None:
+    def add(self, dataset: Dataset) -> None:
+        self.client.execute(
+            """INSERT INTO datasets (id, buid, slug, page, publisher, created, modified)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (str(dataset.id), dataset.buid, dataset.slug, dataset.page, dataset.publisher, dataset.created, dataset.modified)
+        )
         self.client.execute(
             """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
             (str(dataset.id), Json(dataset.raw), dataset.checksum),

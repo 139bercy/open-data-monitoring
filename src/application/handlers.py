@@ -4,6 +4,7 @@ from application.commands.platform import CreatePlatform, SyncPlatform
 from application.services.platform import PlatformMonitoring
 from common import get_base_url
 from domain.datasets.aggregate import Dataset
+from infrastructure.factories.dataset import DatasetAdapterFactory
 
 
 def create_platform(app, data: dict) -> UUID:
@@ -33,17 +34,22 @@ def find_platform_from_url(app, url):
 
 
 def find_dataset_id_from_url(app, url):
-    dataset_id = app.dataset.adapter.find_dataset_id(url=url)
+    platform = find_platform_from_url(app=app, url=url)
+    factory = DatasetAdapterFactory()
+    adapter = factory.create(platform_type=platform.type)
+    dataset_id = adapter.find_dataset_id(url=url)
     return dataset_id
 
 
 def add_dataset(app, platform_type: str, dataset: Dataset):
-    dataset = app.add_dataset(platform_type=platform_type, dataset=dataset)
+    dataset = app.dataset.add_dataset(platform_type=platform_type, dataset=dataset)
     dataset.calculate_hash()
-    app.repository.add(dataset=dataset)
+    app.dataset.repository.add(dataset=dataset)
     return dataset.id
 
 
-def fetch_dataset(app, platform, dataset_id):
-    dataset = app.dataset.adapter.fetch(platform.url, platform.key, dataset_id)
+def fetch_dataset(platform, dataset_id):
+    factory = DatasetAdapterFactory()
+    adapter = factory.create(platform_type=platform.type)
+    dataset = adapter.fetch(platform.url, platform.key, dataset_id)
     return dataset
