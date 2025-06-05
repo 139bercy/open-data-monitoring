@@ -12,7 +12,12 @@ class PostgresClient:
     def execute(self, query, params=None):
         """Execute a query without returning results (INSERT, UPDATE, DELETE)"""
         with self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            cur.execute(query, params)
+            try:
+                cur.execute(query, params)
+            except Exception as e:
+                print(cur.mogrify(query, params))
+                print(e)
+                self.rollback()
 
     def fetchone(self, query, params=None):
         """Execute a query and return a single result as a dict"""
@@ -32,6 +37,7 @@ class PostgresClient:
         self.connection.commit()
 
     def rollback(self):
+        print("Rollback!")
         self.connection.rollback()
 
     def close(self):

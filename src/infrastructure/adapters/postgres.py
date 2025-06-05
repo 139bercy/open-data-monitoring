@@ -97,11 +97,14 @@ class PostgresDatasetRepository(DatasetRepository):
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (str(dataset.id), dataset.buid, dataset.slug, dataset.page, dataset.publisher, dataset.created, dataset.modified)
         )
+        self._add_snapshot(dataset)
+        self.client.commit()
+
+    def _add_snapshot(self, dataset: Dataset):
         self.client.execute(
             """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
             (str(dataset.id), Json(dataset.raw), dataset.checksum),
         )
-        self.client.commit()
 
     def get(self, dataset_id) -> DatasetRawDTO:
         data = self.client.fetchone(
