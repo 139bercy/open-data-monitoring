@@ -9,6 +9,10 @@ from domain.platform.ports import DatasetAdapter
 from infrastructure.factories.dataset import DatasetAdapterFactory
 
 
+class WrongPlatformTypeError(Exception):
+    pass
+
+
 class DatasetMonitoring:
     def __init__(self, repository: DatasetRepository):
         self.factory: DatasetAdapterFactory = DatasetAdapterFactory()
@@ -16,7 +20,10 @@ class DatasetMonitoring:
 
     def add_dataset(self, platform: Platform, dataset: dict) -> Dataset:
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
-        dto: DatasetDTO = adapter.map(**dataset)
+        try:
+            dto: DatasetDTO = adapter.map(**dataset)
+        except TypeError:
+            raise WrongPlatformTypeError()
         dataset = Dataset(
             id=uuid4(),
             buid=dto.buid,

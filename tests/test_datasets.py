@@ -1,11 +1,25 @@
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from application.handlers import add_dataset
 from infrastructure.adapters.ods import OpendatasoftDatasetAdapter
-from settings import app
 
 
-def test_create_opendatasoft_dataset(platform, ods_dataset):
+def test_create_opendatasoft_dataset(app, platform, ods_dataset):
+    # Arrange
+    platform.type = "opendatasoft"
+    dataset_id = add_dataset(
+        app=app,
+        platform=platform,
+        dataset=ods_dataset,
+    )
+    # Act
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    # Assert
+    assert isinstance(result.dataset_id, UUID)
+    assert result.snapshot is not None
+
+
+def test_create_opendatasoft_dataset_platform_does_not_exist(app, platform, ods_dataset):
     # Arrange
     platform.type = "opendatasoft"
     dataset_id = add_dataset(
@@ -40,7 +54,7 @@ def test_find_dataset_id_from_url_if_ends():
     assert dataset_id == "my-dataset"
 
 
-def test_create_datagouv_dataset(platform, datagouv_dataset):
+def test_create_datagouv_dataset(app, platform, datagouv_dataset):
     # Arrange
     platform.type = "datagouvfr"
     dataset_id = add_dataset(
@@ -55,7 +69,7 @@ def test_create_datagouv_dataset(platform, datagouv_dataset):
     assert result.snapshot is not None
 
 
-def test_hash_dataset(platform, ods_dataset):
+def test_hash_dataset(app, platform, ods_dataset):
     # Arrange & Act
     platform.type = "opendatasoft"
     dataset_id = add_dataset(
@@ -72,7 +86,7 @@ def test_hash_dataset(platform, ods_dataset):
     assert len(dataset.checksum) == 64  # SHA-256 hash length
 
 
-def test_hash_consistency(platform, ods_dataset):
+def test_hash_consistency(app, platform, ods_dataset):
     # Arrange
     platform.type = "opendatasoft"
     dataset = app.dataset.add_dataset(platform=platform, dataset=ods_dataset)
@@ -83,7 +97,7 @@ def test_hash_consistency(platform, ods_dataset):
     assert hash1 == hash2  # Hash should be deterministic
 
 
-def test_hash_shanges_with_data_changes(platform, ods_dataset):
+def test_hash_changes_with_data_changes(app, platform, ods_dataset):
     # Arrange
     platform.type = "opendatasoft"
     dataset = app.dataset.add_dataset(platform=platform, dataset=ods_dataset)

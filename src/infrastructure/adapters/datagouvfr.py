@@ -12,6 +12,12 @@ class DataGouvFrAdapter(PlatformAdapter):
         self.key = key
         self.slug = slug
 
+    @staticmethod
+    def find_dataset_id(url: str):
+        if url.endswith("/"):
+            return url.split("/")[-2]
+        return url.split("/")[-1]
+
     def fetch(self) -> dict:
         response = requests.get(
             f"{self.url}/api/1/organizations/{self.slug}/datasets/",

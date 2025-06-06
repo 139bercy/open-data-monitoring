@@ -5,10 +5,12 @@ import uuid
 import psycopg2
 import pytest
 
+from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from domain.platform.aggregate import Platform
-from infrastructure.adapters.in_memory import InMemoryPlatformRepository
+from infrastructure.adapters.in_memory import InMemoryPlatformRepository, InMemoryDatasetRepository
 from infrastructure.database.postgres import PostgresClient
+from settings import App
 from tests.fixtures.fixtures import platform_1
 
 os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
@@ -41,13 +43,15 @@ def datagouv_dataset():
 
 
 @pytest.fixture
-def platform_app():
-    repository = InMemoryPlatformRepository([])
-    return PlatformMonitoring(repository=repository)
+def app():
+    return App(
+        platform=PlatformMonitoring(repository=InMemoryPlatformRepository([])),
+        dataset=DatasetMonitoring(repository=InMemoryDatasetRepository([]))
+    )
 
 
 @pytest.fixture
-def platform(platform_app):
+def platform(app):
     platform = Platform(id=uuid.uuid4(), **platform_1)
     return platform
 

@@ -10,14 +10,16 @@ from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from infrastructure.adapters.postgres import (PostgresDatasetRepository,
                                               PostgresPlatformRepository)
-from settings import app
+from settings import app, App
 from tests.fixtures.fixtures import platform_1
 
 
 @pytest.fixture
 def platform_app(db_transaction):
-    return PlatformMonitoring(
-        repository=PostgresPlatformRepository(client=db_transaction)
+    repository = PostgresPlatformRepository(client=db_transaction)
+    return App(
+        platform=PlatformMonitoring(repository=repository),
+        dataset=DatasetMonitoring(repository=repository)
     )
 
 
@@ -29,7 +31,7 @@ def datasets(db_transaction):
 
 def test_postgresql_create_platform(platform_app, testfile):
     platform_id = create_platform(platform_app, platform_1)
-    platform = platform_app.get(platform_id=platform_id)
+    platform = platform_app.platform.get(platform_id=platform_id)
     assert isinstance(platform.id, UUID)
 
 
@@ -37,7 +39,7 @@ def test_postgresql_get_platform_by_domain(platform_app, testfile):
     # Arrange
     create_platform(platform_app, platform_1)
     # Act
-    result = platform_app.repository.get_by_domain("mydomain.net")
+    result = platform_app.platform.repository.get_by_domain("mydomain.net")
     # Assert
     assert result.slug == "my-platform"
 
@@ -47,9 +49,9 @@ def test_postgresl_sync_platform(platform_app):
     platform_id = create_platform(platform_app, platform_1)
     # Act
     cmd = SyncPlatform(id=platform_id)
-    platform_app.sync_platform(platform_id=cmd.id)
+    platform_app.platform.sync_platform(platform_id=cmd.id)
     # Assert
-    result = platform_app.repository.get(platform_id)
+    result = platform_app.platform.repository.get(platform_id)
     assert isinstance(result.last_sync, datetime)
 
 
@@ -58,9 +60,9 @@ def test_postgresl_retrieve_platform_with_syncs(platform_app):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
     cmd = SyncPlatform(id=platform_id)
-    platform_app.sync_platform(platform_id=cmd.id)
+    platform_app.platform.sync_platform(platform_id=cmd.id)
     # Act
-    result = platform_app.repository.get(platform_id)
+    result = platform_app.platform.repository.get(platform_id)
     # Assert
     assert result.last_sync
     assert len(result.syncs) == 1

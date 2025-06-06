@@ -1,16 +1,15 @@
 from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
-from application.services.platform import PlatformMonitoring
 from common import get_base_url
 from domain.platform.aggregate import Platform
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from settings import App
 
 
-def create_platform(app: PlatformMonitoring, data: dict) -> UUID:
+def create_platform(app: App, data: dict) -> UUID:
     cmd = CreatePlatform(**data)
-    platform = app.register(
+    platform = app.platform.register(
         name=cmd.name,
         slug=cmd.slug,
         organization_id=cmd.organization_id,
@@ -18,13 +17,13 @@ def create_platform(app: PlatformMonitoring, data: dict) -> UUID:
         url=cmd.url,
         key=cmd.key,
     )
-    app.save(platform)
+    app.platform.save(platform)
     return platform.id
 
 
-def sync_platform(app: PlatformMonitoring, platform_id: UUID) -> None:
+def sync_platform(app: App, platform_id: UUID) -> None:
     cmd = SyncPlatform(id=platform_id)
-    app.sync_platform(platform_id=cmd.id)
+    app.platform.sync_platform(platform_id=cmd.id)
     return
 
 
