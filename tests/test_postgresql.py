@@ -10,17 +10,15 @@ from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from infrastructure.adapters.postgres import (PostgresDatasetRepository,
                                               PostgresPlatformRepository)
-from settings import app, App
+from infrastructure.unit_of_work import PostgresUnitOfWork
+from settings import App, app
 from tests.fixtures.fixtures import platform_1
 
 
 @pytest.fixture
 def platform_app(db_transaction):
-    repository = PostgresPlatformRepository(client=db_transaction)
-    return App(
-        platform=PlatformMonitoring(repository=repository),
-        dataset=DatasetMonitoring(repository=repository)
-    )
+    uow = PostgresUnitOfWork(client=db_transaction)
+    return App(uow=uow)
 
 
 @pytest.fixture

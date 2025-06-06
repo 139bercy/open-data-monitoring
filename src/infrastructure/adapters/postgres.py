@@ -32,7 +32,6 @@ class PostgresPlatformRepository(PlatformRepository):
                 platform.last_sync,
             ),
         )
-        self.client.commit()
 
     def get(self, platform_id: uuid.UUID) -> Optional[Platform]:
         query = """
@@ -81,7 +80,6 @@ class PostgresPlatformRepository(PlatformRepository):
                 payload["datasets_count"],
             ),
         )
-        self.client.commit()
 
     def all(self):
         pass
@@ -95,13 +93,22 @@ class PostgresDatasetRepository(DatasetRepository):
         self.client.execute(
             """INSERT INTO datasets (id, platform_id, buid, slug, page, publisher, created, modified)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (str(dataset.id), str(dataset.platform_id), dataset.buid, dataset.slug, dataset.page, dataset.publisher, dataset.created, dataset.modified)
+            """,
+            (
+                str(dataset.id),
+                str(dataset.platform_id),
+                dataset.buid,
+                dataset.slug,
+                dataset.page,
+                dataset.publisher,
+                dataset.created,
+                dataset.modified,
+            ),
         )
         self.client.execute(
             """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
             (str(dataset.id), Json(dataset.raw), dataset.checksum),
         )
-        self.client.commit()
 
     def get(self, dataset_id) -> DatasetRawDTO:
         data = self.client.fetchone(

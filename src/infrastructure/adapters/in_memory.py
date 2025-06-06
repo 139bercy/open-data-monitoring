@@ -7,6 +7,7 @@ from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import (DatasetAdapter, PlatformAdapter,
                                    PlatformRepository)
+from domain.unit_of_work import UnitOfWork
 
 
 class InMemoryPlatformRepository(PlatformRepository):
@@ -82,3 +83,38 @@ class InMemoryDatasetRepository(DatasetRepository):
         return DatasetRawDTO(
             dataset_id=dataset.id, snapshot=dataset.raw, checksum=dataset.checksum
         )
+
+
+class InMemoryUnitOfWork(UnitOfWork):
+    def __init__(self):
+        self._platforms = InMemoryPlatformRepository([])
+        self._datasets = InMemoryDatasetRepository([])
+        self._in_transaction = False
+        self._pending_changes = []
+
+    def __enter__(self):
+        self._in_transaction = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._in_transaction = False
+        if exc_type is not None:
+            self.rollback()
+        else:
+            self.commit()
+
+    def commit(self):
+        if self._in_transaction:
+            self._pending_changes = []
+
+    def rollback(self):
+        if self._in_transaction:
+            self._pending_changes = []
+
+    @property
+    def platforms(self) -> InMemoryPlatformRepository:
+        return self._platforms
+
+    @property
+    def datasets(self) -> InMemoryDatasetRepository:
+        return self._datasets

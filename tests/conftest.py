@@ -8,7 +8,9 @@ import pytest
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from domain.platform.aggregate import Platform
-from infrastructure.adapters.in_memory import InMemoryPlatformRepository, InMemoryDatasetRepository
+from infrastructure.adapters.in_memory import (InMemoryDatasetRepository,
+                                               InMemoryPlatformRepository,
+                                               InMemoryUnitOfWork)
 from infrastructure.database.postgres import PostgresClient
 from settings import App
 from tests.fixtures.fixtures import platform_1
@@ -44,10 +46,7 @@ def datagouv_dataset():
 
 @pytest.fixture
 def app():
-    return App(
-        platform=PlatformMonitoring(repository=InMemoryPlatformRepository([])),
-        dataset=DatasetMonitoring(repository=InMemoryDatasetRepository([]))
-    )
+    return App(uow=InMemoryUnitOfWork())
 
 
 @pytest.fixture

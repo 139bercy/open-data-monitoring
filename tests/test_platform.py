@@ -1,5 +1,4 @@
 import os
-
 from datetime import datetime
 from uuid import UUID
 
@@ -7,7 +6,8 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import create_platform, sync_platform, find_platform_from_url
+from application.handlers import (create_platform, find_platform_from_url,
+                                  sync_platform)
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 from infrastructure.adapters.in_memory import InMemoryAdapter
 from infrastructure.adapters.ods import OpendatasoftAdapter
@@ -37,7 +37,7 @@ def test_find_platform_from_url(app):
     # Act
     platform = find_platform_from_url(app=app, url="https://data.mydomain.net")
     # Assert
-    assert platform.name =="My Platform"
+    assert platform.name == "My Platform"
 
 
 def test_should_return_all_platforms(app, testfile):

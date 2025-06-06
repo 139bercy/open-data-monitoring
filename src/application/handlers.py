@@ -9,28 +9,28 @@ from settings import App
 
 def create_platform(app: App, data: dict) -> UUID:
     cmd = CreatePlatform(**data)
-    platform = app.platform.register(
-        name=cmd.name,
-        slug=cmd.slug,
-        organization_id=cmd.organization_id,
-        type=cmd.type,
-        url=cmd.url,
-        key=cmd.key,
-    )
-    app.platform.save(platform)
-    return platform.id
+    with app.uow:
+        platform = app.platform.register(
+            name=cmd.name,
+            slug=cmd.slug,
+            organization_id=cmd.organization_id,
+            type=cmd.type,
+            url=cmd.url,
+            key=cmd.key,
+        )
+        app.platform.save(platform)
+        return platform.id
 
 
 def sync_platform(app: App, platform_id: UUID) -> None:
     cmd = SyncPlatform(id=platform_id)
-    app.platform.sync_platform(platform_id=cmd.id)
-    return
+    with app.uow:
+        app.platform.sync_platform(platform_id=cmd.id)
 
 
 def find_platform_from_url(app: App, url: str) -> Platform:
-    base_url = get_base_url(url=url)
-    platform = app.platform.repository.get_by_domain(base_url)
-    return platform
+    with app.uow:
+        return app.platform.repository.get_by_domain(get_base_url(url))
 
 
 def find_dataset_id_from_url(app: App, url: str) -> UUID:
@@ -42,10 +42,11 @@ def find_dataset_id_from_url(app: App, url: str) -> UUID:
 
 
 def add_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
-    instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
-    instance.calculate_hash()
-    app.dataset.repository.add(dataset=instance)
-    return instance.id
+    with app.uow:
+        instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
+        instance.calculate_hash()
+        app.dataset.repository.add(dataset=instance)
+        return instance.id
 
 
 def fetch_dataset(platform: Platform, dataset_id: UUID) -> dict:

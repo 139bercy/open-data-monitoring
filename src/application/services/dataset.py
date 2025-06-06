@@ -1,5 +1,4 @@
-from uuid import uuid4
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
