@@ -42,7 +42,7 @@ def cli_create_platform(name, slug, organization_id, type, url, key):
         "url": url,
         "key": key,
     }
-    platform_id = create_platform(app=app.platform, data=data)
+    platform_id = create_platform(app=app, data=data)
     pprint(platform_id)
     click.echo("Success !")
 
@@ -71,12 +71,15 @@ def cli_platform():
 
 @cli_platform.command("add")
 @click.argument("url")
-def cli_add_dataset(url):
+@click.option("-o", "--output", is_flag=True, default=False, help="Print dataset")
+def cli_add_dataset(url, output):
     """Create new platform"""
     platform = find_platform_from_url(app=app, url=url)
     dataset_id = find_dataset_id_from_url(app=app, url=url)
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-    result = add_dataset(app=app, platform=platform, dataset=dataset)
-    if result is not None:
-        return click.echo("Success!")
-    click.echo("Error!")
+    if output:
+        pprint(dataset)
+    try:
+        add_dataset(app=app, platform=platform, dataset=dataset)
+    except Exception as e:
+        print(f'ERROR: DATA_ECO", dataset["dataset_id"], {e}')

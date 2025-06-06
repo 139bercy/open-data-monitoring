@@ -18,8 +18,8 @@ class DatasetMonitoring:
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
         try:
             dto: DatasetDTO = adapter.map(**dataset)
-        except TypeError:
-            raise WrongPlatformTypeError()
+        except TypeError as e:
+            raise WrongPlatformTypeError(e)
         dataset = Dataset(
             id=uuid4(),
             buid=dto.buid,

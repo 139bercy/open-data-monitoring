@@ -31,8 +31,6 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             f"{url}/api/1/datasets/{dataset_id}/",
             headers={"Authorization": f"Apikey {key}"},
         )
-        data = response.json()
-        pprint(data)
         return response.json()
 
     @staticmethod
