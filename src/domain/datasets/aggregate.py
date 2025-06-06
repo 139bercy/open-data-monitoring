@@ -10,6 +10,7 @@ class Dataset:
     def __init__(
         self,
         id: UUID,
+        platform_id: UUID,
         buid: str,
         slug: str,
         page: str,
@@ -19,6 +20,7 @@ class Dataset:
         raw: dict,
     ):
         self.id = id
+        self.platform_id = platform_id
         self.buid = buid
         self.slug = slug
         self.page = page

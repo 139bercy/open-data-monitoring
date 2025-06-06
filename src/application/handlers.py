@@ -22,9 +22,9 @@ def create_platform(app: PlatformMonitoring, data: dict) -> UUID:
     return platform.id
 
 
-def sync_platform(app: App, platform_id: UUID) -> None:
+def sync_platform(app: PlatformMonitoring, platform_id: UUID) -> None:
     cmd = SyncPlatform(id=platform_id)
-    app.platform.sync_platform(platform_id=cmd.id)
+    app.sync_platform(platform_id=cmd.id)
     return
 
 
@@ -43,7 +43,7 @@ def find_dataset_id_from_url(app: App, url: str) -> UUID:
 
 
 def add_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
-    instance = app.dataset.add_dataset(platform_type=platform.type, dataset=dataset)
+    instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
     instance.calculate_hash()
     app.dataset.repository.add(dataset=instance)
     return instance.id

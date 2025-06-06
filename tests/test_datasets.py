@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from application.handlers import add_dataset
 from infrastructure.adapters.ods import OpendatasoftDatasetAdapter
@@ -72,9 +72,10 @@ def test_hash_dataset(platform, ods_dataset):
     assert len(dataset.checksum) == 64  # SHA-256 hash length
 
 
-def test_hash_consistency(ods_dataset):
+def test_hash_consistency(platform, ods_dataset):
     # Arrange
-    dataset = app.dataset.add_dataset(platform_type="opendatasoft", dataset=ods_dataset)
+    platform.type = "opendatasoft"
+    dataset = app.dataset.add_dataset(platform=platform, dataset=ods_dataset)
     # Act
     hash1 = dataset.calculate_hash()
     hash2 = dataset.calculate_hash()
@@ -82,9 +83,10 @@ def test_hash_consistency(ods_dataset):
     assert hash1 == hash2  # Hash should be deterministic
 
 
-def test_hash_shanges_with_data_changes(ods_dataset):
+def test_hash_shanges_with_data_changes(platform, ods_dataset):
     # Arrange
-    dataset = app.dataset.add_dataset(platform_type="opendatasoft", dataset=ods_dataset)
+    platform.type = "opendatasoft"
+    dataset = app.dataset.add_dataset(platform=platform, dataset=ods_dataset)
     # Act
     hash1 = dataset.calculate_hash()
     dataset.raw["modified"] = "2024-01-01T00:00:00Z"
