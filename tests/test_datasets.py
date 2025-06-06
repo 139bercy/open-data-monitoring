@@ -5,11 +5,12 @@ from infrastructure.adapters.ods import OpendatasoftDatasetAdapter
 from settings import app
 
 
-def test_create_opendatasoft_dataset(ods_dataset):
+def test_create_opendatasoft_dataset(platform, ods_dataset):
     # Arrange
+    platform.type = "opendatasoft"
     dataset_id = add_dataset(
         app=app,
-        platform_type="opendatasoft",
+        platform=platform,
         dataset=ods_dataset,
     )
     # Act
@@ -39,11 +40,12 @@ def test_find_dataset_id_from_url_if_ends():
     assert dataset_id == "my-dataset"
 
 
-def test_create_datagouv_dataset(datagouv_dataset):
+def test_create_datagouv_dataset(platform, datagouv_dataset):
     # Arrange
+    platform.type = "datagouvfr"
     dataset_id = add_dataset(
         app=app,
-        platform_type="datagouvfr",
+        platform=platform,
         dataset=datagouv_dataset,
     )
     # Act
@@ -53,18 +55,19 @@ def test_create_datagouv_dataset(datagouv_dataset):
     assert result.snapshot is not None
 
 
-def test_hash_dataset(ods_dataset):
+def test_hash_dataset(platform, ods_dataset):
     # Arrange & Act
+    platform.type = "opendatasoft"
     dataset_id = add_dataset(
         app=app,
-        platform_type="opendatasoft",
+        platform=platform,
         dataset=ods_dataset,
     )
     # Act
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
     assert (
-            dataset.checksum
-            == "def80990f5c971702309af7770599485961a45aa4c6baa5bf2238560dbcc04de"
+        dataset.checksum
+        == "def80990f5c971702309af7770599485961a45aa4c6baa5bf2238560dbcc04de"
     )
     assert len(dataset.checksum) == 64  # SHA-256 hash length
 

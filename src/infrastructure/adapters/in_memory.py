@@ -5,7 +5,8 @@ from application.dtos.dataset import DatasetDTO, DatasetRawDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
-from domain.platform.ports import DatasetAdapter, PlatformAdapter, PlatformRepository
+from domain.platform.ports import (DatasetAdapter, PlatformAdapter,
+                                   PlatformRepository)
 
 
 class InMemoryPlatformRepository(PlatformRepository):
@@ -49,6 +50,13 @@ class InMemoryAdapter(PlatformAdapter):
 
 
 class InMemoryDatasetAdapter(DatasetAdapter):
+    @staticmethod
+    def find_dataset_id(url):
+        raise NotImplementedError
+
+    def fetch(self, url, key, dataset_id):
+        raise NotImplementedError
+
     @staticmethod
     def map(id, slug, page, created_at, last_update, *args, **kwargs):
         dataset = DatasetDTO(

@@ -95,7 +95,16 @@ class PostgresDatasetRepository(DatasetRepository):
         self.client.execute(
             """INSERT INTO datasets (id, buid, slug, page, publisher, created, modified)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (str(dataset.id), dataset.buid, dataset.slug, dataset.page, dataset.publisher, dataset.created, dataset.modified)
+            """,
+            (
+                str(dataset.id),
+                dataset.buid,
+                dataset.slug,
+                dataset.page,
+                dataset.publisher,
+                dataset.created,
+                dataset.modified,
+            ),
         )
         self._add_snapshot(dataset)
         self.client.commit()

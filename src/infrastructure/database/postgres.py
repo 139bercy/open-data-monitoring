@@ -37,7 +37,6 @@ class PostgresClient:
         self.connection.commit()
 
     def rollback(self):
-        print("Rollback!")
         self.connection.rollback()
 
     def close(self):

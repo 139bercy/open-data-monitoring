@@ -4,6 +4,7 @@ import os
 import requests
 
 from application.dtos.dataset import DatasetDTO
+from domain.datasets.aggregate import Dataset
 from domain.platform.ports import DatasetAdapter, PlatformAdapter
 
 
@@ -49,7 +50,9 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         return response.json()
 
     @staticmethod
-    def map(uid, dataset_id, metadata, created_at, updated_at, *args, **kwargs):
+    def map(
+        uid, dataset_id, metadata, created_at, updated_at, *args, **kwargs
+    ) -> DatasetDTO:
         dataset = DatasetDTO(
             buid=uid,
             slug=dataset_id,

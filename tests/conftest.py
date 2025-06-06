@@ -1,10 +1,15 @@
 import json
 import os
+import uuid
 
 import psycopg2
 import pytest
 
+from application.services.platform import PlatformMonitoring
+from domain.platform.aggregate import Platform
+from infrastructure.adapters.in_memory import InMemoryPlatformRepository
 from infrastructure.database.postgres import PostgresClient
+from tests.fixtures.fixtures import platform_1
 
 os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
@@ -35,6 +40,18 @@ def datagouv_dataset():
         return json.load(f)
 
 
+@pytest.fixture
+def platform_app():
+    repository = InMemoryPlatformRepository([])
+    return PlatformMonitoring(repository=repository)
+
+
+@pytest.fixture
+def platform(platform_app):
+    platform = Platform(id=uuid.uuid4(), **platform_1)
+    return platform
+
+
 @pytest.fixture()
 def setup_test_database():
     postgres = PostgresClient(
@@ -45,8 +62,6 @@ def setup_test_database():
     postgres.execute(f"CREATE DATABASE {TEST_DB};")
 
     try:
-
-        # Run migrations
         with psycopg2.connect(
             dbname=TEST_DB, user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=5433
         ) as migration_conn, migration_conn.cursor() as cur:
@@ -86,5 +101,5 @@ def db_transaction(setup_test_database):
     try:
         yield client
     finally:
-        client.rollback()
+        # client.rollback()
         client.close()

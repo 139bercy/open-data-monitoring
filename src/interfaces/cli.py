@@ -3,14 +3,9 @@ from uuid import UUID
 
 import click
 
-from application.handlers import (
-    add_dataset,
-    create_platform,
-    fetch_dataset,
-    find_dataset_id_from_url,
-    find_platform_from_url,
-    sync_platform,
-)
+from application.handlers import (add_dataset, create_platform, fetch_dataset,
+                                  find_dataset_id_from_url,
+                                  find_platform_from_url, sync_platform)
 from common import get_base_url
 from settings import app
 
@@ -81,7 +76,7 @@ def cli_add_dataset(url):
     platform = find_platform_from_url(app=app, url=url)
     dataset_id = find_dataset_id_from_url(app=app, url=url)
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-    result = add_dataset(app=app, platform_type=platform.type, dataset=dataset)
+    result = add_dataset(app=app, platform=platform, dataset=dataset)
     if result is not None:
         return click.echo("Success!")
     click.echo("Error!")

@@ -8,11 +8,9 @@ from application.commands.platform import SyncPlatform
 from application.handlers import add_dataset, create_platform
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.postgres import (
-    PostgresDatasetRepository,
-    PostgresPlatformRepository,
-)
-from settings import app, client
+from infrastructure.adapters.postgres import (PostgresDatasetRepository,
+                                              PostgresPlatformRepository)
+from settings import app
 
 
 @pytest.fixture
@@ -77,12 +75,13 @@ def test_postgresl_retrieve_platform_with_syncs(platform):
     assert len(result.syncs) == 1
 
 
-def test_postgresql_create_dataset(db_transaction, ods_dataset):
+def test_postgresql_create_dataset(platform, db_transaction, ods_dataset):
     # Arrange
+    platform.type = "opendatasoft"
     app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
     dataset_id = add_dataset(
         app=app,
-        platform_type="opendatasoft",
+        platform=platform,
         dataset=ods_dataset,
     )
     # Act
