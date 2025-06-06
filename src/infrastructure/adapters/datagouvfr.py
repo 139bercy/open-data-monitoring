@@ -1,4 +1,5 @@
 import datetime
+from pprint import pprint
 
 import requests
 
@@ -11,12 +12,6 @@ class DataGouvFrAdapter(PlatformAdapter):
         self.url = url
         self.key = key
         self.slug = slug
-
-    @staticmethod
-    def find_dataset_id(url: str):
-        if url.endswith("/"):
-            return url.split("/")[-2]
-        return url.split("/")[-1]
 
     def fetch(self) -> dict:
         response = requests.get(
@@ -31,6 +26,21 @@ class DataGouvFrAdapter(PlatformAdapter):
 
 
 class DatagouvDatasetAdapter(DatasetAdapter):
+    def fetch(self, url, key, dataset_id):
+        response = requests.get(
+            f"{url}/api/1/datasets/{dataset_id}/",
+            headers={"Authorization": f"Apikey {key}"},
+        )
+        data = response.json()
+        pprint(data)
+        return response.json()
+
+    @staticmethod
+    def find_dataset_id(url: str):
+        if url.endswith("/"):
+            return url.split("/")[-2]
+        return url.split("/")[-1]
+
     @staticmethod
     def map(id, slug, page, created_at, last_update, *args, **kwargs):
         dataset = DatasetDTO(

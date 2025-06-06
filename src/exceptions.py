@@ -1,0 +1,2 @@
+class WrongPlatformTypeError(Exception):
+    pass

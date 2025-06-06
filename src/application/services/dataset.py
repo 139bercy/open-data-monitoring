@@ -1,15 +1,12 @@
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
+from exceptions import WrongPlatformTypeError
 from infrastructure.factories.dataset import DatasetAdapterFactory
-
-
-class WrongPlatformTypeError(Exception):
-    pass
 
 
 class DatasetMonitoring:
