@@ -39,21 +39,24 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         response = requests.get(
             f"{url}/api/automation/v1.0/datasets/",
             headers={"Authorization": f"Apikey {key}"},
-            params={"dataset_id": dataset_id}
+            params={"dataset_id": dataset_id},
         )
         data = response.json()
         return data["results"][0]
 
     @staticmethod
     def map(
-        uid, dataset_id, metadata, created_at, updated_at, *args, **kwargs
+        uid, dataset_id, metadata, created_at, updated_at, is_published, *args, **kwargs
     ) -> DatasetDTO:
         dataset = DatasetDTO(
             buid=uid,
             slug=dataset_id,
             page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
-            publisher=metadata.get("default", {}).get("publisher", {}).get("value", None),
+            publisher=metadata.get("default", {})
+            .get("publisher", {})
+            .get("value", None),
             created=created_at,
             modified=updated_at,
+            published=is_published,
         )
         return dataset

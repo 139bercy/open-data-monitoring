@@ -1,5 +1,6 @@
-import pytest
 from uuid import uuid4
+
+import pytest
 
 from domain.platform.aggregate import Platform
 from infrastructure.unit_of_work import PostgresUnitOfWork

@@ -8,10 +8,8 @@ from application.commands.platform import SyncPlatform
 from application.handlers import add_dataset, create_platform
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.postgres import (
-    PostgresDatasetRepository,
-    PostgresPlatformRepository,
-)
+from infrastructure.adapters.postgres import (PostgresDatasetRepository,
+                                              PostgresPlatformRepository)
 from infrastructure.unit_of_work import PostgresUnitOfWork
 from settings import App, app
 from tests.fixtures.fixtures import platform_1
@@ -85,7 +83,9 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     assert result.dataset_id == dataset_id
 
 
-def test_postgresql_get_dataset_checksum_by_buid(platform_app, platform, db_transaction, ods_dataset):
+def test_postgresql_get_dataset_checksum_by_buid(
+    platform_app, platform, db_transaction, ods_dataset
+):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"
@@ -96,6 +96,8 @@ def test_postgresql_get_dataset_checksum_by_buid(platform_app, platform, db_tran
         dataset=ods_dataset,
     )
     # Act
-    checksum = app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
+    checksum = app.dataset.repository.get_checksum_by_buid(
+        dataset_buid=ods_dataset["uid"]
+    )
     # Assert
     assert len(checksum) == 64

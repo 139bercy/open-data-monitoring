@@ -12,6 +12,7 @@ export-es:
 	sqlite3 db/writes-dev.db .dump > output.sql
 
 clean:
+	find . -name .DS_Store -print -delete
 	black src tests
 	isort .
 

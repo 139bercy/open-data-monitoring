@@ -128,5 +128,5 @@ class PostgresDatasetRepository(DatasetRepository):
             (str(dataset_buid),),
         )
         if data is not None:
-           return data.get("checksum", None)
+            return data.get("checksum", None)
         return

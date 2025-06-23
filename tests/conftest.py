@@ -6,9 +6,7 @@ import psycopg2
 import pytest
 
 from domain.platform.aggregate import Platform
-from infrastructure.adapters.in_memory import (
-    InMemoryUnitOfWork,
-)
+from infrastructure.adapters.in_memory import InMemoryUnitOfWork
 from infrastructure.database.postgres import PostgresClient
 from settings import App
 from tests.fixtures.fixtures import platform_1

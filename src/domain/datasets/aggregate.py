@@ -16,6 +16,7 @@ class Dataset:
         page: str,
         created: datetime,
         modified: datetime,
+        published: bool,
         raw: dict,
         publisher: str = None,
     ):
@@ -27,6 +28,7 @@ class Dataset:
         self.publisher = publisher
         self.created = created
         self.modified = modified
+        self.published = published
         self.raw = raw
         self.checksum = None
 

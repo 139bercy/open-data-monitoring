@@ -47,6 +47,8 @@ def add_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
         instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
         instance.calculate_hash()
         dataset_exists = app.dataset.repository.get_checksum_by_buid(instance.buid)
+        print(instance.published)
+        exit()
         if dataset_exists == instance.checksum:
             raise DatasetHasNotChanged("Dataset already exists in this version. ")
         app.dataset.repository.add(dataset=instance)

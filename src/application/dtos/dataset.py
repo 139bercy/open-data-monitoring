@@ -11,6 +11,7 @@ class DatasetDTO:
     publisher: str
     created: datetime
     modified: datetime
+    published: bool
 
 
 @dataclass

@@ -1,4 +1,5 @@
-from domain.platform.ports import AbstractPlatformAdapterFactory, PlatformAdapter
+from domain.platform.ports import (AbstractPlatformAdapterFactory,
+                                   PlatformAdapter)
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 from infrastructure.adapters.in_memory import InMemoryAdapter
 from infrastructure.adapters.ods import OpendatasoftAdapter

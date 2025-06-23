@@ -119,7 +119,9 @@ def test_get_checksum_by_buid(app, platform, ods_dataset):
     platform.type = "opendatasoft"
     add_dataset(app=app, platform=platform, dataset=ods_dataset)
     # Act
-    checksum = app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
+    checksum = app.dataset.repository.get_checksum_by_buid(
+        dataset_buid=ods_dataset["uid"]
+    )
     # Assert
     assert checksum is not None
     assert len(checksum) == 64

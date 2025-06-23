@@ -18,6 +18,7 @@ class DatasetMonitoring:
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
         try:
             dto: DatasetDTO = adapter.map(**dataset)
+            print(dto)
         except TypeError as e:
             raise WrongPlatformTypeError(e)
         dataset = Dataset(
@@ -28,6 +29,7 @@ class DatasetMonitoring:
             page=dto.page,
             publisher=dto.publisher,
             created=dto.created,
+            published=dto.published,
             modified=dto.modified,
             raw=dataset,
         )
