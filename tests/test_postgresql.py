@@ -8,8 +8,10 @@ from application.commands.platform import SyncPlatform
 from application.handlers import add_dataset, create_platform
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.postgres import (PostgresDatasetRepository,
-                                              PostgresPlatformRepository)
+from infrastructure.adapters.postgres import (
+    PostgresDatasetRepository,
+    PostgresPlatformRepository,
+)
 from infrastructure.unit_of_work import PostgresUnitOfWork
 from settings import App, app
 from tests.fixtures.fixtures import platform_1

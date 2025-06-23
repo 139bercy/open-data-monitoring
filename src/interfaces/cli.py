@@ -3,10 +3,14 @@ from uuid import UUID
 
 import click
 
-from application.handlers import (add_dataset, create_platform, fetch_dataset,
-                                  find_dataset_id_from_url,
-                                  find_platform_from_url, sync_platform)
-from common import get_base_url
+from application.handlers import (
+    add_dataset,
+    create_platform,
+    fetch_dataset,
+    find_dataset_id_from_url,
+    find_platform_from_url,
+    sync_platform,
+)
 from settings import app
 
 
@@ -59,7 +63,7 @@ def cli_get_all_platforms():
 def cli_sync_platform(id):
     """Sync platform and project stats"""
     platform_id = UUID(id)
-    sync_platform(app=app.platform, platform_id=platform_id)
+    sync_platform(app=app, platform_id=platform_id)
     result = app.platform.get(platform_id=platform_id)
     pprint(result.__dict__)
 
@@ -83,3 +87,4 @@ def cli_add_dataset(url, output):
         add_dataset(app=app, platform=platform, dataset=dataset)
     except Exception as e:
         print(f'ERROR: DATA_ECO", dataset["dataset_id"], {e}')
+

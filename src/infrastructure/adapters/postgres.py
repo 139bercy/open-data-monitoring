@@ -82,7 +82,7 @@ class PostgresPlatformRepository(PlatformRepository):
         )
 
     def all(self):
-        pass
+        return self.client.fetchall("""SELECT * from platforms;""")
 
 
 class PostgresDatasetRepository(DatasetRepository):
@@ -90,25 +90,29 @@ class PostgresDatasetRepository(DatasetRepository):
         self.client = client
 
     def add(self, dataset: Dataset) -> None:
-        self.client.execute(
-            """INSERT INTO datasets (id, platform_id, buid, slug, page, publisher, created, modified)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """,
-            (
-                str(dataset.id),
-                str(dataset.platform_id),
-                dataset.buid,
-                dataset.slug,
-                dataset.page,
-                dataset.publisher,
-                dataset.created,
-                dataset.modified,
-            ),
-        )
-        self.client.execute(
-            """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
-            (str(dataset.id), Json(dataset.raw), dataset.checksum),
-        )
+        try:
+            self.client.execute(
+                """INSERT INTO datasets (id, platform_id, buid, slug, page, publisher, created, modified)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    str(dataset.id),
+                    str(dataset.platform_id),
+                    dataset.buid,
+                    dataset.slug,
+                    dataset.page,
+                    dataset.publisher,
+                    dataset.created,
+                    dataset.modified,
+                ),
+            )
+        except Exception as e:
+            print(e)
+        finally:
+            self.client.execute(
+                """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
+                (str(dataset.id), Json(dataset.raw), dataset.checksum),
+            )
 
     def get(self, dataset_id) -> DatasetRawDTO:
         data = self.client.fetchone(

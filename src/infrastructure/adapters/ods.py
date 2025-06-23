@@ -4,7 +4,6 @@ import os
 import requests
 
 from application.dtos.dataset import DatasetDTO
-from domain.datasets.aggregate import Dataset
 from domain.platform.ports import DatasetAdapter, PlatformAdapter
 
 
@@ -35,19 +34,15 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             return url.split("/")[-2]
         return url.split("/")[-1]
 
-    def fetch(self, url: str, key: str, dataset_id):
+    def fetch(self, url: str, key: str, dataset_id: str):
         key = os.environ[key]
         response = requests.get(
-            f"{url}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
+            f"{url}/api/automation/v1.0/datasets/",
             headers={"Authorization": f"Apikey {key}"},
+            params={"dataset_id": dataset_id}
         )
         data = response.json()
-        dataset_uid = data.get("dataset_uid")
-        response = requests.get(
-            f"{url}/api/automation/v1.0/datasets/{dataset_uid}/",
-            headers={"Authorization": f"Apikey {key}"},
-        )
-        return response.json()
+        return data["results"][0]
 
     @staticmethod
     def map(
@@ -57,7 +52,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             buid=uid,
             slug=dataset_id,
             page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
-            publisher=metadata["default"]["publisher"]["value"],
+            publisher=metadata.get("default", {}).get("publisher", {}).get("value", None),
             created=created_at,
             modified=updated_at,
         )

@@ -14,10 +14,10 @@ class Dataset:
         buid: str,
         slug: str,
         page: str,
-        publisher: str,
         created: datetime,
         modified: datetime,
         raw: dict,
+        publisher: str = None,
     ):
         self.id = id
         self.platform_id = platform_id

@@ -5,8 +5,7 @@ from application.dtos.dataset import DatasetDTO, DatasetRawDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
-from domain.platform.ports import (DatasetAdapter, PlatformAdapter,
-                                   PlatformRepository)
+from domain.platform.ports import DatasetAdapter, PlatformAdapter, PlatformRepository
 from domain.unit_of_work import UnitOfWork
 
 

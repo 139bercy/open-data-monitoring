@@ -8,9 +8,11 @@ import pytest
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from domain.platform.aggregate import Platform
-from infrastructure.adapters.in_memory import (InMemoryDatasetRepository,
-                                               InMemoryPlatformRepository,
-                                               InMemoryUnitOfWork)
+from infrastructure.adapters.in_memory import (
+    InMemoryDatasetRepository,
+    InMemoryPlatformRepository,
+    InMemoryUnitOfWork,
+)
 from infrastructure.database.postgres import PostgresClient
 from settings import App
 from tests.fixtures.fixtures import platform_1

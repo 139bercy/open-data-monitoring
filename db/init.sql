@@ -48,10 +48,11 @@ CREATE INDEX IF NOT EXISTS idx_platform_sync_chrono ON platform_sync_histories(p
 CREATE TABLE IF NOT EXISTS datasets (
     id UUID PRIMARY KEY,
     platform_id UUID NOT NULL REFERENCES platforms(id),
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     buid VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL UNIQUE,
     page TEXT NOT NULL,
-    publisher VARCHAR(255) NOT NULL,
+    publisher VARCHAR(255),
     created TIMESTAMPTZ NOT NULL,
     modified TIMESTAMPTZ NOT NULL,
     last_sync TIMESTAMPTZ

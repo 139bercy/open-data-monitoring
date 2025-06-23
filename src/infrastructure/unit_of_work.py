@@ -1,6 +1,8 @@
 from domain.unit_of_work import UnitOfWork
-from infrastructure.adapters.postgres import (PostgresDatasetRepository,
-                                              PostgresPlatformRepository)
+from infrastructure.adapters.postgres import (
+    PostgresDatasetRepository,
+    PostgresPlatformRepository,
+)
 from infrastructure.database.postgres import PostgresClient
 
 

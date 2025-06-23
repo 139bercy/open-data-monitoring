@@ -4,7 +4,7 @@ from domain.datasets.ports import DatasetRepository
 from domain.platform.ports import PlatformRepository
 
 
-class UnitOfWork(ABC):
+class UnitOfWork(ABC):  # pragma: no cover
     def __enter__(self):
         return self
 
