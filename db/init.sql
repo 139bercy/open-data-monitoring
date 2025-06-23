@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS datasets (
     publisher VARCHAR(255),
     created TIMESTAMPTZ NOT NULL,
     modified TIMESTAMPTZ NOT NULL,
-    published BOOL NOT NULL,
+    published BOOL DEFAULT NULL,
+    restricted BOOL DEFAULT NULL,
     last_sync TIMESTAMPTZ
 );
 

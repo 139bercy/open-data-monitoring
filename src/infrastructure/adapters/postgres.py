@@ -92,8 +92,8 @@ class PostgresDatasetRepository(DatasetRepository):
     def add(self, dataset: Dataset) -> None:
         try:
             self.client.execute(
-                """INSERT INTO datasets (id, platform_id, buid, slug, page, publisher, created, modified)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO datasets (id, platform_id, buid, slug, page, publisher, created, modified, published, restricted)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     str(dataset.id),
@@ -104,6 +104,8 @@ class PostgresDatasetRepository(DatasetRepository):
                     dataset.publisher,
                     dataset.created,
                     dataset.modified,
+                    dataset.published,
+                    dataset.restricted
                 ),
             )
         except Exception as e:

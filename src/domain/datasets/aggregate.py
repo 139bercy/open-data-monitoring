@@ -17,6 +17,7 @@ class Dataset:
         created: datetime,
         modified: datetime,
         published: bool,
+        restricted: bool,
         raw: dict,
         publisher: str = None,
     ):
@@ -29,6 +30,7 @@ class Dataset:
         self.created = created
         self.modified = modified
         self.published = published
+        self.restricted = restricted
         self.raw = raw
         self.checksum = None
 

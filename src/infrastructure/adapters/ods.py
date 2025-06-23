@@ -46,7 +46,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-        uid, dataset_id, metadata, created_at, updated_at, is_published, *args, **kwargs
+        uid, dataset_id, metadata, created_at, updated_at, is_published, is_restricted, *args, **kwargs
     ) -> DatasetDTO:
         dataset = DatasetDTO(
             buid=uid,
@@ -58,5 +58,6 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             created=created_at,
             modified=updated_at,
             published=is_published,
+            restricted=is_restricted
         )
         return dataset

@@ -12,6 +12,7 @@ class DatasetDTO:
     created: datetime
     modified: datetime
     published: bool
+    restricted: bool
 
 
 @dataclass

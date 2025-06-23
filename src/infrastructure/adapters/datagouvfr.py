@@ -49,5 +49,6 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             created=created_at,
             modified=last_update,
             published=True if archived is None else False,
+            restricted=False if archived is None else True,
         )
         return dataset

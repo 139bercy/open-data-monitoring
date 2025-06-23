@@ -29,8 +29,9 @@ class DatasetMonitoring:
             page=dto.page,
             publisher=dto.publisher,
             created=dto.created,
-            published=dto.published,
             modified=dto.modified,
+            published=dto.published,
+            restricted=dto.restricted,
             raw=dataset,
         )
         return dataset
