@@ -186,3 +186,4 @@ dev/*
 tmp.py
 *.json
 *.db*
+*.csv
