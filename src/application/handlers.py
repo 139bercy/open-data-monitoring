@@ -3,6 +3,7 @@ from uuid import UUID
 from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.platform.aggregate import Platform
+from exceptions import DatasetHasNotChanged
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from settings import App
 
@@ -45,6 +46,9 @@ def add_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     with app.uow:
         instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
         instance.calculate_hash()
+        dataset_exists = app.dataset.repository.get_checksum_by_buid(instance.buid)
+        if dataset_exists == instance.checksum:
+            raise DatasetHasNotChanged("Dataset already exists in this version. ")
         app.dataset.repository.add(dataset=instance)
         return instance.id
 

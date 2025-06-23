@@ -121,3 +121,12 @@ class PostgresDatasetRepository(DatasetRepository):
         )
         data["dataset_id"] = uuid.UUID(data["dataset_id"])
         return DatasetRawDTO(**data)
+
+    def get_checksum_by_buid(self, dataset_buid) -> str or None:
+        data = self.client.fetchone(
+            """SELECT dv.checksum FROM dataset_versions dv JOIN datasets d ON d.id = dv.dataset_id WHERE d.buid = %s ORDER BY dv.created_at DESC LIMIT 1""",
+            (str(dataset_buid),),
+        )
+        if data is not None:
+           return data.get("checksum", None)
+        return

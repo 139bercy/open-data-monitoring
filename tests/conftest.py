@@ -5,12 +5,8 @@ import uuid
 import psycopg2
 import pytest
 
-from application.services.dataset import DatasetMonitoring
-from application.services.platform import PlatformMonitoring
 from domain.platform.aggregate import Platform
 from infrastructure.adapters.in_memory import (
-    InMemoryDatasetRepository,
-    InMemoryPlatformRepository,
     InMemoryUnitOfWork,
 )
 from infrastructure.database.postgres import PostgresClient

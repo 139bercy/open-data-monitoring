@@ -13,3 +13,7 @@ class DatasetRepository(abc.ABC):  # pragma: no cover
     @abc.abstractmethod
     def get(self, dataset_id: UUID) -> DatasetRawDTO:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_checksum_by_buid(self, dataset_buid) -> DatasetRawDTO:
+        raise NotImplementedError

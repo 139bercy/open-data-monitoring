@@ -83,6 +83,12 @@ class InMemoryDatasetRepository(DatasetRepository):
             dataset_id=dataset.id, snapshot=dataset.raw, checksum=dataset.checksum
         )
 
+    def get_checksum_by_buid(self, dataset_buid) -> DatasetRawDTO:
+        dataset = next((item for item in self.db if item.buid == dataset_buid), None)
+        if dataset is not None:
+            return dataset.checksum
+        return dataset
+
 
 class InMemoryUnitOfWork(UnitOfWork):
     def __init__(self):

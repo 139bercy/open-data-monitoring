@@ -86,5 +86,5 @@ def cli_add_dataset(url, output):
     try:
         add_dataset(app=app, platform=platform, dataset=dataset)
     except Exception as e:
-        print(f'ERROR: DATA_ECO", dataset["dataset_id"], {e}')
+        print(f'ERROR: DATA_ECO" :: {dataset_id} :: {e}')
 

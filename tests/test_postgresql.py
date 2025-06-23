@@ -83,3 +83,19 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     # Assert
     assert isinstance(result.dataset_id, UUID)
     assert result.dataset_id == dataset_id
+
+
+def test_postgresql_get_dataset_checksum_by_buid(platform_app, platform, db_transaction, ods_dataset):
+    # Arrange
+    platform_id = create_platform(platform_app, platform_1)
+    platform.id, platform.type = platform_id, "opendatasoft"
+    app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
+    dataset_id = add_dataset(
+        app=app,
+        platform=platform,
+        dataset=ods_dataset,
+    )
+    # Act
+    checksum = app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
+    # Assert
+    assert len(checksum) == 64
