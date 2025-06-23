@@ -23,3 +23,11 @@ docker-up:
 
 docker-down:
 	docker compose down --remove-orphans -v
+
+dump:
+	docker exec open-data-monitoring-db pg_dump -U postgres odm --create --clean --if-exists > /tmp/dump.sql
+	docker cp open-data-monitoring-db:/tmp/dump.sql ./dump.sql
+
+load:
+	docker cp ./dump.sql open-data-monitoring-db:/tmp/dump.sql
+	docker exec -u postgres -it open-data-monitoring-db psql -d postgres -f /tmp/dump.sql
