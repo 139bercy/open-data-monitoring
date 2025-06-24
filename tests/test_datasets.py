@@ -18,8 +18,8 @@ def test_create_opendatasoft_dataset(app, platform, ods_dataset):
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
-    assert isinstance(result.dataset_id, UUID)
-    assert result.snapshot is not None
+    assert isinstance(result.id, UUID)
+    assert len(result.versions) == 1
 
 
 def test_create_opendatasoft_dataset_platform_does_not_exist(
@@ -35,8 +35,7 @@ def test_create_opendatasoft_dataset_platform_does_not_exist(
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
-    assert isinstance(result.dataset_id, UUID)
-    assert result.snapshot is not None
+    assert isinstance(result.id, UUID)
 
 
 def test_find_dataset_id_from_url_if_ends_with_dash():
@@ -70,8 +69,8 @@ def test_create_datagouv_dataset(app, platform, datagouv_dataset):
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
-    assert isinstance(result.dataset_id, UUID)
-    assert result.snapshot is not None
+    assert isinstance(result.id, UUID)
+    assert result.publisher is not None
 
 
 def test_hash_dataset(app, platform, ods_dataset):

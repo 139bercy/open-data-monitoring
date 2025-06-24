@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from common import UUIDEncoder
+from common import JsonSerializer
 
 
 class Dataset:
@@ -33,6 +33,7 @@ class Dataset:
         self.restricted = restricted
         self.raw = raw
         self.checksum = None
+        self.versions = []
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -43,8 +44,24 @@ class Dataset:
         self.checksum = checksum
         return checksum
 
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            id=UUID(data["id"]) if not isinstance(data["id"], UUID) else data["id"],
+            platform_id=UUID(data["platform_id"]) if not isinstance(data["platform_id"], UUID) else data["platform_id"],
+            buid=data["buid"],
+            slug=data["slug"],
+            page=data["page"],
+            created=data["created"] if isinstance(data["created"], datetime) else datetime.fromisoformat(data["created"]),
+            modified=data["modified"] if isinstance(data["modified"], datetime) else datetime.fromisoformat(data["modified"]),
+            published=bool(data.get("published", True)),
+            restricted=bool(data.get("restricted", False)),
+            raw=data.get("raw", {}),
+            publisher=data.get("publisher"),
+        )
+
     def __repr__(self):
         return f"<Dataset: {self.slug}>"
 
     def __str__(self):
-        return json.dumps(self.__dict__, indent=2, cls=UUIDEncoder)
+        return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)

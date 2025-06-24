@@ -116,13 +116,24 @@ class PostgresDatasetRepository(DatasetRepository):
                 (str(dataset.id), Json(dataset.raw), dataset.checksum),
             )
 
-    def get(self, dataset_id) -> DatasetRawDTO:
+    def get(self, dataset_id) -> Dataset:
         data = self.client.fetchone(
-            """SELECT dataset_id, snapshot, checksum from dataset_versions WHERE dataset_id = %s""",
-            (str(dataset_id),),
+            """
+            SELECT d.*, COALESCE(jsonb_agg(jsonb_build_object(
+                'dataset_id', dv.dataset_id,
+                'snapshot', dv.snapshot,
+                'checksum', dv.checksum
+            ) ORDER BY dv.created_at), '[]'::jsonb) AS versions
+            FROM datasets d
+            LEFT JOIN dataset_versions dv ON dv.dataset_id = d.id
+            WHERE d.id = %s 
+            GROUP BY d.id;
+            """, (str(dataset_id),)
         )
-        data["dataset_id"] = uuid.UUID(data["dataset_id"])
-        return DatasetRawDTO(**data)
+        data["versions"] = [DatasetRawDTO(**version) for version in data["versions"]]
+        data["id"] = uuid.UUID(data["id"])
+        dataset = Dataset.from_dict(data)
+        return dataset
 
     def get_checksum_by_buid(self, dataset_buid) -> str or None:
         data = self.client.fetchone(

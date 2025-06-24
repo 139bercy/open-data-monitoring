@@ -72,7 +72,7 @@ def cli_platform():
 @click.argument("url")
 @click.option("-o", "--output", is_flag=True, default=False, help="Print dataset")
 def cli_add_dataset(url, output):
-    """Create new platform"""
+    """Create new dataset"""
     platform = find_platform_from_url(app=app, url=url)
     dataset_id = find_dataset_id_from_url(app=app, url=url)
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)

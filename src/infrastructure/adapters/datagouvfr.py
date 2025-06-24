@@ -40,12 +40,13 @@ class DatagouvDatasetAdapter(DatasetAdapter):
         return url.split("/")[-1]
 
     @staticmethod
-    def map(id, slug, page, created_at, last_update, archived, *args, **kwargs):
+    def map(id, slug, page, created_at, last_update, contact_points, archived, *args, **kwargs):
+        publisher = next((item.get("name") for item in contact_points if item["role"] == "publisher"), None)
         dataset = DatasetDTO(
             buid=id,
             slug=slug,
             page=page,
-            publisher="",
+            publisher=publisher,
             created=created_at,
             modified=last_update,
             published=True if archived is None else False,

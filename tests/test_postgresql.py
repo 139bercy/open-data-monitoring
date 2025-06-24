@@ -79,8 +79,8 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
-    assert isinstance(result.dataset_id, UUID)
-    assert result.dataset_id == dataset_id
+    assert isinstance(result.id, UUID)
+    assert result.id == dataset_id
 
 
 def test_postgresql_get_dataset_checksum_by_buid(
