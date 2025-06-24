@@ -48,12 +48,24 @@ class Dataset:
     def from_dict(cls, data):
         return cls(
             id=UUID(data["id"]) if not isinstance(data["id"], UUID) else data["id"],
-            platform_id=UUID(data["platform_id"]) if not isinstance(data["platform_id"], UUID) else data["platform_id"],
+            platform_id=(
+                UUID(data["platform_id"])
+                if not isinstance(data["platform_id"], UUID)
+                else data["platform_id"]
+            ),
             buid=data["buid"],
             slug=data["slug"],
             page=data["page"],
-            created=data["created"] if isinstance(data["created"], datetime) else datetime.fromisoformat(data["created"]),
-            modified=data["modified"] if isinstance(data["modified"], datetime) else datetime.fromisoformat(data["modified"]),
+            created=(
+                data["created"]
+                if isinstance(data["created"], datetime)
+                else datetime.fromisoformat(data["created"])
+            ),
+            modified=(
+                data["modified"]
+                if isinstance(data["modified"], datetime)
+                else datetime.fromisoformat(data["modified"])
+            ),
             published=bool(data.get("published", True)),
             restricted=bool(data.get("restricted", False)),
             raw=data.get("raw", {}),

@@ -128,7 +128,8 @@ class PostgresDatasetRepository(DatasetRepository):
             LEFT JOIN dataset_versions dv ON dv.dataset_id = d.id
             WHERE d.id = %s 
             GROUP BY d.id;
-            """, (str(dataset_id),)
+            """,
+            (str(dataset_id),),
         )
         data["versions"] = [DatasetRawDTO(**version) for version in data["versions"]]
         data["id"] = uuid.UUID(data["id"])

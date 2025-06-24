@@ -59,7 +59,9 @@ class InMemoryDatasetAdapter(DatasetAdapter):
         raise NotImplementedError
 
     @staticmethod
-    def map(id, slug, page, created_at, last_update, published, restricted, *args, **kwargs):
+    def map(
+        id, slug, page, created_at, last_update, published, restricted, *args, **kwargs
+    ):
         dataset = DatasetDTO(
             buid=id,
             slug=slug,
@@ -68,7 +70,7 @@ class InMemoryDatasetAdapter(DatasetAdapter):
             created=created_at,
             modified=last_update,
             published=published,
-            restricted=restricted
+            restricted=restricted,
         )
         return dataset
 
@@ -82,9 +84,11 @@ class InMemoryDatasetRepository(DatasetRepository):
 
     def get(self, dataset_id):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
-        dataset.versions.append(DatasetRawDTO(
-            dataset_id=dataset.id, snapshot=dataset.raw, checksum=dataset.checksum
-        ))
+        dataset.versions.append(
+            DatasetRawDTO(
+                dataset_id=dataset.id, snapshot=dataset.raw, checksum=dataset.checksum
+            )
+        )
         return dataset
 
     def get_checksum_by_buid(self, dataset_buid) -> DatasetRawDTO:

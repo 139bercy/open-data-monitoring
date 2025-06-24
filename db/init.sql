@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS datasets (
     platform_id UUID NOT NULL REFERENCES platforms(id),
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     buid VARCHAR(255) NOT NULL,
-    slug VARCHAR(255) NOT NULL UNIQUE,
+    slug VARCHAR(255) NOT NULL,
     page TEXT NOT NULL,
     publisher VARCHAR(255),
     created TIMESTAMPTZ NOT NULL,
@@ -71,12 +71,10 @@ CREATE INDEX IF NOT EXISTS idx_datasets_publisher ON datasets(publisher);
 CREATE INDEX IF NOT EXISTS idx_datasets_modified ON datasets(modified);
 CREATE INDEX IF NOT EXISTS idx_datasets_created ON datasets(created);
 
--- Table de liaison pour le versioning
 CREATE TABLE IF NOT EXISTS dataset_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     dataset_id UUID NOT NULL,
---     dataset_id UUID NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
     snapshot JSONB NOT NULL,
     checksum VARCHAR(64) NOT NULL
 );

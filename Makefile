@@ -32,3 +32,6 @@ dump:
 load:
 	docker cp ./dump.sql open-data-monitoring-db:/tmp/dump.sql
 	docker exec -u postgres -it open-data-monitoring-db psql -d postgres -f /tmp/dump.sql
+
+exec-db:
+	docker exec -it open-data-monitoring-db psql -U postgres -d postgres
