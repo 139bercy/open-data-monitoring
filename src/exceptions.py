@@ -4,3 +4,7 @@ class WrongPlatformTypeError(Exception):
 
 class DatasetHasNotChanged(Exception):
     pass
+
+
+class DatasetUnreachableError(Exception):
+    pass

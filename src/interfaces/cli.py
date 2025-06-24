@@ -6,6 +6,8 @@ import click
 from application.handlers import (add_dataset, create_platform, fetch_dataset,
                                   find_dataset_id_from_url,
                                   find_platform_from_url, sync_platform)
+from exceptions import DatasetHasNotChanged, WrongPlatformTypeError
+from logger import logger
 from settings import app
 
 
@@ -42,8 +44,7 @@ def cli_create_platform(name, slug, organization_id, type, url, key):
         "key": key,
     }
     platform_id = create_platform(app=app, data=data)
-    pprint(platform_id)
-    click.echo("Success !")
+    logger.info(f"{type} - {name} - Platform created with id {platform_id}")
 
 
 @cli_platform.command("all")
@@ -80,5 +81,7 @@ def cli_add_dataset(url, output):
         pprint(dataset)
     try:
         add_dataset(app=app, platform=platform, dataset=dataset)
-    except Exception as e:
-        print(f'ERROR: {platform.type.upper()}" :: {dataset_id} :: {e}')
+    except DatasetHasNotChanged as e:
+        logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
+    except WrongPlatformTypeError as e:
+        logger.error(f"{platform.type.upper()} - {dataset_id} - Wrong plaform error")

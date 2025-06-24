@@ -3,8 +3,9 @@ from uuid import UUID
 from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.platform.aggregate import Platform
-from exceptions import DatasetHasNotChanged
+from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from infrastructure.factories.dataset import DatasetAdapterFactory
+from logger import logger
 from settings import App
 
 
@@ -48,13 +49,17 @@ def add_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
         instance.calculate_hash()
         dataset_exists = app.dataset.repository.get_checksum_by_buid(instance.buid)
         if dataset_exists == instance.checksum:
-            raise DatasetHasNotChanged("Dataset already exists in this version. ")
+            raise DatasetHasNotChanged("Dataset already exists in this version.")
         app.dataset.repository.add(dataset=instance)
+        logger.warn(f"{platform.type.upper()} - New dataset - {instance.slug}")
         return instance.id
 
 
 def fetch_dataset(platform: Platform, dataset_id: UUID) -> dict:
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
-    dataset = adapter.fetch(platform.url, platform.key, dataset_id)
-    return dataset
+    try:
+        dataset = adapter.fetch(platform.url, platform.key, dataset_id)
+        return dataset
+    except DatasetUnreachableError:
+        logger.error(f"{platform.type.upper()} - Dataset not found")

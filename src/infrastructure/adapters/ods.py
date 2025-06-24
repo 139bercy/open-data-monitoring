@@ -5,6 +5,7 @@ import requests
 
 from application.dtos.dataset import DatasetDTO
 from domain.platform.ports import DatasetAdapter, PlatformAdapter
+from exceptions import DatasetUnreachableError
 
 
 class OpendatasoftAdapter(PlatformAdapter):
@@ -41,8 +42,11 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             headers={"Authorization": f"Apikey {key}"},
             params={"dataset_id": dataset_id},
         )
-        data = response.json()
-        return data["results"][0]
+        try:
+            data = response.json()
+            return data["results"][0]
+        except IndexError:
+            raise DatasetUnreachableError()
 
     @staticmethod
     def map(
