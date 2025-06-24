@@ -105,7 +105,7 @@ class PostgresDatasetRepository(DatasetRepository):
                     dataset.created,
                     dataset.modified,
                     dataset.published,
-                    dataset.restricted
+                    dataset.restricted,
                 ),
             )
         except Exception as e:
