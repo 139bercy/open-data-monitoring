@@ -26,12 +26,11 @@ docker-down:
 	docker compose down --remove-orphans -v
 
 dump:
-	docker exec open-data-monitoring-db pg_dump -U postgres -d odm --create --clean --if-exists > /tmp/dump.sql
-	docker cp open-data-monitoring-db:/tmp/dump.sql ./dump.sql
+	docker exec -i open-data-monitoring-db /bin/bash -c "PGPASSWORD=password pg_dump --username postgres odm" > /tmp/dump.sql
+	cp /tmp/dump.sql ./dump.sql
 
 load:
-	docker cp ./dump.sql open-data-monitoring-db:/tmp/dump.sql
-	docker exec -u postgres -it open-data-monitoring-db psql -d postgres -f /tmp/dump.sql
+	docker exec -i open-data-monitoring-db /bin/bash -c "PGPASSWORD=password psql --username postgres postgres" < ./dump.sql
 
 exec-db:
 	docker exec -it open-data-monitoring-db psql -U postgres -d postgres
