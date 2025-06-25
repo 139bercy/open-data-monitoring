@@ -30,7 +30,7 @@ def testfile():
 
 @pytest.fixture
 def ods_dataset():
-    with open("tests/fixtures/ods-dataset.json", "r") as f:
+    with open("tests/fixtures/data-eco.json", "r") as f:
         return json.load(f)
 
 

@@ -12,7 +12,7 @@ console_handler.setFormatter(formatter)
 
 log_file = "app.log"
 file_handler = RotatingFileHandler("app.log", maxBytes=1_000_000, backupCount=5)
-file_handler.setLevel(logging.ERROR)
+file_handler.setLevel(logging.WARN)
 file_handler.setFormatter(formatter)
 
 if not logger.hasHandlers():

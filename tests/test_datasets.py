@@ -85,7 +85,7 @@ def test_hash_dataset(app, platform, ods_dataset):
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
     assert (
         dataset.checksum
-        == "def80990f5c971702309af7770599485961a45aa4c6baa5bf2238560dbcc04de"
+        == "a8ab8a8da4fcf2dc6fa4be275d04e6bed8cd8ade0c810e9d0315cef39e398911"
     )
     assert len(dataset.checksum) == 64  # SHA-256 hash length
 
@@ -131,9 +131,9 @@ def test_dataset_version_has_not_changed(app, platform, ods_dataset):
     platform.type = "opendatasoft"
     upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
     # Act & Assert
-    with pytest.raises(DatasetHasNotChanged):
-        upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
-        assert len(app.dataset.repository.db) == 1
+    upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
+    assert len(app.dataset.repository.db) == 1
+    assert len(app.dataset.repository.versions) == 1
 
 
 def test_dataset_version_has_changed(app, platform, ods_dataset):
