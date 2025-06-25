@@ -123,7 +123,7 @@ class PostgresDatasetRepository(DatasetRepository):
                 'dataset_id', dv.dataset_id,
                 'snapshot', dv.snapshot,
                 'checksum', dv.checksum
-            ) ORDER BY dv.created_at), '[]'::jsonb) AS versions
+            ) ORDER BY dv.timestamp), '[]'::jsonb) AS versions
             FROM datasets d
             LEFT JOIN dataset_versions dv ON dv.dataset_id = d.id
             WHERE d.id = %s 
@@ -138,7 +138,7 @@ class PostgresDatasetRepository(DatasetRepository):
 
     def get_checksum_by_buid(self, dataset_buid) -> str or None:
         data = self.client.fetchone(
-            """SELECT dv.checksum FROM dataset_versions dv JOIN datasets d ON d.id = dv.dataset_id WHERE d.buid = %s ORDER BY dv.created_at DESC LIMIT 1""",
+            """SELECT dv.checksum FROM dataset_versions dv JOIN datasets d ON d.id = dv.dataset_id WHERE d.buid = %s ORDER BY dv.timestamp DESC LIMIT 1""",
             (str(dataset_buid),),
         )
         if data is not None:

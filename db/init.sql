@@ -29,8 +29,7 @@ CREATE TABLE IF NOT EXISTS platform_sync_histories (
    platform_id UUID NOT NULL REFERENCES platforms(id) ON DELETE CASCADE,
    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
    status sync_status_type NOT NULL,
-   datasets_count INT NOT NULL CHECK (datasets_count >= 0),
-   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+   datasets_count INT NOT NULL CHECK (datasets_count >= 0)
 );
 
 COMMENT ON TABLE platform_sync_histories IS 'Historique des synchronisations des plateformes';
@@ -65,7 +64,6 @@ COMMENT ON COLUMN datasets.buid IS 'Identifiant unique métier de la source';
 COMMENT ON COLUMN datasets.slug IS 'Identifiant lisible pour les URLs';
 COMMENT ON COLUMN datasets.last_sync IS 'Dernière synchronisation avec la source';
 
--- Indexes stratégiques
 CREATE INDEX IF NOT EXISTS idx_datasets_slug ON datasets(slug);
 CREATE INDEX IF NOT EXISTS idx_datasets_publisher ON datasets(publisher);
 CREATE INDEX IF NOT EXISTS idx_datasets_modified ON datasets(modified);
@@ -73,7 +71,7 @@ CREATE INDEX IF NOT EXISTS idx_datasets_created ON datasets(created);
 
 CREATE TABLE IF NOT EXISTS dataset_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     dataset_id UUID NOT NULL,
     snapshot JSONB NOT NULL,
     checksum VARCHAR(64) NOT NULL

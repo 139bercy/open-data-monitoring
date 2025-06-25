@@ -1,3 +1,5 @@
+import csv
+from datetime import datetime
 from pprint import pprint
 from uuid import UUID
 
@@ -83,5 +85,53 @@ def cli_add_dataset(url, output):
         add_dataset(app=app, platform=platform, dataset=dataset)
     except DatasetHasNotChanged as e:
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
-    except WrongPlatformTypeError as e:
+    except WrongPlatformTypeError:
         logger.error(f"{platform.type.upper()} - {dataset_id} - Wrong plaform error")
+
+
+@cli_platform.group("get")
+def cli_get_datasets():
+    """retrieve datasets"""
+
+
+@cli_get_datasets.command("tests")
+def cli_get_test_dataset():
+    """Retrieve datasets"""
+    datasets = app.dataset.repository.client.fetchall("""
+    SELECT d.*
+    FROM datasets d JOIN platforms p ON p.id = d.platform_id
+    WHERE d.slug ILIKE '%test%' AND p.type = 'opendatasoft'
+    ORDER BY timestamp DESC
+    """)
+    filename = f"{datetime.today().strftime('%Y-%m-%d')}-datasets-flagged-as-tests.csv"
+    with open(filename, "w") as output:
+        writer = csv.DictWriter(output, fieldnames=datasets[0].keys())
+        writer.writeheader()
+        writer.writerows(datasets)
+    click.echo(f"-> {filename}")
+
+
+@cli_get_datasets.command("publisher")
+@click.argument("name")
+def cli_get_by_publisher(name):
+    """Retrieve datasets"""
+    query = """
+        SELECT d.*
+        FROM datasets d
+        JOIN platforms p ON p.id = d.platform_id
+        WHERE d.publisher ILIKE %s
+        ORDER BY timestamp DESC
+    """
+    pattern = f"%{name}%"
+    datasets = app.dataset.repository.client.fetchall(query, (pattern,))  # ← tuple ici
+    if not datasets:
+        click.echo("Aucun dataset trouvé.")
+        return
+
+    filename = f"{datetime.today().strftime('%Y-%m-%d')}-datasets-by-publisher.csv"
+    with open(filename, "w", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=datasets[0].keys())
+        writer.writeheader()
+        writer.writerows(datasets)
+
+    click.echo(f"-> {filename}")
