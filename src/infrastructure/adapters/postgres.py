@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional
 
+from click import UUID
 from psycopg2.extras import Json
 
 from application.dtos.dataset import DatasetRawDTO
@@ -110,11 +111,19 @@ class PostgresDatasetRepository(DatasetRepository):
             )
         except Exception as e:
             print(e)
-        finally:
-            self.client.execute(
-                """INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)""",
-                (str(dataset.id), Json(dataset.raw), dataset.checksum),
-            )
+
+    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
+        row = self.client.fetchone("SELECT * FROM datasets WHERE buid = %s", (dataset_buid,))
+        if row:
+            row["id"] = uuid.UUID(row["id"])
+            return Dataset.from_dict(row)
+        return None
+
+    def add_version(self, dataset_id: UUID, snapshot: dict, checksum: str) -> None:
+        self.client.execute(
+            "INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)",
+            (str(dataset_id), Json(snapshot), checksum),
+        )
 
     def get(self, dataset_id) -> Dataset:
         data = self.client.fetchone(
@@ -131,9 +140,10 @@ class PostgresDatasetRepository(DatasetRepository):
             """,
             (str(dataset_id),),
         )
-        data["versions"] = [DatasetRawDTO(**version) for version in data["versions"]]
         data["id"] = uuid.UUID(data["id"])
         dataset = Dataset.from_dict(data)
+        for version in data["versions"]:
+            dataset.add_version(**version)
         return dataset
 
     def get_checksum_by_buid(self, dataset_buid) -> str or None:

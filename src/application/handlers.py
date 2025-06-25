@@ -2,6 +2,7 @@ from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
+from domain.datasets.aggregate import Dataset
 from domain.platform.aggregate import Platform
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from infrastructure.factories.dataset import DatasetAdapterFactory
@@ -43,16 +44,35 @@ def find_dataset_id_from_url(app: App, url: str) -> UUID:
     return dataset_id
 
 
-def add_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
+def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
+    instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
+    instance.calculate_hash()
     with app.uow:
-        instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
-        instance.calculate_hash()
-        dataset_exists = app.dataset.repository.get_checksum_by_buid(instance.buid)
-        if dataset_exists == instance.checksum:
-            raise DatasetHasNotChanged("Dataset already exists in this version.")
-        app.dataset.repository.add(dataset=instance)
-        logger.warn(f"{platform.type.upper()} - New dataset - {instance.slug}")
-        return instance.id
+        existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)
+        if existing_checksum == instance.checksum:
+            logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum, "
+                        f"skipping.")
+
+        existing_dataset = app.dataset.repository.get_by_buid(instance.buid)
+        if existing_dataset:
+            logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
+            add_version(app=app, dataset_id=existing_dataset.id, instance=instance)
+            dataset_id = existing_dataset.id
+
+        else:
+            logger.info(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
+            app.dataset.repository.add(dataset=instance)
+            add_version(app=app, dataset_id=instance.id, instance=instance)
+            dataset_id = instance.id
+        return dataset_id
+
+
+def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
+    app.dataset.repository.add_version(
+        dataset_id=dataset_id,
+        snapshot=instance.raw,
+        checksum=instance.checksum
+    )
 
 
 def fetch_dataset(platform: Platform, dataset_id: UUID) -> dict:

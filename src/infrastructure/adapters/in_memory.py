@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from typing import Optional
 
 from application.dtos.dataset import DatasetDTO, DatasetRawDTO
 from domain.datasets.aggregate import Dataset
@@ -78,24 +79,30 @@ class InMemoryDatasetAdapter(DatasetAdapter):
 class InMemoryDatasetRepository(DatasetRepository):
     def __init__(self, db):
         self.db = db
+        self.versions = []
 
     def add(self, dataset: Dataset):
         self.db.append(dataset)
 
+    def add_version(self, dataset_id: uuid.UUID, snapshot: dict, checksum: str) -> None:
+        self.versions.append({"dataset_id": dataset_id, "snapshot": snapshot, "checksum": checksum})
+
     def get(self, dataset_id):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
-        dataset.versions.append(
-            DatasetRawDTO(
-                dataset_id=dataset.id, snapshot=dataset.raw, checksum=dataset.checksum
-            )
-        )
+        next((dataset.add_version(**item) for item in self.versions if item["dataset_id"] == dataset_id), None)
         return dataset
 
-    def get_checksum_by_buid(self, dataset_buid) -> DatasetRawDTO:
+    def get_checksum_by_buid(self, dataset_buid) -> Optional[DatasetRawDTO]:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
         if dataset is not None:
             return dataset.checksum
-        return dataset
+        return
+
+    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
+        dataset = next((item for item in self.db if item.buid == dataset_buid), None)
+        if dataset is not None:
+            return dataset
+        return
 
 
 class InMemoryUnitOfWork(UnitOfWork):

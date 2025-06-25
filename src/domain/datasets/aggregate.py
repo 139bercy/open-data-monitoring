@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from common import JsonSerializer
+from domain.datasets.entities import DatasetVersion
 
 
 class Dataset:
@@ -44,6 +45,10 @@ class Dataset:
         self.checksum = checksum
         return checksum
 
+    def add_version(self, dataset_id: str, snapshot: dict, checksum: str):
+        version = DatasetVersion(dataset_id=dataset_id, snapshot=snapshot, checksum=checksum)
+        self.versions.append(version)
+
     @classmethod
     def from_dict(cls, data):
         return cls(
@@ -77,3 +82,4 @@ class Dataset:
 
     def __str__(self):
         return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)
+

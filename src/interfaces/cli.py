@@ -5,7 +5,7 @@ from uuid import UUID
 
 import click
 
-from application.handlers import (add_dataset, create_platform, fetch_dataset,
+from application.handlers import (upsert_dataset, create_platform, fetch_dataset,
                                   find_dataset_id_from_url,
                                   find_platform_from_url, sync_platform)
 from exceptions import DatasetHasNotChanged, WrongPlatformTypeError
@@ -82,11 +82,38 @@ def cli_add_dataset(url, output):
     if output:
         pprint(dataset)
     try:
-        add_dataset(app=app, platform=platform, dataset=dataset)
+        upsert_dataset(app=app, platform=platform, dataset=dataset)
     except DatasetHasNotChanged as e:
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except WrongPlatformTypeError:
         logger.error(f"{platform.type.upper()} - {dataset_id} - Wrong plaform error")
+
+
+@cli.group("common")
+def cli_common():
+    """Various ops"""
+
+
+@cli_common.command("get-publishers")
+def cli_get_publishers():
+    query = """
+    SELECT publisher, COUNT(*) AS dataset_count
+    FROM datasets
+    WHERE publisher IS NOT NULL
+    GROUP BY publisher
+    ORDER BY publisher;
+    """
+    datasets = app.dataset.repository.client.fetchall(query)
+    if not datasets:
+        click.echo("Aucun dataset trouvé.")
+        return
+    filename = f"{datetime.today().strftime('%Y-%m-%d')}-publishers.csv"
+    with open(filename, "w", newline="") as output:
+        writer = csv.DictWriter(output, fieldnames=datasets[0].keys(), delimiter=",")
+        writer.writeheader()
+        writer.writerows(datasets)
+
+    click.echo(f"-> {filename}")
 
 
 @cli_platform.group("get")
@@ -116,21 +143,21 @@ def cli_get_test_dataset():
 def cli_get_by_publisher(name):
     """Retrieve datasets"""
     query = """
-        SELECT d.*
+        SELECT p.name, d.timestamp, d.buid, d.slug, d.page, d.publisher,d.created, d.modified, d.published, d.restricted, d.last_sync
         FROM datasets d
         JOIN platforms p ON p.id = d.platform_id
         WHERE d.publisher ILIKE %s
         ORDER BY timestamp DESC
     """
     pattern = f"%{name}%"
-    datasets = app.dataset.repository.client.fetchall(query, (pattern,))  # ← tuple ici
+    datasets = app.dataset.repository.client.fetchall(query, (pattern,))
     if not datasets:
         click.echo("Aucun dataset trouvé.")
         return
 
-    filename = f"{datetime.today().strftime('%Y-%m-%d')}-datasets-by-publisher.csv"
+    filename = f"{datetime.today().strftime('%Y-%m-%d')}-datasets-by-publisher-{name.lower()}.csv"
     with open(filename, "w", newline="") as output:
-        writer = csv.DictWriter(output, fieldnames=datasets[0].keys())
+        writer = csv.DictWriter(output, fieldnames=datasets[0].keys(), delimiter=",")
         writer.writeheader()
         writer.writerows(datasets)
 

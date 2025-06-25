@@ -1,3 +1,4 @@
+from pprint import pprint
 from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
@@ -7,6 +8,7 @@ from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
 from exceptions import WrongPlatformTypeError
 from infrastructure.factories.dataset import DatasetAdapterFactory
+from logger import logger
 
 
 class DatasetMonitoring:
@@ -19,6 +21,8 @@ class DatasetMonitoring:
         try:
             dto: DatasetDTO = adapter.map(**dataset)
         except TypeError as e:
+            logger.error(f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error")
+            logger.error(f"{platform.type.upper()} - {pprint(dataset)}")
             raise WrongPlatformTypeError(e)
         dataset = Dataset(
             id=uuid4(),

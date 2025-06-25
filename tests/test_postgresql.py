@@ -5,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import add_dataset, create_platform
+from application.handlers import upsert_dataset, create_platform
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from infrastructure.adapters.postgres import (PostgresDatasetRepository,
@@ -71,7 +71,7 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"
     app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
-    dataset_id = add_dataset(
+    dataset_id = upsert_dataset(
         app=app,
         platform=platform,
         dataset=ods_dataset,
@@ -90,7 +90,7 @@ def test_postgresql_get_dataset_checksum_by_buid(
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"
     app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
-    dataset_id = add_dataset(
+    dataset_id = upsert_dataset(
         app=app,
         platform=platform,
         dataset=ods_dataset,
@@ -101,3 +101,22 @@ def test_postgresql_get_dataset_checksum_by_buid(
     )
     # Assert
     assert len(checksum) == 64
+
+
+def test_postgresql_dataset_has_changed(platform_app, platform, db_transaction, ods_dataset):
+    # Arrange
+    platform_id = create_platform(platform_app, platform_1)
+    platform.id, platform.type = platform_id, "opendatasoft"
+    app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
+    dataset_id = upsert_dataset(
+        app=app,
+        platform=platform,
+        dataset=ods_dataset,
+    )
+    # Act
+    new = {**ods_dataset, "field": "new"}
+    upsert_dataset(app=app, platform=platform, dataset=new)
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    # Assert
+    assert result.id == dataset_id
+    assert len(result.versions) == 2

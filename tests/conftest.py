@@ -100,5 +100,5 @@ def db_transaction(setup_test_database):
     try:
         yield client
     finally:
-        # client.rollback()
+        client.rollback()
         client.close()
