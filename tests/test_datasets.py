@@ -145,4 +145,3 @@ def test_dataset_version_has_changed(app, platform, ods_dataset):
     upsert_dataset(app=app, platform=platform, dataset=new)
     assert len(app.dataset.repository.db) == 1
     assert len(app.dataset.repository.versions) == 2
-

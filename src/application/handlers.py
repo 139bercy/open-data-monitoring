@@ -52,12 +52,16 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     with app.uow:
         existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)
         if existing_checksum == instance.checksum:
-            logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum, "
-                        f"skipping.")
+            logger.info(
+                f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum, "
+                f"skipping."
+            )
             return instance.id
         existing_dataset = app.dataset.repository.get_by_buid(instance.buid)
         if existing_dataset:
-            logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
+            logger.info(
+                f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created"
+            )
             add_version(app=app, dataset_id=existing_dataset.id, instance=instance)
             dataset_id = existing_dataset.id
 
@@ -71,9 +75,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
 
 def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     app.dataset.repository.add_version(
-        dataset_id=dataset_id,
-        snapshot=instance.raw,
-        checksum=instance.checksum
+        dataset_id=dataset_id, snapshot=instance.raw, checksum=instance.checksum
     )
 
 

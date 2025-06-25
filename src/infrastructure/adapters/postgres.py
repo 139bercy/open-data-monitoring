@@ -113,7 +113,9 @@ class PostgresDatasetRepository(DatasetRepository):
             print(e)
 
     def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
-        row = self.client.fetchone("SELECT * FROM datasets WHERE buid = %s", (dataset_buid,))
+        row = self.client.fetchone(
+            "SELECT * FROM datasets WHERE buid = %s", (dataset_buid,)
+        )
         if row:
             row["id"] = uuid.UUID(row["id"])
             return Dataset.from_dict(row)

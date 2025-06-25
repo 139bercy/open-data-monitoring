@@ -6,7 +6,7 @@ from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
-from exceptions import WrongPlatformTypeError, DatasetUnreachableError
+from exceptions import DatasetUnreachableError, WrongPlatformTypeError
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 
@@ -35,6 +35,7 @@ class DatasetMonitoring:
             )
             return dataset
         except TypeError as e:
-            logger.error(f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error")
+            logger.error(
+                f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error"
+            )
             logger.error(f"{platform.type.upper()} - {pprint(dataset)}")
-

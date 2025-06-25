@@ -85,11 +85,20 @@ class InMemoryDatasetRepository(DatasetRepository):
         self.db.append(dataset)
 
     def add_version(self, dataset_id: uuid.UUID, snapshot: dict, checksum: str) -> None:
-        self.versions.append({"dataset_id": dataset_id, "snapshot": snapshot, "checksum": checksum})
+        self.versions.append(
+            {"dataset_id": dataset_id, "snapshot": snapshot, "checksum": checksum}
+        )
 
     def get(self, dataset_id):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
-        next((dataset.add_version(**item) for item in self.versions if item["dataset_id"] == dataset_id), None)
+        next(
+            (
+                dataset.add_version(**item)
+                for item in self.versions
+                if item["dataset_id"] == dataset_id
+            ),
+            None,
+        )
         return dataset
 
     def get_checksum_by_buid(self, dataset_buid) -> Optional[DatasetRawDTO]:

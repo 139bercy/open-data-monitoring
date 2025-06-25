@@ -5,10 +5,11 @@ from uuid import UUID
 
 import click
 
-from application.handlers import (upsert_dataset, create_platform, fetch_dataset,
+from application.handlers import (create_platform, fetch_dataset,
                                   find_dataset_id_from_url,
-                                  find_platform_from_url, sync_platform)
-from exceptions import DatasetHasNotChanged, WrongPlatformTypeError, DatasetUnreachableError
+                                  find_platform_from_url, sync_platform,
+                                  upsert_dataset)
+from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from logger import logger
 from settings import app
 
@@ -124,12 +125,14 @@ def cli_get_datasets():
 @cli_get_datasets.command("tests")
 def cli_get_test_dataset():
     """Retrieve datasets"""
-    datasets = app.dataset.repository.client.fetchall("""
+    datasets = app.dataset.repository.client.fetchall(
+        """
     SELECT d.*
     FROM datasets d JOIN platforms p ON p.id = d.platform_id
     WHERE d.slug ILIKE '%test%' AND p.type = 'opendatasoft'
     ORDER BY timestamp DESC
-    """)
+    """
+    )
     filename = f"{datetime.today().strftime('%Y-%m-%d')}-datasets-flagged-as-tests.csv"
     with open(filename, "w") as output:
         writer = csv.DictWriter(output, fieldnames=datasets[0].keys())

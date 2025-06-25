@@ -18,4 +18,3 @@ file_handler.setFormatter(formatter)
 if not logger.hasHandlers():
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
-

@@ -5,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import upsert_dataset, create_platform
+from application.handlers import create_platform, upsert_dataset
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from infrastructure.adapters.postgres import (PostgresDatasetRepository,
@@ -103,7 +103,9 @@ def test_postgresql_get_dataset_checksum_by_buid(
     assert len(checksum) == 64
 
 
-def test_postgresql_dataset_has_changed(platform_app, platform, db_transaction, ods_dataset):
+def test_postgresql_dataset_has_changed(
+    platform_app, platform, db_transaction, ods_dataset
+):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"

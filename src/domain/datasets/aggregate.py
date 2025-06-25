@@ -46,7 +46,9 @@ class Dataset:
         return checksum
 
     def add_version(self, dataset_id: str, snapshot: dict, checksum: str):
-        version = DatasetVersion(dataset_id=dataset_id, snapshot=snapshot, checksum=checksum)
+        version = DatasetVersion(
+            dataset_id=dataset_id, snapshot=snapshot, checksum=checksum
+        )
         self.versions.append(version)
 
     @classmethod
@@ -82,4 +84,3 @@ class Dataset:
 
     def __str__(self):
         return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)
-

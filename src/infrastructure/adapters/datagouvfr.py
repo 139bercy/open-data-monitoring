@@ -30,7 +30,9 @@ class DatagouvDatasetAdapter(DatasetAdapter):
         query = f"{url}/api/1/datasets/{dataset_id}/"
         response = requests.get(query)
         if response.status_code != 200:
-            raise DatasetUnreachableError(f"DATAGOUVFR :: {response.status_code} for '{query}'")
+            raise DatasetUnreachableError(
+                f"DATAGOUVFR :: {response.status_code} for '{query}'"
+            )
         return response.json()
 
     @staticmethod
