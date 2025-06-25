@@ -6,7 +6,7 @@ from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
-from exceptions import WrongPlatformTypeError
+from exceptions import WrongPlatformTypeError, DatasetUnreachableError
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 
@@ -20,21 +20,21 @@ class DatasetMonitoring:
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
         try:
             dto: DatasetDTO = adapter.map(**dataset)
+            dataset = Dataset(
+                id=uuid4(),
+                buid=dto.buid,
+                platform_id=platform.id,
+                slug=dto.slug,
+                page=dto.page,
+                publisher=dto.publisher,
+                created=dto.created,
+                modified=dto.modified,
+                published=dto.published,
+                restricted=dto.restricted,
+                raw=dataset,
+            )
+            return dataset
         except TypeError as e:
             logger.error(f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error")
             logger.error(f"{platform.type.upper()} - {pprint(dataset)}")
-            raise WrongPlatformTypeError(e)
-        dataset = Dataset(
-            id=uuid4(),
-            buid=dto.buid,
-            platform_id=platform.id,
-            slug=dto.slug,
-            page=dto.page,
-            publisher=dto.publisher,
-            created=dto.created,
-            modified=dto.modified,
-            published=dto.published,
-            restricted=dto.restricted,
-            raw=dataset,
-        )
-        return dataset
+

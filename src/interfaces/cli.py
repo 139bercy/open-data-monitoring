@@ -8,7 +8,7 @@ import click
 from application.handlers import (upsert_dataset, create_platform, fetch_dataset,
                                   find_dataset_id_from_url,
                                   find_platform_from_url, sync_platform)
-from exceptions import DatasetHasNotChanged, WrongPlatformTypeError
+from exceptions import DatasetHasNotChanged, WrongPlatformTypeError, DatasetUnreachableError
 from logger import logger
 from settings import app
 
@@ -85,8 +85,8 @@ def cli_add_dataset(url, output):
         upsert_dataset(app=app, platform=platform, dataset=dataset)
     except DatasetHasNotChanged as e:
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
-    except WrongPlatformTypeError:
-        logger.error(f"{platform.type.upper()} - {dataset_id} - Wrong plaform error")
+    except DatasetUnreachableError:
+        pass
 
 
 @cli.group("common")

@@ -36,7 +36,7 @@ def find_platform_from_url(app: App, url: str) -> Platform:
         return app.platform.repository.get_by_domain(get_base_url(url))
 
 
-def find_dataset_id_from_url(app: App, url: str) -> UUID:
+def find_dataset_id_from_url(app: App, url: str) -> str:
     platform = find_platform_from_url(app=app, url=url)
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
@@ -45,6 +45,8 @@ def find_dataset_id_from_url(app: App, url: str) -> UUID:
 
 
 def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
+    if not dataset:
+        raise DatasetUnreachableError(f"{platform.type.upper()} - Dataset not found. ")
     instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
     instance.calculate_hash()
     with app.uow:
@@ -52,7 +54,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
         if existing_checksum == instance.checksum:
             logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum, "
                         f"skipping.")
-
+            return instance.id
         existing_dataset = app.dataset.repository.get_by_buid(instance.buid)
         if existing_dataset:
             logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
@@ -60,7 +62,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             dataset_id = existing_dataset.id
 
         else:
-            logger.info(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
+            logger.warn(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
             app.dataset.repository.add(dataset=instance)
             add_version(app=app, dataset_id=instance.id, instance=instance)
             dataset_id = instance.id
@@ -75,11 +77,11 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     )
 
 
-def fetch_dataset(platform: Platform, dataset_id: UUID) -> dict:
+def fetch_dataset(platform: Platform, dataset_id: str) -> dict:
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     try:
         dataset = adapter.fetch(platform.url, platform.key, dataset_id)
         return dataset
     except DatasetUnreachableError:
-        logger.error(f"{platform.type.upper()} - Dataset not found")
+        logger.error(f"{platform.type.upper()} - Dataset '{dataset_id}' not found")

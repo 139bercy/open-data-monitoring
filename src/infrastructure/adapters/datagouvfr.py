@@ -1,10 +1,10 @@
 import datetime
-from pprint import pprint
 
 import requests
 
 from application.dtos.dataset import DatasetDTO
 from domain.platform.ports import DatasetAdapter, PlatformAdapter
+from exceptions import DatasetUnreachableError
 
 
 class DataGouvFrAdapter(PlatformAdapter):
@@ -27,10 +27,10 @@ class DataGouvFrAdapter(PlatformAdapter):
 
 class DatagouvDatasetAdapter(DatasetAdapter):
     def fetch(self, url, key, dataset_id):
-        response = requests.get(
-            f"{url}/api/1/datasets/{dataset_id}/",
-            headers={"Authorization": f"Apikey {key}"},
-        )
+        query = f"{url}/api/1/datasets/{dataset_id}/"
+        response = requests.get(query)
+        if response.status_code != 200:
+            raise DatasetUnreachableError(f"DATAGOUVFR :: {response.status_code} for '{query}'")
         return response.json()
 
     @staticmethod
