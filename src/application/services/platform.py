@@ -1,7 +1,5 @@
 import uuid
 
-from tinydb import Query
-
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
 from infrastructure.factories.platform import PlatformAdapterFactory
@@ -9,7 +7,6 @@ from infrastructure.factories.platform import PlatformAdapterFactory
 
 class PlatformMonitoring:
     def __init__(self, repository: PlatformRepository):
-        self.PlatformQuery = Query()
         self.factory = PlatformAdapterFactory()
         self.repository = repository
 
