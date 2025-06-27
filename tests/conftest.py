@@ -55,7 +55,7 @@ def platform(app):
 @pytest.fixture()
 def setup_test_database():
     postgres = PostgresClient(
-        dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=5433
+        dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT
     )
     postgres.connection.set_session(autocommit=True)
     postgres.execute(f"DROP DATABASE IF EXISTS {TEST_DB};")
@@ -63,7 +63,7 @@ def setup_test_database():
 
     try:
         with psycopg2.connect(
-            dbname=TEST_DB, user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=5433
+            dbname=TEST_DB, user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT
         ) as migration_conn, migration_conn.cursor() as cur:
             cur.execute(open("db/init.sql").read())
             migration_conn.commit()
@@ -78,7 +78,7 @@ def setup_test_database():
         user=TEST_USER,
         password=TEST_PASSWORD,
         host=HOST,
-        port=5433,
+        port=int(PORT),
     )
     conn.set_session(autocommit=True)
 
