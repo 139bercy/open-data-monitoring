@@ -16,7 +16,7 @@ os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
 TEST_DB = "odm_test"
 TEST_USER = "postgres"
-TEST_PASSWORD = os.environ["ODM_TEST_DATABASE_PORT"]
+TEST_PASSWORD = os.environ["ODM_TEST_USER_PASSWORD"]
 HOST = "localhost"
 PORT = os.environ["ODM_TEST_DATABASE_PORT"]
 
