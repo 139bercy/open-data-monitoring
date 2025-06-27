@@ -16,8 +16,9 @@ os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
 TEST_DB = "odm_test"
 TEST_USER = "postgres"
-TEST_PASSWORD = "password"
+TEST_PASSWORD = os.environ["ODM_TEST_DATABASE_PORT"]
 HOST = "localhost"
+PORT = os.environ["ODM_TEST_DATABASE_PORT"]
 
 
 @pytest.fixture
@@ -95,7 +96,7 @@ def db_transaction(setup_test_database):
         user=TEST_USER,
         password=TEST_PASSWORD,
         host=HOST,
-        port=int(os.environ["ODM_TEST_DATABASE_PORT"]),
+        port=int(PORT),
     )
     try:
         yield client

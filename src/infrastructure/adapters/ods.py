@@ -1,11 +1,19 @@
 import datetime
+import json
 import os
+from pprint import pprint
 
 import requests
 
 from application.dtos.dataset import DatasetDTO
 from domain.platform.ports import DatasetAdapter, PlatformAdapter
 from exceptions import DatasetUnreachableError
+
+
+def load_json_by_id(data, dataset_id) -> dict:
+    """Charge un fichier JSON et crée un dictionnaire indexé par une clé"""
+    return next((item for item in data if item["dataset_id"] == dataset_id), None)
+
 
 
 class OpendatasoftAdapter(PlatformAdapter):
@@ -37,14 +45,31 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
 
     def fetch(self, url: str, key: str, dataset_id: str):
         key = os.environ[key]
-        response = requests.get(
+        automation = requests.get(
             f"{url}/api/automation/v1.0/datasets/",
             headers={"Authorization": f"Apikey {key}"},
             params={"dataset_id": dataset_id},
         )
+        catalog = requests.get(
+            f"{url}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
+            headers={"Authorization": f"Apikey {key}"},
+        )
+        monitoring = requests.get(
+            f"{url}/api/explore/v2.1/monitoring/datasets/ods-datasets-monitoring/exports/json/?where=dataset_id: '{dataset_id}'",
+            headers={"Authorization": f"Apikey {key}"},
+        )
+        pprint(monitoring.json())
+        # https://data.economie.gouv.fr/api/explore/v2.1/monitoring/datasets/ods-api-monitoring/exports/json/?where=dataset_id:'prix-des-carburants-en-france-flux-instantane-v2'
         try:
-            data = response.json()
-            return data["results"][0]
+            automation_data = automation.json()
+            catalog_data = catalog.json()
+            monitoring_data = monitoring.json()
+            # monitoring_data = load_json_by_id(monitoring.json(), dataset_id)
+            data = {**automation_data["results"][0], **catalog_data, **monitoring_data[0]
+                    }
+            with open("zzz.json", "w") as file:
+                json.dump(data, file, indent=2)
+            return data
         except IndexError:
             raise DatasetUnreachableError()
 
