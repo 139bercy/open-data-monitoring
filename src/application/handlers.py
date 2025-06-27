@@ -75,7 +75,11 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
 
 def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     app.dataset.repository.add_version(
-        dataset_id=dataset_id, snapshot=instance.raw, checksum=instance.checksum
+        dataset_id=dataset_id,
+        snapshot=instance.raw,
+        checksum=instance.checksum,
+        downloads_count=instance.downloads_count,
+        api_calls_count=instance.api_calls_count,
     )
 
 

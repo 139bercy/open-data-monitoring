@@ -72,6 +72,8 @@ class InMemoryDatasetAdapter(DatasetAdapter):
             modified=last_update,
             published=published,
             restricted=restricted,
+            downloads_count=download_count,
+            api_calls_count=api_calls_count,
         )
         return dataset
 
@@ -84,9 +86,22 @@ class InMemoryDatasetRepository(DatasetRepository):
     def add(self, dataset: Dataset):
         self.db.append(dataset)
 
-    def add_version(self, dataset_id: uuid.UUID, snapshot: dict, checksum: str) -> None:
+    def add_version(
+        self,
+        dataset_id: uuid.UUID,
+        snapshot: dict,
+        checksum: str,
+        downloads_count: int,
+        api_calls_count: int,
+    ) -> None:
         self.versions.append(
-            {"dataset_id": dataset_id, "snapshot": snapshot, "checksum": checksum}
+            {
+                "dataset_id": dataset_id,
+                "snapshot": snapshot,
+                "checksum": checksum,
+                "downloads_count": downloads_count,
+                "api_calls_count": api_calls_count,
+            }
         )
 
     def get(self, dataset_id):

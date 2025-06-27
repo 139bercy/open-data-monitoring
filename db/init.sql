@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS dataset_versions (
     timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     dataset_id UUID NOT NULL,
     snapshot JSONB NOT NULL,
-    checksum VARCHAR(64) NOT NULL
+    checksum VARCHAR(64) NOT NULL,
+    downloads_count INT,
+    api_calls_count INT
 );
 
 COMMENT ON TABLE dataset_versions IS 'Historique des versions des métadonnées';

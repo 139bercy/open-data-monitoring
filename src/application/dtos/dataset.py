@@ -13,6 +13,8 @@ class DatasetDTO:
     modified: datetime
     published: bool
     restricted: bool
+    downloads_count: int
+    api_calls_count: int
 
 
 @dataclass
@@ -20,3 +22,5 @@ class DatasetRawDTO:
     dataset_id: UUID
     snapshot: dict
     checksum: str
+    downloads_count: int
+    api_calls_count: int

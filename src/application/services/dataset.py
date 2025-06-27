@@ -20,7 +20,7 @@ class DatasetMonitoring:
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
         try:
             dto: DatasetDTO = adapter.map(**dataset)
-            dataset = Dataset(
+            result = Dataset(
                 id=uuid4(),
                 buid=dto.buid,
                 platform_id=platform.id,
@@ -31,11 +31,13 @@ class DatasetMonitoring:
                 modified=dto.modified,
                 published=dto.published,
                 restricted=dto.restricted,
+                downloads_count=dto.downloads_count,
+                api_calls_count=dto.api_calls_count,
                 raw=dataset,
             )
-            return dataset
+            return result
         except TypeError as e:
             logger.error(
                 f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error"
             )
-            logger.error(f"{platform.type.upper()} - {pprint(dataset)}")
+            # logger.error(f"{platform.type.upper()} - {pprint(dataset)}")

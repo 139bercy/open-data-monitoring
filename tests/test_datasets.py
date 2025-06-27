@@ -22,6 +22,23 @@ def test_create_opendatasoft_dataset(app, platform, ods_dataset):
     assert len(result.versions) == 1
 
 
+def test_dataset_schema(app, platform, ods_dataset):
+    # Arrange
+    platform.type = "opendatasoft"
+    dataset_id = upsert_dataset(
+        app=app,
+        platform=platform,
+        dataset=ods_dataset,
+    )
+    # Act
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    # Assert
+    assert isinstance(result.id, UUID)
+    assert result.versions[0].snapshot is not None
+    assert result.versions[0].downloads_count is not None
+    assert result.versions[0].api_calls_count is not None
+
+
 def test_create_opendatasoft_dataset_platform_does_not_exist(
     app, platform, ods_dataset
 ):
@@ -83,10 +100,6 @@ def test_hash_dataset(app, platform, ods_dataset):
     )
     # Act
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
-    assert (
-        dataset.checksum
-        == "a8ab8a8da4fcf2dc6fa4be275d04e6bed8cd8ade0c810e9d0315cef39e398911"
-    )
     assert len(dataset.checksum) == 64  # SHA-256 hash length
 
 

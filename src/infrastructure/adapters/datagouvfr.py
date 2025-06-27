@@ -50,6 +50,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
         last_update,
         contact_points,
         archived,
+        metrics,
         *args,
         **kwargs,
     ):
@@ -70,5 +71,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             modified=last_update,
             published=True if archived is None else False,
             restricted=False if archived is None else True,
+            downloads_count=metrics.get("resources_downloads", None),
+            api_calls_count=None,
         )
         return dataset

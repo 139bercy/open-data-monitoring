@@ -15,7 +15,6 @@ def load_json_by_id(data, dataset_id) -> dict:
     return next((item for item in data if item["dataset_id"] == dataset_id), None)
 
 
-
 class OpendatasoftAdapter(PlatformAdapter):
     def __init__(self, url: str, key: str, slug: str):
         self.url = url
@@ -58,17 +57,15 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             f"{url}/api/explore/v2.1/monitoring/datasets/ods-datasets-monitoring/exports/json/?where=dataset_id: '{dataset_id}'",
             headers={"Authorization": f"Apikey {key}"},
         )
-        pprint(monitoring.json())
-        # https://data.economie.gouv.fr/api/explore/v2.1/monitoring/datasets/ods-api-monitoring/exports/json/?where=dataset_id:'prix-des-carburants-en-france-flux-instantane-v2'
         try:
             automation_data = automation.json()
             catalog_data = catalog.json()
             monitoring_data = monitoring.json()
-            # monitoring_data = load_json_by_id(monitoring.json(), dataset_id)
-            data = {**automation_data["results"][0], **catalog_data, **monitoring_data[0]
-                    }
-            with open("zzz.json", "w") as file:
-                json.dump(data, file, indent=2)
+            data = {
+                **automation_data["results"][0],
+                **catalog_data,
+                **monitoring_data[0],
+            }
             return data
         except IndexError:
             raise DatasetUnreachableError()
@@ -82,6 +79,8 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         updated_at,
         is_published,
         is_restricted,
+        download_count,
+        api_call_count,
         *args,
         **kwargs,
     ) -> DatasetDTO:
@@ -96,5 +95,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             modified=updated_at,
             published=is_published,
             restricted=is_restricted,
+            downloads_count=download_count,
+            api_calls_count=api_call_count,
         )
         return dataset

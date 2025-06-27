@@ -34,6 +34,6 @@ else:  # pragma: no cover
         user=os.environ["DB_USER"],
         password=os.environ["DB_PASSWORD"],
         host="localhost",
-        port=int(os.environ["DB_PORT"])
+        port=int(os.environ["DB_PORT"]),
     )
     app = App(uow=PostgresUnitOfWork(client))

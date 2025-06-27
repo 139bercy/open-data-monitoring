@@ -4,7 +4,6 @@ from typing import Optional
 from click import UUID
 from psycopg2.extras import Json
 
-from application.dtos.dataset import DatasetRawDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
@@ -121,10 +120,23 @@ class PostgresDatasetRepository(DatasetRepository):
             return Dataset.from_dict(row)
         return None
 
-    def add_version(self, dataset_id: UUID, snapshot: dict, checksum: str) -> None:
+    def add_version(
+        self,
+        dataset_id: UUID,
+        snapshot: dict,
+        checksum: str,
+        downloads_count: int,
+        api_calls_count: int,
+    ) -> None:
         self.client.execute(
-            "INSERT INTO dataset_versions (dataset_id, snapshot, checksum) VALUES (%s, %s, %s)",
-            (str(dataset_id), Json(snapshot), checksum),
+            "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count, api_calls_count) VALUES (%s, %s, %s, %s, %s)",
+            (
+                str(dataset_id),
+                Json(snapshot),
+                checksum,
+                downloads_count,
+                api_calls_count,
+            ),
         )
 
     def get(self, dataset_id) -> Dataset:
@@ -133,7 +145,9 @@ class PostgresDatasetRepository(DatasetRepository):
             SELECT d.*, COALESCE(jsonb_agg(jsonb_build_object(
                 'dataset_id', dv.dataset_id,
                 'snapshot', dv.snapshot,
-                'checksum', dv.checksum
+                'checksum', dv.checksum, 
+                'downloads_count', dv.downloads_count, 
+                'api_calls_count', dv.api_calls_count
             ) ORDER BY dv.timestamp), '[]'::jsonb) AS versions
             FROM datasets d
             LEFT JOIN dataset_versions dv ON dv.dataset_id = d.id

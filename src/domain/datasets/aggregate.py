@@ -19,6 +19,8 @@ class Dataset:
         modified: datetime,
         published: bool,
         restricted: bool,
+        downloads_count: int,
+        api_calls_count: int,
         raw: dict,
         publisher: str = None,
     ):
@@ -32,6 +34,8 @@ class Dataset:
         self.modified = modified
         self.published = published
         self.restricted = restricted
+        self.downloads_count = downloads_count
+        self.api_calls_count = api_calls_count
         self.raw = raw
         self.checksum = None
         self.versions = []
@@ -45,9 +49,20 @@ class Dataset:
         self.checksum = checksum
         return checksum
 
-    def add_version(self, dataset_id: str, snapshot: dict, checksum: str):
+    def add_version(
+        self,
+        dataset_id: str,
+        snapshot: dict,
+        checksum: str,
+        downloads_count: int,
+        api_calls_count: int,
+    ):
         version = DatasetVersion(
-            dataset_id=dataset_id, snapshot=snapshot, checksum=checksum
+            dataset_id=dataset_id,
+            snapshot=snapshot,
+            checksum=checksum,
+            downloads_count=downloads_count,
+            api_calls_count=api_calls_count,
         )
         self.versions.append(version)
 
@@ -77,6 +92,8 @@ class Dataset:
             restricted=bool(data.get("restricted", False)),
             raw=data.get("raw", {}),
             publisher=data.get("publisher"),
+            downloads_count=data.get("downloads_count"),
+            api_calls_count=data.get("api_calls_count"),
         )
 
     def __repr__(self):

@@ -22,15 +22,14 @@ clean-db:
 docker-up:
 	docker compose up --build -d
 
-docker-down:
+docke r-down:
 	docker compose down --remove-orphans -v
 
 dump:
-	docker exec -i open-data-monitoring-db /bin/bash -c "PGPASSWORD=password pg_dump --username postgres odm" > /tmp/dump.sql
-	cp /tmp/dump.sql ./dump.sql
+	docker exec -t open-data-monitoring-db pg_dumpall -U postgres > dump.sql
 
 load:
-	docker exec -i open-data-monitoring-db /bin/bash -c "PGPASSWORD=password psql --username postgres postgres" < ./dump.sql
+	cat dump.sql | docker exec -i open-data-monitoring-db psql -U postgres
 
 exec-db:
 	docker exec -it open-data-monitoring-db psql -U postgres -d postgres
