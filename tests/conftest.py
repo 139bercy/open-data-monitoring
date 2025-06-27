@@ -95,7 +95,7 @@ def db_transaction(setup_test_database):
         user=TEST_USER,
         password=TEST_PASSWORD,
         host=HOST,
-        port=5433,
+        port=int(os.environ["ODM_TEST_DATABASE_PORT"]),
     )
     try:
         yield client
