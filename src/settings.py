@@ -9,9 +9,13 @@ from infrastructure.adapters.in_memory import InMemoryUnitOfWork
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.unit_of_work import PostgresUnitOfWork
 
-load_dotenv(".env")
+from pathlib import Path
 
-BASE_DIR = "db"
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = os.path.join(BASE_DIR, ".env")
+
+load_dotenv(ENV_PATH)
+
 ENV = os.environ["OPEN_DATA_MONITORING_ENV"]
 
 

@@ -15,4 +15,3 @@ WHERE dv.dataset_id = d.id AND p.type = 'opendatasoft' AND dv.snapshot ? 'api_ca
 -- WHERE p.type = 'opendatasoft'
 -- ORDER BY api_calls_count DESC NULLS LAST
 -- LIMIT 10;
-l
