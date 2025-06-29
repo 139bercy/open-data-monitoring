@@ -13,12 +13,12 @@ class DatasetRepository(abc.ABC):  # pragma: no cover
 
     @abc.abstractmethod
     def add_version(
-        self,
-        dataset_id: UUID,
-        snapshot: dict,
-        checksum: str,
-        downloads_count: int,
-        api_calls_count: int,
+            self,
+            dataset_id: UUID,
+            snapshot: dict,
+            checksum: str,
+            downloads_count: int,
+            api_calls_count: int,
     ) -> None:
         raise NotImplementedError
 

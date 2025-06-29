@@ -7,9 +7,7 @@ from freezegun import freeze_time
 from application.commands.platform import SyncPlatform
 from application.handlers import create_platform, upsert_dataset
 from application.services.dataset import DatasetMonitoring
-from application.services.platform import PlatformMonitoring
-from infrastructure.adapters.postgres import (PostgresDatasetRepository,
-                                              PostgresPlatformRepository)
+from infrastructure.adapters.postgres import (PostgresDatasetRepository)
 from infrastructure.unit_of_work import PostgresUnitOfWork
 from settings import App, app
 from tests.fixtures.fixtures import platform_1
@@ -84,7 +82,7 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
 
 
 def test_postgresql_get_dataset_checksum_by_buid(
-    platform_app, platform, db_transaction, ods_dataset
+        platform_app, platform, db_transaction, ods_dataset
 ):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
@@ -104,7 +102,7 @@ def test_postgresql_get_dataset_checksum_by_buid(
 
 
 def test_postgresql_dataset_has_changed(
-    platform_app, platform, db_transaction, ods_dataset
+        platform_app, platform, db_transaction, ods_dataset
 ):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)

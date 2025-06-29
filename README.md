@@ -2,7 +2,7 @@
 
 ## Install
 
-Run `make install` or : 
+Run `make install` or :
 
 ```bash
 $ pip install -r requirements.txt
@@ -11,7 +11,7 @@ $ pip install -r .
 
 ### Env
 
-Add platforms `API_KEYS` in `.env` file : 
+Add platforms `API_KEYS` in `.env` file :
 
 ```
 $ cp .env.sample .env
@@ -31,7 +31,7 @@ $ app --help
 
 ### Create platform
 
-`<MY_API_KEY>` should be located in `.env` file. 
+`<MY_API_KEY>` should be located in `.env` file.
 
 ```text
 <MY_API_KEY>=<API_KEY>

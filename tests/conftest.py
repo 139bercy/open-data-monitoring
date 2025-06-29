@@ -13,7 +13,6 @@ from tests.fixtures.fixtures import platform_1
 
 os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
-
 TEST_DB = "odm_test"
 TEST_USER = "postgres"
 TEST_PASSWORD = os.environ["ODM_TEST_USER_PASSWORD"]
@@ -63,7 +62,7 @@ def setup_test_database():
 
     try:
         with psycopg2.connect(
-            dbname=TEST_DB, user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT
+                dbname=TEST_DB, user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT
         ) as migration_conn, migration_conn.cursor() as cur:
             cur.execute(open("db/init.sql").read())
             migration_conn.commit()

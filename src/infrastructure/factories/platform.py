@@ -7,7 +7,7 @@ from infrastructure.adapters.ods import OpendatasoftAdapter
 
 class PlatformAdapterFactory(AbstractPlatformAdapterFactory):
     def create(
-        self, platform_type: str, url: str, key: str, slug: str
+            self, platform_type: str, url: str, key: str, slug: str
     ) -> PlatformAdapter:
         if platform_type == "opendatasoft":
             return OpendatasoftAdapter(url=url, key=key, slug=slug)

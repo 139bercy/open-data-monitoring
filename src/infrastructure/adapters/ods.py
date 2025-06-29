@@ -1,7 +1,5 @@
 import datetime
-import json
 import os
-from pprint import pprint
 
 import requests
 
@@ -72,17 +70,15 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-        uid,
-        dataset_id,
-        metadata,
-        created_at,
-        updated_at,
-        is_published,
-        is_restricted,
-        download_count,
-        api_call_count,
-        *args,
-        **kwargs,
+            uid,
+            dataset_id,
+            metadata,
+            created_at,
+            updated_at,
+            is_published,
+            is_restricted,
+            *args,
+            **kwargs,
     ) -> DatasetDTO:
         dataset = DatasetDTO(
             buid=uid,
@@ -95,7 +91,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             modified=updated_at,
             published=is_published,
             restricted=is_restricted,
-            downloads_count=download_count,
-            api_calls_count=api_call_count,
+            downloads_count=kwargs.get("download_count", None),
+            api_calls_count=kwargs.get("api_call_count", None),
         )
         return dataset

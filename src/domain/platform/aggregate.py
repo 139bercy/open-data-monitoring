@@ -1,20 +1,19 @@
 import uuid
-from datetime import datetime
 
 
 class Platform:
     def __init__(
-        self,
-        id: uuid,
-        name: str,
-        slug: str,
-        type: str,
-        url: str,
-        organization_id: str,
-        key: str,
-        datasets_count=0,
-        last_sync=None,
-        created_at=None,
+            self,
+            id: uuid,
+            name: str,
+            slug: str,
+            type: str,
+            url: str,
+            organization_id: str,
+            key: str,
+            datasets_count=0,
+            last_sync=None,
+            created_at=None,
     ):
         self.id = id
         self.name = name

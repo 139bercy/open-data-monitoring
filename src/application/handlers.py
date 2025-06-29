@@ -4,7 +4,7 @@ from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.datasets.aggregate import Dataset
 from domain.platform.aggregate import Platform
-from exceptions import DatasetHasNotChanged, DatasetUnreachableError
+from exceptions import DatasetUnreachableError
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 from settings import App

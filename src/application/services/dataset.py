@@ -1,4 +1,3 @@
-from pprint import pprint
 from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
@@ -6,7 +5,6 @@ from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
-from exceptions import DatasetUnreachableError, WrongPlatformTypeError
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 
