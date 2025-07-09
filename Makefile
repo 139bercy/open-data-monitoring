@@ -22,7 +22,7 @@ clean-db:
 docker-up:
 	docker compose up --build -d
 
-docke r-down:
+docker-down:
 	docker compose down --remove-orphans -v
 
 dump:
@@ -33,3 +33,6 @@ load:
 
 exec-db:
 	docker exec -it open-data-monitoring-db psql -U postgres -d postgres
+
+stats:
+	./stats/stats.sh && python stats/push_stats.py
