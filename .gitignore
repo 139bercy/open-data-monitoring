@@ -180,6 +180,10 @@ pyrightconfig.json
 *.iml
 .cursor
 
+## DB
+
+*.dump
+
 ##
 docs
 dev/*
