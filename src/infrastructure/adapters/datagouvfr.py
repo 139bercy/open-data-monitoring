@@ -43,16 +43,16 @@ class DatagouvDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-            id,
-            slug,
-            page,
-            created_at,
-            last_update,
-            contact_points,
-            archived,
-            metrics,
-            *args,
-            **kwargs,
+        id,
+        slug,
+        page,
+        created_at,
+        last_update,
+        contact_points,
+        archived,
+        metrics,
+        *args,
+        **kwargs,
     ):
         publisher = next(
             (

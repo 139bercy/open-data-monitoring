@@ -61,7 +61,7 @@ class InMemoryDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-            id, slug, page, created_at, last_update, published, restricted, *args, **kwargs
+        id, slug, page, created_at, last_update, published, restricted, *args, **kwargs
     ):
         dataset = DatasetDTO(
             buid=id,
@@ -87,12 +87,12 @@ class InMemoryDatasetRepository(DatasetRepository):
         self.db.append(dataset)
 
     def add_version(
-            self,
-            dataset_id: uuid.UUID,
-            snapshot: dict,
-            checksum: str,
-            downloads_count: int,
-            api_calls_count: int,
+        self,
+        dataset_id: uuid.UUID,
+        snapshot: dict,
+        checksum: str,
+        downloads_count: int,
+        api_calls_count: int,
     ) -> None:
         self.versions.append(
             {

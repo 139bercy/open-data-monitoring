@@ -37,7 +37,7 @@ def test_dataset_schema(app, platform, ods_dataset):
 
 
 def test_create_opendatasoft_dataset_platform_does_not_exist(
-        app, platform, ods_dataset
+    app, platform, ods_dataset
 ):
     # Arrange
     platform.type = "opendatasoft"

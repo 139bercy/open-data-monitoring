@@ -9,20 +9,20 @@ from domain.datasets.entities import DatasetVersion
 
 class Dataset:
     def __init__(
-            self,
-            id: UUID,
-            platform_id: UUID,
-            buid: str,
-            slug: str,
-            page: str,
-            created: datetime,
-            modified: datetime,
-            published: bool,
-            restricted: bool,
-            downloads_count: int,
-            api_calls_count: int,
-            raw: dict,
-            publisher: str = None,
+        self,
+        id: UUID,
+        platform_id: UUID,
+        buid: str,
+        slug: str,
+        page: str,
+        created: datetime,
+        modified: datetime,
+        published: bool,
+        restricted: bool,
+        downloads_count: int,
+        api_calls_count: int,
+        raw: dict,
+        publisher: str = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -50,12 +50,12 @@ class Dataset:
         return checksum
 
     def add_version(
-            self,
-            dataset_id: str,
-            snapshot: dict,
-            checksum: str,
-            downloads_count: int,
-            api_calls_count: int,
+        self,
+        dataset_id: str,
+        snapshot: dict,
+        checksum: str,
+        downloads_count: int,
+        api_calls_count: int,
     ):
         version = DatasetVersion(
             dataset_id=dataset_id,

@@ -20,13 +20,13 @@ class PlatformMonitoring:
         return self.repository.all()
 
     def register(
-            self,
-            name: str,
-            slug: str,
-            organization_id: str,
-            type: str,
-            url: str,
-            key: str = None,
+        self,
+        name: str,
+        slug: str,
+        organization_id: str,
+        type: str,
+        url: str,
+        key: str = None,
     ):
         platform = Platform(
             id=uuid.uuid4(),

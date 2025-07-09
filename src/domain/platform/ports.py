@@ -39,7 +39,7 @@ class DatasetAdapter(abc.ABC):  # pragma: no cover
 class AbstractPlatformAdapterFactory(abc.ABC):
     @abc.abstractmethod
     def create(
-            self, platform_type: str, url: str, key: str, slug: str
+        self, platform_type: str, url: str, key: str, slug: str
     ) -> PlatformAdapter:
         raise NotImplementedError
 

@@ -15,6 +15,7 @@ clean:
 	find . -name .DS_Store -print -delete
 	black src tests
 	isort .
+	rm -rf htmlcov .coverage .cursor .pytest_cache
 
 clean-db:
 	rm -rf db/dev/*

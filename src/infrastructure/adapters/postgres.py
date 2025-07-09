@@ -121,12 +121,12 @@ class PostgresDatasetRepository(DatasetRepository):
         return None
 
     def add_version(
-            self,
-            dataset_id: UUID,
-            snapshot: dict,
-            checksum: str,
-            downloads_count: int,
-            api_calls_count: int,
+        self,
+        dataset_id: UUID,
+        snapshot: dict,
+        checksum: str,
+        downloads_count: int,
+        api_calls_count: int,
     ) -> None:
         self.client.execute(
             "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count, api_calls_count) VALUES (%s, %s, %s, %s, %s)",
