@@ -52,7 +52,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     with app.uow:
         existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)
         if existing_checksum == instance.checksum:
-            logger.info(
+            logger.debug(
                 f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum, "
                 f"skipping."
             )
