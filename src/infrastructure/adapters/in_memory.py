@@ -84,7 +84,11 @@ class InMemoryDatasetRepository(DatasetRepository):
         self.versions = []
 
     def add(self, dataset: Dataset):
-        self.db.append(dataset)
+        for i, existing in enumerate(self.db):
+            if existing.id == dataset.id:
+                self.db[i] = dataset  # Update existing entry
+                return
+        self.db.append(dataset)  # Insert if not found
 
     def add_version(
         self,

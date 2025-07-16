@@ -17,7 +17,7 @@ DUMP_FILE="odm-${DATE}.dump"
 BACKUP_FILE="odm-${DATE}-backup.dump"
 
 echo "Dumping remote database from $SERVER:$SOURCE_PORT..."
-ssh "$SERVER" "sudo -u postgres pg_dump -h localhost -p $SOURCE_PORT -d odm -F c" > "$DUMP_FILE"
+ssh -t "$SERVER" "sudo -u postgres /usr/local/bin/pg_dump -h localhost -p $SOURCE_PORT -d odm -F c" > "$DUMP_FILE"
 
 echo "Creating local backup of current database..."
 pg_dump -h localhost -U postgres -d odm -p "$DEST_PORT" -F c -f "$BACKUP_FILE"

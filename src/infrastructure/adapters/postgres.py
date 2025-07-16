@@ -92,8 +92,20 @@ class PostgresDatasetRepository(DatasetRepository):
     def add(self, dataset: Dataset) -> None:
         try:
             self.client.execute(
-                """INSERT INTO datasets (id, platform_id, buid, slug, page, publisher, created, modified, published, restricted)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                INSERT INTO datasets (
+                    id, platform_id, buid, slug, page, publisher, created, modified, published, restricted
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    platform_id = EXCLUDED.platform_id,
+                    buid = EXCLUDED.buid,
+                    slug = EXCLUDED.slug,
+                    page = EXCLUDED.page,
+                    publisher = EXCLUDED.publisher,
+                    created = EXCLUDED.created,
+                    modified = EXCLUDED.modified,
+                    published = EXCLUDED.published,
+                    restricted = EXCLUDED.restricted
                 """,
                 (
                     str(dataset.id),

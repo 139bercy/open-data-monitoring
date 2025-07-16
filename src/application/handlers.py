@@ -62,9 +62,10 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             logger.info(
                 f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created"
             )
+            instance.id = existing_dataset.id
+            app.dataset.repository.add(dataset=instance)
             add_version(app=app, dataset_id=existing_dataset.id, instance=instance)
             dataset_id = existing_dataset.id
-
         else:
             logger.warn(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
             app.dataset.repository.add(dataset=instance)

@@ -38,4 +38,3 @@ class DatasetMonitoring:
             logger.error(
                 f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error"
             )
-            # logger.error(f"{platform.type.upper()} - {pprint(dataset)}")
