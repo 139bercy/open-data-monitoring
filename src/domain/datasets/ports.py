@@ -16,7 +16,7 @@ class DatasetRepository(abc.ABC):  # pragma: no cover
         self,
         dataset_id: UUID,
         snapshot: dict,
-        checksum: str,
+        checksum: str | None,
         downloads_count: int,
         api_calls_count: int,
     ) -> None:

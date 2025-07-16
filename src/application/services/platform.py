@@ -26,7 +26,7 @@ class PlatformMonitoring:
         organization_id: str,
         type: str,
         url: str,
-        key: str = None,
+        key: str | None = None,
     ):
         platform = Platform(
             id=uuid.uuid4(),

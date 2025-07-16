@@ -18,6 +18,9 @@ class PlatformRepository(Protocol):  # pragma: no cover
     def save_sync(self, platform_id, payload):
         raise NotImplementedError
 
+    def get_by_domain(self, domain) -> Platform:
+        raise NotImplementedError
+
 
 class PlatformAdapter(Protocol):
     def fetch(self) -> dict:  # pragma: no cover

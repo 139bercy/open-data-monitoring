@@ -1,4 +1,5 @@
 from uuid import uuid4
+from typing import cast
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
@@ -14,10 +15,10 @@ class DatasetMonitoring:
         self.factory: DatasetAdapterFactory = DatasetAdapterFactory()
         self.repository: DatasetRepository = repository
 
-    def add_dataset(self, platform: Platform, dataset: dict) -> Dataset:
+    def add_dataset(self, platform: Platform, dataset: dict) -> Dataset | None:
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
         try:
-            dto: DatasetDTO = adapter.map(**dataset)
+            dto: DatasetDTO = cast(DatasetDTO, adapter.map(**dataset))
             result = Dataset(
                 id=uuid4(),
                 buid=dto.buid,

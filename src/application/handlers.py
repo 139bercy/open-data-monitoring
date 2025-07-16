@@ -64,19 +64,19 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             )
             instance.id = existing_dataset.id
             app.dataset.repository.add(dataset=instance)
-            add_version(app=app, dataset_id=existing_dataset.id, instance=instance)
+            add_version(app=app, dataset_id=str(existing_dataset.id), instance=instance)
             dataset_id = existing_dataset.id
         else:
             logger.warn(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
             app.dataset.repository.add(dataset=instance)
-            add_version(app=app, dataset_id=instance.id, instance=instance)
+            add_version(app=app, dataset_id=str(instance.id), instance=instance)
             dataset_id = instance.id
         return dataset_id
 
 
 def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     app.dataset.repository.add_version(
-        dataset_id=dataset_id,
+        dataset_id=UUID(dataset_id),
         snapshot=instance.raw,
         checksum=instance.checksum,
         downloads_count=instance.downloads_count,
@@ -84,7 +84,7 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     )
 
 
-def fetch_dataset(platform: Platform, dataset_id: str) -> dict:
+def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     try:
