@@ -2,12 +2,46 @@
 
 ## Install
 
+### Install dependencies
+
 Run `make install` or :
 
 ```bash
 $ pip install -r requirements.txt
 $ pip install -r . 
 ```
+
+### Deploy database
+
+Database is deployed with docker. Install it before on your system.
+
+Run `make docker-up` or :
+
+```bash
+$ docker compose up --build -d
+```
+
+You can also run `make docker-down` to stop the container or :
+
+```bash
+$ docker compose down --remove-orphans -v
+```
+
+### Load data
+
+Run :
+
+```bash
+$ python utils/tasks.py
+```
+
+Alternatively, you can run :
+
+```bash
+$ make load
+```
+
+This will load a file named "dump.sql" in the root of the project if it exists.
 
 ### Env
 
@@ -16,10 +50,6 @@ Add platforms `API_KEYS` in `.env` file :
 ```
 $ cp .env.sample .env
 ```
-
-### Infrastructure
-
-Docker commands are in the `Makefile`
 
 ## Usage
 
