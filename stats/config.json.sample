@@ -1,0 +1,13 @@
+{
+  "database": "odm"
+  "port": 5432,
+  "jobs": [
+    {
+      "sql": "stats/path-to-script.sql",
+      "output": "filename.csv",
+      "dataset_uid": "ods-dataset-uid",
+      "label": "dataset label",
+      "frequency": "daily/weekly"
+    },
+  ]
+}

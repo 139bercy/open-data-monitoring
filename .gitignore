@@ -187,7 +187,6 @@ pyrightconfig.json
 ##
 docs
 dev/*
-stats/*
 tmp.py
 *.json
 *.db*
