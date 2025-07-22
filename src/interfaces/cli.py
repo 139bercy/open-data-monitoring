@@ -79,6 +79,9 @@ def cli_add_dataset(url, output):
     """Create new dataset"""
     platform = find_platform_from_url(app=app, url=url)
     dataset_id = find_dataset_id_from_url(app=app, url=url)
+    if dataset_id is None:
+        logger.warning(f"Dataset not found for url: {url}")
+        return
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
     if output:
         pprint(dataset)

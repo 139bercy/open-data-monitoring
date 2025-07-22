@@ -63,6 +63,10 @@ class PostgresPlatformRepository(PlatformRepository):
     def get_by_domain(self, domain) -> Platform:
         query = "SELECT * FROM platforms WHERE position(%s in url) > 0;"
         row = self.client.fetchone(query=query, params=(domain,))
+
+        if row is None:
+            raise ValueError(f"Platform not found for domain: {domain}")
+
         row["id"] = uuid.UUID(row["id"])
         return Platform(**{k: v for k, v in row.items()})
 

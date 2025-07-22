@@ -31,13 +31,18 @@ def sync_platform(app: App, platform_id: UUID) -> None:
         app.platform.sync_platform(platform_id=cmd.id)
 
 
-def find_platform_from_url(app: App, url: str) -> Platform:
+def find_platform_from_url(app: App, url: str) -> Platform | None:
     with app.uow:
-        return app.platform.repository.get_by_domain(get_base_url(url))
+        try:
+            return app.platform.repository.get_by_domain(get_base_url(url))
+        except ValueError:
+            return None 
 
 
-def find_dataset_id_from_url(app: App, url: str) -> str:
+def find_dataset_id_from_url(app: App, url: str) -> str | None:
     platform = find_platform_from_url(app=app, url=url)
+    if platform is None:
+        return None
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     dataset_id = adapter.find_dataset_id(url=url)
@@ -48,6 +53,8 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     if not dataset:
         raise DatasetUnreachableError(f"{platform.type.upper()} - Dataset not found. ")
     instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
+    if instance is None:
+        return None
     instance.calculate_hash()
     with app.uow:
         existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)

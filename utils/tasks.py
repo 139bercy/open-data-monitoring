@@ -153,6 +153,8 @@ def process_data_eco():
                 app=app, url="https://data.economie.gouv.fr"
             )
             try:
+                if platform is None:
+                    continue
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
             except Exception as e:
                 logger.debug(f'OPENDATASOFT - {dataset["dataset_id"]} - {e}')

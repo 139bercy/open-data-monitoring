@@ -15,7 +15,9 @@ class DatasetMonitoring:
         self.factory: DatasetAdapterFactory = DatasetAdapterFactory()
         self.repository: DatasetRepository = repository
 
-    def add_dataset(self, platform: Platform, dataset: dict) -> Dataset | None:
+    def add_dataset(self, platform: Platform | None, dataset: dict) -> Dataset | None:
+        if platform is None:
+            return None
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
         try:
             dto: DatasetDTO = cast(DatasetDTO, adapter.map(**dataset))
