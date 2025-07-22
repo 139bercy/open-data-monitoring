@@ -38,13 +38,14 @@ $ app --help
 ```
 
 ```bash 
-$ app platform create -n "data.economie.gouv.fr" -t opendatasoft -u "https://data.economie.gouv.fr" -k DATA_ECO_API_KEY -s "data-economie" -o "data.economie.gouv.fr"                          
+$ app platform create -n "data.example.com" -t opendatasoft -u "https://data.example.com" -k DATA_EXAMPLE_API_KEY -s 
+"data-example" -o "data.example.com"                          
 ```
 
 ### Add dataset
 
 ```bash
-$ app dataset add https://data.economie.gouv.fr/explore/dataset/hello-world/
+$ app dataset add https://data.example.com/explore/dataset/hello-world/
 ```
 
 ---
