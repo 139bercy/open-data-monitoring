@@ -1,0 +1,1 @@
+\copy (select dv.timestamp, p.name, p.slug as platform_slug, d.publisher, d.created, d.modified, d.slug, dv.downloads_count, dv.api_calls_count from dataset_versions dv JOIN datasets d ON d.id = dv.dataset_id JOIN platforms p ON p.id = d.platform_id where d.restricted is FALSE and d.published is true order by dv.timestamp) to STDOUT with csv HEADER;

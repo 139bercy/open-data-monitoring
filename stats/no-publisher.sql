@@ -1,0 +1,1 @@
+\COPY (SELECT timestamp, p.type, d.slug, d.page, d.publisher, d.created, d.modified, d.published::text AS published, d.restricted::text AS restricted, d.last_sync FROM datasets d JOIN platforms p ON d.platform_id = p.id WHERE publisher IS NULL AND p.type = 'opendatasoft' ORDER BY created_at DESC) TO STDOUT WITH CSV HEADER;
