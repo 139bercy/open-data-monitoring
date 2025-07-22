@@ -186,3 +186,14 @@ class PostgresDatasetRepository(DatasetRepository):
         if data is not None:
             return data.get("checksum", None)
         return
+
+    def get_publishers_stats(self) -> list[dict[str, any]]:
+        """Récupère les statistiques des publishers (nom et nombre de datasets)"""
+        query = """
+        SELECT publisher, COUNT(*) AS dataset_count
+        FROM datasets
+        WHERE publisher IS NOT NULL
+        GROUP BY publisher
+        ORDER BY publisher;
+        """
+        return self.client.fetchall(query) or []

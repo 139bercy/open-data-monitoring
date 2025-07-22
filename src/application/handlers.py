@@ -99,3 +99,13 @@ def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
         return dataset
     except DatasetUnreachableError:
         logger.error(f"{platform.type.upper()} - Dataset '{dataset_id}' not found")
+        return None
+
+
+def get_publishers_stats(app: App) -> list[dict[str, any]]:
+    """
+    Récupère les statistiques des publishers via la méthode repository propre.
+    Version DDD-compliant pour remplacer l'accès direct au client dans la CLI.
+    """
+    with app.uow:
+        return app.dataset.repository.get_publishers_stats()

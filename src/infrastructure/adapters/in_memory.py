@@ -1,6 +1,7 @@
 import datetime
 from uuid import UUID
 from typing import Optional
+from collections import Counter
 
 from application.dtos.dataset import DatasetDTO, DatasetRawDTO
 from domain.datasets.aggregate import Dataset
@@ -142,6 +143,16 @@ class InMemoryDatasetRepository(DatasetRepository):
         if dataset is not None:
             return dataset
         return
+
+    def get_publishers_stats(self) -> list[dict[str, any]]:
+        """Récupère les statistiques des publishers (nom et nombre de datasets) - Version in-memory"""
+        publishers = [dataset.publisher for dataset in self.db if dataset.publisher]
+        publisher_counts = Counter(publishers)
+        
+        return [
+            {"publisher": publisher, "dataset_count": count}
+            for publisher, count in sorted(publisher_counts.items())
+        ]
 
 
 class InMemoryUnitOfWork(UnitOfWork):

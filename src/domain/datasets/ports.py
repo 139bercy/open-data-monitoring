@@ -33,3 +33,8 @@ class DatasetRepository(abc.ABC):  # pragma: no cover
     @abc.abstractmethod
     def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_publishers_stats(self) -> list[dict[str, any]]:
+        """Récupère les statistiques des publishers (nom et nombre de datasets)"""
+        raise NotImplementedError
