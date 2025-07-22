@@ -29,6 +29,12 @@ $ docker compose down --remove-orphans -v
 
 ### Load data
 
+Before running the tasks, you need to create a platform for the domain you want to monitor :
+
+```bash
+TODO : add commands to create platforms
+```
+
 Run :
 
 ```bash
