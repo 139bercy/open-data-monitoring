@@ -31,9 +31,26 @@ $ docker compose down --remove-orphans -v
 
 Before running the tasks, you need to create a platform for the domain you want to monitor :
 
-```bash
-TODO : add commands to create platforms
+#### Create platform
+
+`<MY_API_KEY>` should be located in `.env` file.
+
+```text
+<MY_API_KEY>=<API_KEY>
 ```
+
+```bash 
+$ app platform create -n "data.example.com" -t opendatasoft -u "https://data.example.com" -k DATA_EXAMPLE_API_KEY -s 
+"data-example" -o "data.example.com"                          
+```
+
+#### Add dataset
+
+```bash
+$ app dataset add https://data.example.com/explore/dataset/hello-world/
+```
+
+This are examples values, you need to replace them with your own.
 
 Run :
 
@@ -63,25 +80,6 @@ $ cp .env.sample .env
 
 ```
 $ app --help
-```
-
-### Create platform
-
-`<MY_API_KEY>` should be located in `.env` file.
-
-```text
-<MY_API_KEY>=<API_KEY>
-```
-
-```bash 
-$ app platform create -n "data.example.com" -t opendatasoft -u "https://data.example.com" -k DATA_EXAMPLE_API_KEY -s 
-"data-example" -o "data.example.com"                          
-```
-
-### Add dataset
-
-```bash
-$ app dataset add https://data.example.com/explore/dataset/hello-world/
 ```
 
 ---
