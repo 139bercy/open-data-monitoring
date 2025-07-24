@@ -12,7 +12,7 @@ if __name__ == "__main__":
     config = {
         "app": "interfaces.api.main:api_app",
         "host": "0.0.0.0",
-        "port": os.environ["API_PORT"],
+        "port": int(os.environ["API_PORT"]),
     }
     
     if ENV == "DEV":
