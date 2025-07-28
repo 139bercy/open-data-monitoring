@@ -10,7 +10,6 @@ from settings import app as domain_app
 
 router = APIRouter(prefix="/common", tags=["common"])
 
-
 @router.get("/publishers", response_model=PublishersResponse)
 async def get_publishers_endpoint():
     """
