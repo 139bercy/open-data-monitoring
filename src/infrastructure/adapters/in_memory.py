@@ -1,6 +1,7 @@
 import datetime
-import uuid
+from uuid import UUID
 from typing import Optional
+from collections import Counter
 
 from application.dtos.dataset import DatasetDTO, DatasetRawDTO
 from domain.datasets.aggregate import Dataset
@@ -19,16 +20,24 @@ class InMemoryPlatformRepository(PlatformRepository):
     def save(self, data):
         self.db.append(data)
 
-    def get(self, platform_id: uuid) -> Platform:
+    def get(self, platform_id: UUID) -> Platform:
         syncs = [item for item in self.syncs if item["platform_id"] == platform_id]
         platform = next((item for item in self.db if item.id == platform_id), None)
         if len(syncs) is not None:
             for sync in syncs:
-                platform.add_sync(sync)
+                if platform is not None:
+                    platform.add_sync(sync)
+
+        if platform is None:
+            raise ValueError(f"Platform with id {platform_id} not found")
+
         return platform
 
     def get_by_domain(self, domain) -> Platform:
-        return next((item for item in self.db if domain in item.url), None)
+        platform = next((item for item in self.db if domain in item.url), None)
+        if platform is not None:
+            return platform
+        raise ValueError(f"Platform with domain {domain} not found")
 
     def all(self):
         return self.db
@@ -61,7 +70,7 @@ class InMemoryDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-        id, slug, page, created_at, last_update, published, restricted, *args, **kwargs
+        id, slug, page, created_at, last_update, published, restricted, download_count, api_calls_count, *args, **kwargs
     ):
         dataset = DatasetDTO(
             buid=id,
@@ -92,7 +101,7 @@ class InMemoryDatasetRepository(DatasetRepository):
 
     def add_version(
         self,
-        dataset_id: uuid.UUID,
+        dataset_id: UUID,
         snapshot: dict,
         checksum: str,
         downloads_count: int,
@@ -110,14 +119,17 @@ class InMemoryDatasetRepository(DatasetRepository):
 
     def get(self, dataset_id):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
-        next(
-            (
-                dataset.add_version(**item)
-                for item in self.versions
-                if item["dataset_id"] == dataset_id
-            ),
-            None,
-        )
+        if dataset is not None:
+            next(
+                (
+                    dataset.add_version(**item)
+                    for item in self.versions
+                    if item["dataset_id"] == dataset_id
+                ),
+                None,
+            )
+        if dataset is None:
+            raise ValueError(f"Dataset with id {dataset_id} not found")
         return dataset
 
     def get_checksum_by_buid(self, dataset_buid) -> Optional[DatasetRawDTO]:
@@ -131,6 +143,16 @@ class InMemoryDatasetRepository(DatasetRepository):
         if dataset is not None:
             return dataset
         return
+
+    def get_publishers_stats(self) -> list[dict[str, any]]:
+        """Récupère les statistiques des publishers (nom et nombre de datasets) - Version in-memory"""
+        publishers = [dataset.publisher for dataset in self.db if dataset.publisher]
+        publisher_counts = Counter(publishers)
+        
+        return [
+            {"publisher": publisher, "dataset_count": count}
+            for publisher, count in sorted(publisher_counts.items())
+        ]
 
 
 class InMemoryUnitOfWork(UnitOfWork):

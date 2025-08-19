@@ -2,6 +2,8 @@
 
 ## Install
 
+### Install dependencies
+
 Run `make install` or :
 
 ```bash
@@ -9,27 +11,27 @@ $ pip install -r requirements.txt
 $ pip install -r . 
 ```
 
-### Env
+### Deploy database
 
-Add platforms `API_KEYS` in `.env` file :
+Database is deployed with docker. Install it before on your system.
 
-```
-$ cp .env.sample .env
-```
+Run `make docker-up` or :
 
-### Infrastructure
-
-Docker commands are in the `Makefile`
-
-## Usage
-
-### CLI
-
-```
-$ app --help
+```bash
+$ docker compose up --build -d
 ```
 
-### Create platform
+You can also run `make docker-down` to stop the container or :
+
+```bash
+$ docker compose down --remove-orphans -v
+```
+
+### Load data
+
+Before running the tasks, you need to create a platform for the domain you want to monitor :
+
+#### Create platform
 
 `<MY_API_KEY>` should be located in `.env` file.
 
@@ -42,10 +44,42 @@ $ app platform create -n "data.example.com" -t opendatasoft -u "https://data.exa
 "data-example" -o "data.example.com"                          
 ```
 
-### Add dataset
+#### Add dataset
 
 ```bash
 $ app dataset add https://data.example.com/explore/dataset/hello-world/
+```
+
+This are examples values, you need to replace them with your own.
+
+Run :
+
+```bash
+$ python utils/tasks.py
+```
+
+Alternatively, you can run :
+
+```bash
+$ make load
+```
+
+This will load a file named "dump.sql" in the root of the project if it exists.
+
+### Env
+
+Add platforms `API_KEYS` in `.env` file :
+
+```
+$ cp .env.sample .env
+```
+
+## Usage
+
+### CLI
+
+```
+$ app --help
 ```
 
 ---

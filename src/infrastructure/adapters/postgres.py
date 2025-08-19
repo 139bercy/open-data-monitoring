@@ -63,6 +63,10 @@ class PostgresPlatformRepository(PlatformRepository):
     def get_by_domain(self, domain) -> Platform:
         query = "SELECT * FROM platforms WHERE position(%s in url) > 0;"
         row = self.client.fetchone(query=query, params=(domain,))
+
+        if row is None:
+            raise ValueError(f"Platform not found for domain: {domain}")
+
         row["id"] = uuid.UUID(row["id"])
         return Platform(**{k: v for k, v in row.items()})
 
@@ -182,3 +186,14 @@ class PostgresDatasetRepository(DatasetRepository):
         if data is not None:
             return data.get("checksum", None)
         return
+
+    def get_publishers_stats(self) -> list[dict[str, any]]:
+        """Récupère les statistiques des publishers (nom et nombre de datasets)"""
+        query = """
+        SELECT publisher, COUNT(*) AS dataset_count
+        FROM datasets
+        WHERE publisher IS NOT NULL
+        GROUP BY publisher
+        ORDER BY publisher;
+        """
+        return self.client.fetchall(query) or []

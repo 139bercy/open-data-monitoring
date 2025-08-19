@@ -1,16 +1,16 @@
-import uuid
+from uuid import UUID
 
 
 class Platform:
     def __init__(
         self,
-        id: uuid,
+        id: UUID,
         name: str,
         slug: str,
         type: str,
         url: str,
         organization_id: str,
-        key: str,
+        key: str | None,
         datasets_count=0,
         last_sync=None,
         created_at=None,

@@ -17,7 +17,6 @@ load_dotenv(ENV_PATH)
 
 ENV = os.environ["OPEN_DATA_MONITORING_ENV"]
 
-
 class App:
     def __init__(self, uow: UnitOfWork):
         self.uow = uow
