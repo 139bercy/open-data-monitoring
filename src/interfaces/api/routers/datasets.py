@@ -3,7 +3,8 @@ Router pour les endpoints datasets (STUB)
 TODO: Implémenter les endpoints dataset
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+from uuid import UUID
 from interfaces.api.schemas.datasets import DatasetCreateResponse, DatasetResponse, DatasetAPI
 from settings import app as domain_app
 from pprint import pprint
@@ -66,6 +67,260 @@ async def get_tests():
             datasets=datasets_list,
             total_datasets=len(datasets_list)
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/")
+@router.get("")
+async def list_datasets(
+    platform_id: str | None = None,
+    publisher: str | None = None,
+    created_from: str | None = None,
+    created_to: str | None = None,
+    modified_from: str | None = None,
+    modified_to: str | None = None,
+    q: str | None = None,
+    sort_by: str = Query("modified", pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count)$"),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
+    page: int = 1,
+    page_size: int = 25,
+    include_counts: bool = True,
+):
+    """
+    Liste paginée de datasets. Implémentation minimale pour le front UC1.
+    - Recherche ILIKE uniquement sur slug (q)
+    - Filtres basiques platform_id/publisher/created/modified
+    - Tri limité sur created/modified/publisher
+    - include_counts ignoré pour l'instant (à implémenter avec dataset_versions)
+    """
+    try:
+        where_clauses = ["TRUE"]
+        params: list = []
+
+        if platform_id:
+            where_clauses.append("platform_id = %s")
+            params.append(platform_id)
+        if publisher:
+            where_clauses.append("publisher = %s")
+            params.append(publisher)
+        if q:
+            where_clauses.append("slug ILIKE %s")
+            params.append(f"%{q}%")
+        if created_from:
+            where_clauses.append("created >= %s")
+            params.append(created_from)
+        if created_to:
+            where_clauses.append("created <= %s")
+            params.append(created_to)
+        if modified_from:
+            where_clauses.append("modified >= %s")
+            params.append(modified_from)
+        if modified_to:
+            where_clauses.append("modified <= %s")
+            params.append(modified_to)
+
+        where_sql = " AND ".join(where_clauses)
+
+        # Count
+        count_query = f"SELECT COUNT(*) AS cnt FROM datasets WHERE {where_sql}"
+        total_rows = domain_app.dataset.repository.client.fetchall(count_query, tuple(params))
+        total = int(total_rows[0]["cnt"]) if total_rows else 0
+
+        # Sorting (NULL-safe): treat NULL as 0 for counts, and as '' for text
+        sort_column = sort_by if sort_by in ("created", "modified", "publisher", "title", "api_calls_count", "downloads_count") else "modified"
+        sort_dir = "DESC" if order.lower() != "asc" else "ASC"
+        if sort_column == "title":
+            order_sql = "COALESCE(title, '')"
+        elif sort_column == "api_calls_count":
+            order_sql = "COALESCE(lv.api_calls_count, 0)"
+        elif sort_column == "downloads_count":
+            order_sql = "COALESCE(lv.downloads_count, 0)"
+        elif sort_column == "versions_count":
+            order_sql = "COALESCE(vc.versions_count, 0)"
+        elif sort_column == "publisher":
+            order_sql = "COALESCE(publisher, '')"
+        else:
+            order_sql = sort_column
+
+        # Pagination
+        page = max(1, page)
+        page_size = max(1, min(100, page_size))
+        offset = (page - 1) * page_size
+
+        # Latest snapshot per dataset to derive a title and counts (works for datagouv and opendatasoft shapes)
+        list_query = f"""
+            WITH latest_versions AS (
+                SELECT DISTINCT ON (dataset_id) dataset_id, snapshot, downloads_count, api_calls_count, timestamp
+                FROM dataset_versions
+                ORDER BY dataset_id, timestamp DESC
+            ),
+            version_counts AS (
+                SELECT dataset_id, COUNT(*) AS versions_count
+                FROM dataset_versions
+                GROUP BY dataset_id
+            )
+            SELECT d.id,
+                   d.platform_id,
+                   d.publisher,
+                   d.created,
+                   d.modified,
+                   d.slug,
+                   d.page,
+                   COALESCE(
+                       (lv.snapshot ->> 'title'),
+                       (lv.snapshot -> 'metas' ->> 'title')
+                   ) AS title,
+                   lv.api_calls_count AS api_calls_count,
+                   lv.downloads_count AS downloads_count,
+                   COALESCE(vc.versions_count, 0) AS versions_count
+            FROM datasets d
+            LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
+            LEFT JOIN version_counts vc ON vc.dataset_id = d.id
+            WHERE {where_sql}
+            ORDER BY {order_sql} {sort_dir}
+            LIMIT %s OFFSET %s
+        """
+        list_params = params + [page_size, offset]
+        rows = domain_app.dataset.repository.client.fetchall(list_query, tuple(list_params))
+
+        items = [
+            {
+                "id": r["id"],
+                "platform_id": r["platform_id"],
+                "publisher": r.get("publisher"),
+                "title": r.get("title"),
+                "created": r["created"].isoformat() if r.get("created") else None,
+                "modified": r["modified"].isoformat() if r.get("modified") else None,
+                "downloads_count": r.get("downloads_count"),
+                "api_calls_count": r.get("api_calls_count"),
+                "versions_count": r.get("versions_count"),
+                "page": r.get("page"),
+            }
+            for r in rows
+        ]
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{dataset_id}")
+async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
+    """
+    Détail d'un dataset avec snapshot courant. Optionnellement inclut la liste des snapshots.
+    """
+    try:
+        # Base dataset
+        ds_query = (
+            "SELECT id, platform_id, buid, slug, page, publisher, created, modified, published, restricted "
+            "FROM datasets WHERE id = %s"
+        )
+        rows = domain_app.dataset.repository.client.fetchall(ds_query, (str(dataset_id),))
+        if not rows:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        d = rows[0]
+
+        # Latest version for current snapshot
+        cur_query = (
+            "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, "
+            "COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
+            "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT 1"
+        )
+        cur_rows = domain_app.dataset.repository.client.fetchall(cur_query, (str(dataset_id),))
+        current_snapshot = None
+        if cur_rows:
+            r = cur_rows[0]
+            current_snapshot = {
+                "id": r["id"],
+                "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                "downloads_count": r.get("downloads_count"),
+                "api_calls_count": r.get("api_calls_count"),
+                "page": d.get("page"),
+                "title": r.get("title"),
+                "data": r.get("snapshot"),
+            }
+
+        # Optional snapshots list (not paginated here, front uses /versions normally)
+        snapshots = None
+        if include_snapshots:
+            list_rows = domain_app.dataset.repository.client.fetchall(
+                "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
+                "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT 50",
+                (str(dataset_id),),
+            )
+            snapshots = [
+                {
+                    "id": r["id"],
+                    "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                    "downloads_count": r.get("downloads_count"),
+                    "api_calls_count": r.get("api_calls_count"),
+                    "page": d.get("page"),
+                    "title": r.get("title"),
+                    "data": r.get("snapshot"),
+                }
+                for r in list_rows
+            ]
+
+        return {
+            "id": d["id"],
+            "platform_id": d["platform_id"],
+            "publisher": d.get("publisher"),
+            "buid": d["buid"],
+            "slug": d["slug"],
+            "page": d.get("page"),
+            "created": d["created"].isoformat() if d.get("created") else None,
+            "modified": d["modified"].isoformat() if d.get("modified") else None,
+            "published": d.get("published"),
+            "restricted": d.get("restricted"),
+            "current_snapshot": current_snapshot,
+            "snapshots": snapshots,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{dataset_id}/versions")
+async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int = 10, include_data: bool = False):
+    """
+    Liste paginée des versions (snapshots) d'un dataset.
+    """
+    try:
+        page = max(1, page)
+        page_size = max(1, min(100, page_size))
+        offset = (page - 1) * page_size
+
+        cnt_rows = domain_app.dataset.repository.client.fetchall(
+            "SELECT COUNT(*) AS cnt FROM dataset_versions WHERE dataset_id = %s",
+            (str(dataset_id),),
+        )
+        total = int(cnt_rows[0]["cnt"]) if cnt_rows else 0
+
+        rows = domain_app.dataset.repository.client.fetchall(
+            "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
+            "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s",
+            (str(dataset_id), page_size, offset),
+        )
+        items = [
+            {
+                "id": r["id"],
+                "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                "downloads_count": r.get("downloads_count"),
+                "api_calls_count": r.get("api_calls_count"),
+                "page": None,
+                "title": r.get("title"),
+                "data": r.get("snapshot") if include_data else None,
+            }
+            for r in rows
+        ]
+        return {"items": items, "total": total, "page": page, "page_size": page_size}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

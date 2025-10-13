@@ -1,0 +1,214 @@
+import { useEffect, useMemo, useState } from "react";
+import { Accordion } from "@codegouvfr/react-dsfr/Accordion";
+import { createModal } from "@codegouvfr/react-dsfr/Modal";
+import { Button } from "@codegouvfr/react-dsfr/Button";
+import { Alert } from "@codegouvfr/react-dsfr/Alert";
+import type { DatasetDetail, SnapshotVersion } from "../types/datasets";
+import { getDatasetVersions } from "../api/datasets";
+
+export const datasetDetailsModal = createModal({
+    id: "dataset-details-modal",
+    isOpenedByDefault: false
+});
+
+export type DatasetDetailsModalProps = Readonly<{
+    dataset?: DatasetDetail | null;
+    platformName?: string | null;
+    platformUrl?: string | null;
+}>;
+
+type DiffSummary = {
+    added: string[];
+    removed: string[];
+    changed: string[];
+};
+
+function flattenObject(value: unknown, prefix = ""): Record<string, unknown> {
+    if (value === null || typeof value !== "object") {
+        return { [prefix || "value"]: value };
+    }
+    const out: Record<string, unknown> = {};
+    const obj = value as Record<string, unknown>;
+    for (const key of Object.keys(obj)) {
+        const next = prefix ? `${prefix}.${key}` : key;
+        const v = obj[key];
+        if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+            Object.assign(out, flattenObject(v, next));
+        } else {
+            out[next] = v;
+        }
+    }
+    return out;
+}
+
+function computeDiff(base: unknown, other: unknown): DiffSummary {
+    const a = flattenObject(base ?? {});
+    const b = flattenObject(other ?? {});
+    const added: string[] = [];
+    const removed: string[] = [];
+    const changed: string[] = [];
+    const aKeys = new Set(Object.keys(a));
+    const bKeys = new Set(Object.keys(b));
+    for (const k of bKeys) {
+        if (!aKeys.has(k)) {
+            added.push(k);
+        } else {
+            const av = JSON.stringify(a[k]);
+            const bv = JSON.stringify(b[k]);
+            if (av !== bv) changed.push(k);
+        }
+    }
+    for (const k of aKeys) {
+        if (!bKeys.has(k)) removed.push(k);
+    }
+    return { added, removed, changed };
+}
+
+function SnapshotItem(props: { snap: SnapshotVersion; diff?: DiffSummary }): JSX.Element {
+    const { snap, diff } = props;
+    const title = `${new Date(snap.timestamp).toLocaleString()} • API: ${snap.apiCallsCount ?? "—"} • DL: ${snap.downloadsCount ?? "—"}`;
+    const hasDiff = !!diff && (diff.added.length + diff.removed.length + diff.changed.length) > 0;
+    return (
+        <Accordion label={title}>
+            <div className="fr-mb-2w">
+                <a className="fr-link" href={snap.page} target="_blank" rel="noreferrer">Lien vers le dataset</a>
+            </div>
+            {snap.title && <p className="fr-text--sm">{snap.title}</p>}
+            {hasDiff && (
+                <div className="fr-mb-2w">
+                    <p className="fr-text--sm"><strong>Différences vs dernière version</strong></p>
+                    <ul className="fr-pl-2w fr-text--sm">
+                        <li>Ajouts: {diff!.added.length}</li>
+                        <li>Suppressions: {diff!.removed.length}</li>
+                        <li>Modifications: {diff!.changed.length}</li>
+                    </ul>
+                </div>
+            )}
+            {("data" in snap && (snap as any).data) ? (
+                <pre className="fr-text--xs" aria-label="Snapshot JSON">{JSON.stringify((snap as any).data, null, 2)}</pre>
+            ) : null}
+        </Accordion>
+    );
+}
+
+export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Element {
+    const { dataset, platformName, platformUrl } = props;
+    const [loadingVersions, setLoadingVersions] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [versions, setVersions] = useState<SnapshotVersion[] | null>(null);
+    const [versionsDatasetId, setVersionsDatasetId] = useState<string | null>(null);
+
+    useEffect(() => {
+        let isCurrent = true;
+
+        if (!dataset?.id) {
+            setVersions(null);
+            setVersionsDatasetId(null);
+            setError(null);
+            setLoadingVersions(false);
+            return () => { isCurrent = false; };
+        }
+
+        // Reset immediately to avoid showing stale versions from a previous dataset
+        setVersions(null);
+        setVersionsDatasetId(dataset.id);
+        setError(null);
+        setLoadingVersions(true);
+
+        (async () => {
+            try {
+                const res = await getDatasetVersions(dataset.id, { page: 1, pageSize: 10, includeData: true });
+                if (isCurrent) setVersions(res.items);
+            } catch (e: any) {
+                if (isCurrent) setError(e?.message ?? "Impossible de charger l'historique");
+            } finally {
+                if (isCurrent) setLoadingVersions(false);
+            }
+        })();
+
+        return () => { isCurrent = false; };
+    }, [dataset?.id]);
+
+    const baseline = useMemo<SnapshotVersion | null>(() => {
+        if (dataset?.currentSnapshot) return dataset.currentSnapshot;
+        if (versionsDatasetId === dataset?.id && versions && versions.length > 0) return versions[0];
+        return null;
+    }, [dataset?.currentSnapshot, dataset?.id, versions, versionsDatasetId]);
+
+    return (
+        <datasetDetailsModal.Component title={dataset?.slug ?? "Détails du dataset"}>
+            {!dataset ? (
+                <p className="fr-text">Chargement…</p>
+            ) : (
+                <>
+                    {error && <Alert severity="error" title="Erreur" description={error} className="fr-mb-2w" />}
+                    <div className="fr-mb-3w">
+                        <p className="fr-text--sm">
+                            <strong>Plateforme:</strong> {platformName ? (
+                                platformUrl ? (
+                                    <a className="fr-link" href={platformUrl} target="_blank" rel="noreferrer">{platformName}</a>
+                                ) : (
+                                    platformName
+                                )
+                            ) : dataset.platformId}
+                        </p>
+                        <p className="fr-text--sm"><strong>Éditeur:</strong> {dataset.publisher ?? "—"}</p>
+                        <p className="fr-text--sm"><strong>Créé le:</strong> {new Date(dataset.created).toLocaleString()}</p>
+                        <p className="fr-text--sm"><strong>Modifié le:</strong> {new Date(dataset.modified).toLocaleString()}</p>
+                        <a className="fr-link" href={dataset.page} target="_blank" rel="noreferrer">Voir sur la plateforme</a>
+                    </div>
+
+                    {dataset.currentSnapshot && (
+                        <div className="fr-mb-2w">
+                            <h6 className="fr-h6">Snapshot courant</h6>
+                            <SnapshotItem snap={dataset.currentSnapshot} />
+                        </div>
+                    )}
+
+                    <div className="fr-mt-4w">
+                        <div className="fr-grid-row fr-grid-row--middle fr-grid-row--gutters fr-mb-2w">
+                            <div className="fr-col">
+                                <h6 className="fr-h6">Historique des snapshots</h6>
+                            </div>
+                            <div className="fr-col-auto">
+                                <Button
+                                    iconId="ri-history-line"
+                                    priority="secondary"
+                                    disabled={loadingVersions}
+                                    onClick={async () => {
+                                        if (!dataset) return;
+                                        // reset previous state when loading for a different dataset
+                                        setVersions(null);
+                                        setVersionsDatasetId(dataset.id);
+                                        try {
+                                            setError(null);
+                                            setLoadingVersions(true);
+                                            const res = await getDatasetVersions(dataset.id, { page: 1, pageSize: 10, includeData: true });
+                                            setVersions(res.items);
+                                        } catch (e: any) {
+                                            setError(e?.message ?? "Impossible de charger l'historique");
+                                        } finally {
+                                            setLoadingVersions(false);
+                                        }
+                                    }}
+                                >
+                                    {loadingVersions ? "Chargement…" : "Charger l'historique"}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {Array.isArray(versions) && versionsDatasetId === dataset.id && versions.length > 0 && (
+                            <div className="fr-mt-2w">
+                                {versions.map(s => (
+                                    <SnapshotItem key={s.id} snap={s} diff={baseline ? computeDiff(baseline.data, s.data) : undefined} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+        </datasetDetailsModal.Component>
+    );
+}
+
+

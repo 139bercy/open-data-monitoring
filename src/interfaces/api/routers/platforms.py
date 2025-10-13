@@ -8,6 +8,7 @@ from interfaces.api.schemas.platforms import PlatformsResponse, PlatformDTO, Pla
 router = APIRouter(prefix="/platforms", tags=["platforms"])
 
 @router.get("/", response_model=PlatformsResponse)
+@router.get("", response_model=PlatformsResponse)
 async def get_platforms():
     """
     Récupère la liste des plateformes Open Data.
@@ -31,6 +32,7 @@ async def get_platforms():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=PlatformCreateResponse)
+@router.post("", response_model=PlatformCreateResponse)
 async def create_platform_endpoint(platform: PlatformCreateDTO):
     """
     Crée une nouvelle plateforme Open Data.

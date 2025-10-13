@@ -8,7 +8,7 @@ via des endpoints HTTP. Suit les principes DDD en réutilisant les handlers exis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from interfaces.api.routers import common, platforms, datasets
+from interfaces.api.routers import common, platforms, datasets, publishers
 from settings import ENV
 
 # Configuration de l'application FastAPI
@@ -46,6 +46,7 @@ if ENV in ["DEV", "TEST"]:
 api_app.include_router(common.router, prefix="/api/v1")
 api_app.include_router(platforms.router, prefix="/api/v1") 
 api_app.include_router(datasets.router, prefix="/api/v1")
+api_app.include_router(publishers.router, prefix="/api/v1")
 
 # Health check endpoint
 @api_app.get("/health")
