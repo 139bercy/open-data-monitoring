@@ -33,15 +33,16 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
 
     return (
         <div className="fr-my-2w" style={{ width: "100%" }}>
-            <div className="fr-grid-row fr-grid-row--gutters fr-grid-row--top">
+            <div className="fr-grid-row fr-grid-row--gutters fr-grid-row--top" style={{ display: 'flex', alignItems: 'center' }} >
                 <div className="fr-col-12 fr-col-md-4">
                     <Input
                         label="Rechercher par slug"
-                        hintText="Recherche contenant (ILIKE) sur le slug"
+                        // hintText="Recherche contenant (ILIKE) sur le slug"
                         nativeInputProps={{
                             type: "search",
                             value: query.q ?? "",
-                            onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange({ q: e.currentTarget.value, page: 1 })
+                            onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange({ q: e.currentTarget.value, page: 1 }),
+                          placeholder: "ex: prix-des-controles-techniques"
                         }}
                         style={{ transition: "box-shadow .2s ease" }}
                     />

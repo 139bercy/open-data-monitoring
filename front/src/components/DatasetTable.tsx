@@ -69,7 +69,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
         return (
             <Alert
                 severity="info"
-                title="Aucun dataset"
+                title="Aucun jeu de données"
                 description="Modifiez les critères ou réessayez plus tard."
                 className="fr-my-4w"
             />
@@ -79,7 +79,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
     return (
         <div className="fr-my-1w" style={{ width: "100%" }} aria-busy={!!loading} aria-live="polite">
             <Table
-                caption="Liste des datasets"
+                caption="Liste des jeux de données"
                 headers={[
                     (
                         <button
@@ -98,7 +98,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                         </button>
                     ),
                     "Plateforme",
-                    "Éditeur",
+                    "Producteur",
                     (
                         <button
                             key="h-created"
@@ -142,7 +142,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                                 props.onSortChange?.("api_calls_count", nextOrder as "asc" | "desc");
                             }}
                             aria-pressed={props.sortBy === "api_calls_count"}
-                            aria-label="Trier par API calls"
+                            aria-label="Trier par nb d'appels API"
                         >
                             API calls {props.sortBy === "api_calls_count" ? (props.order === "asc" ? "▲" : "▼") : ""}
                         </button>

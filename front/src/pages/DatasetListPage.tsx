@@ -80,7 +80,7 @@ export function DatasetListPage(): JSX.Element {
         setQuery({ page: 1, pageSize: query.pageSize, sortBy: "modified", order: "desc" });
     };
 
-    const title = useMemo(() => "Visualisation des datasets", []);
+    const title = useMemo(() => "Jeux de données", []);
 
     // Resolve platform_id -> platform name for display
     const platformNameById = useMemo(() => {
