@@ -21,7 +21,6 @@ import {
   getPublishers,
   getDatasetDetail,
 } from "../api/datasets";
-import { useCompareSnapshotsModal } from "../hooks/useModals";
 
 export function DatasetListPage(): JSX.Element {
   const [query, setQuery] = useState<DatasetListQuery>({

@@ -65,12 +65,13 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<Paginat
 
 export async function getPlatforms(): Promise<PlatformRef[]> {
     const data = await api.get<any>("/platforms");
+    console.log(data)
     const array = Array.isArray(data?.items)
         ? data.items
         : Array.isArray(data?.platforms)
             ? data.platforms
             : [];
-    return array.map((p: any) => ({ id: p.id, name: p.name, slug: p.slug, type: p.type, url: p.url }));
+    return array.map((p: any) => ({ id: p.id, name: p.name, created: p.created_at, slug: p.slug, type: p.type, url: p.url, key: p.key, lastSync: p.last_sync }));
 }
 
 export async function getPublishers(params?: { platformId?: string; q?: string; limit?: number }): Promise<PublishersRef> {

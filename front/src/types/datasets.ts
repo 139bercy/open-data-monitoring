@@ -61,9 +61,12 @@ export type DatasetListQuery = {
 export type PlatformRef = {
     id: string;
     name: string;
+    created: string;  // ISO8601
     slug: string;
     type: string;
     url: string;
+    key: string;
+    lastSync: string
 };
 
 export type PublishersRef = string[];
