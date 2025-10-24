@@ -1,6 +1,9 @@
 import { createModal } from "@codegouvfr/react-dsfr/Modal";
 import ReactDiffViewer from "react-diff-viewer-continued";
 import type { SnapshotVersion } from "../types/datasets";
+import { useIsDark } from "@codegouvfr/react-dsfr/useIsDark";
+import {useState} from "react";
+
 
 export const compareSnapshotsModal = createModal({
   id: "compare-snapshots-modal",
@@ -18,6 +21,9 @@ export function CompareSnapshotsModal({
                                       }: CompareSnapshotsModalProps): JSX.Element {
   const left = JSON.stringify(snapshotB.data ?? {}, null, 2);
   const right = JSON.stringify(snapshotA.data ?? {}, null, 2);
+  const [darkMode, setDarkMode] = useState(
+      document.documentElement.getAttribute("data-fr-theme") === "dark"
+  );
 
   return (
       <compareSnapshotsModal.Component title="Comparaison des versions" size="lg">
@@ -28,10 +34,10 @@ export function CompareSnapshotsModal({
             hideLineNumbers={false}
             leftTitle={new Date(snapshotB.timestamp).toLocaleString()}
             rightTitle={new Date(snapshotA.timestamp).toLocaleString()}
-            useDarkTheme={false}
+            useDarkTheme={darkMode}
             styles={{
               wordDiff: {padding: 0},
-              contentText: {wordBreak: 'break-word'}  // Force le wrapping du texte long
+              contentText: {wordBreak: 'break-word'}
             }}
         />
       </compareSnapshotsModal.Component>
