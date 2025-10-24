@@ -67,6 +67,7 @@ export type PlatformRef = {
     url: string;
     key: string;
     lastSync: string
+    datasetsCount: number
 };
 
 export type PublishersRef = string[];

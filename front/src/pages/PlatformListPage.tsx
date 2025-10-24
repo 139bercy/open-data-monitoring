@@ -109,26 +109,33 @@ export function PlatformListPage(): JSX.Element {
                       {platform.created ?? "—"}
                     </p>
                   </div>
-                </div>
-
-                {/* Colonne droite : Synchronisation et clé */}
-                <div className="fr-col-12 fr-col-md-6">
                   <div className="fr-mb-2w">
                     <p className="fr-text--xs fr-text--uppercase fr-m-0 fr-text--bold">
-                      Dernière sync
+                      Dernière synchronisation
                     </p>
                     <p className="fr-text--sm fr-m-0 fr-text--grey">
                       {platform.lastSync
-                        ? platform.lastSync.split("T")[0]
-                        : "Jamais"}
+                          ? platform.lastSync.split("T")[0]
+                          : "Jamais"}
                     </p>
                   </div>
+                </div>
+
+                <div className="fr-col-12 fr-col-md-6">
                   <div className="fr-mb-2w">
                     <p className="fr-text--xs fr-text--uppercase fr-m-0 fr-text--bold">
                       Clé API
                     </p>
                     <p className="fr-text--sm fr-m-0 fr-text--grey">
                       {platform.key ? "✓ Configurée" : "—"}
+                    </p>
+                  </div>
+                  <div className="fr-mb-2w">
+                    <p className="fr-text--xs fr-text--uppercase fr-m-0 fr-text--bold">
+                      Jeux de données
+                    </p>
+                    <p className="fr-text--sm fr-m-0 fr-text--grey">
+                      {platform.datasetsCount ? platform.datasetsCount : "—"}
                     </p>
                   </div>
                 </div>

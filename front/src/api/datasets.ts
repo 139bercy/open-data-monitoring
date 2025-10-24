@@ -71,7 +71,7 @@ export async function getPlatforms(): Promise<PlatformRef[]> {
         : Array.isArray(data?.platforms)
             ? data.platforms
             : [];
-    return array.map((p: any) => ({ id: p.id, name: p.name, created: p.created_at, slug: p.slug, type: p.type, url: p.url, key: p.key, lastSync: p.last_sync }));
+    return array.map((p: any) => ({ id: p.id, name: p.name, created: p.created_at, slug: p.slug, type: p.type, url: p.url, key: p.key, lastSync: p.last_sync, datasetsCount: p.datasets_count }));
 }
 
 export async function getPublishers(params?: { platformId?: string; q?: string; limit?: number }): Promise<PublishersRef> {
