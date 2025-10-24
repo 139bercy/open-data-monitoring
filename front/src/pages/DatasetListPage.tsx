@@ -124,6 +124,7 @@ export function DatasetListPage(): JSX.Element {
                 onPageChange={p => setQuery(q => ({ ...q, page: p }))}
                 onPageSizeChange={size => setQuery(q => ({ ...q, page: 1, pageSize: size }))}
                 onRowClick={handleOpenDetails}
+                style={{width: "100%"}}
             />
 
             <DatasetDetailsModal
