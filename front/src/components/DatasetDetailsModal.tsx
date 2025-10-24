@@ -1,11 +1,11 @@
-import {useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {Accordion} from "@codegouvfr/react-dsfr/Accordion";
 import {createModal} from "@codegouvfr/react-dsfr/Modal";
 import {Button} from "@codegouvfr/react-dsfr/Button";
 import {Alert} from "@codegouvfr/react-dsfr/Alert";
 import type {DatasetDetail, SnapshotVersion} from "../types/datasets";
 import {getDatasetVersions} from "../api/datasets";
-import {compareSnapshotsModal, CompareSnapshotsModal} from "./CompareSnapshotsModal";
+import { CompareSnapshotsModal, compareSnapshotsModal } from "./CompareSnapshotsModal";
 
 
 export const datasetDetailsModal = createModal({
@@ -27,7 +27,7 @@ type DiffSummary = {
 
 function flattenObject(value: unknown, prefix = ""): Record<string, unknown> {
     if (value === null || typeof value !== "object") {
-        return { [prefix || "value"]: value };
+        return {[prefix || "value"]: value};
     }
     const out: Record<string, unknown> = {};
     const obj = value as Record<string, unknown>;
@@ -63,7 +63,7 @@ function computeDiff(base: unknown, other: unknown): DiffSummary {
     for (const k of aKeys) {
         if (!bKeys.has(k)) removed.push(k);
     }
-    return { added, removed, changed };
+    return {added, removed, changed};
 }
 
 function SnapshotItem(props: {
@@ -73,22 +73,22 @@ function SnapshotItem(props: {
     onSelect?: (id: string, checked: boolean) => void;
     displayCheckbox?: boolean;
 }): JSX.Element {
-    const { snap, diff, selected = false, onSelect, displayCheckbox = false } = props;  // destructuré avec valeur par défaut
+    const {snap, diff, selected = false, onSelect, displayCheckbox = false} = props;
     const title = `${new Date(snap.timestamp).toLocaleString()} • API: ${snap.apiCallsCount ?? "—"} • DL: ${snap.downloadsCount ?? "—"}`;
     const hasDiff = !!diff && (diff.added.length + diff.removed.length + diff.changed.length) > 0;
 
     return (
-        <div className="fr-mb-2w" style={{ display: "flex", alignItems: "center", maxWidth: "80vh" }}>
+        <div className="fr-mb-2w" style={{display: "flex", alignItems: "center", maxWidth: "80vh"}}>
             {displayCheckbox && (
                 <input
                     id={`checkbox-${snap.id}`}
                     type="checkbox"
                     checked={selected}
                     onChange={e => onSelect?.(snap.id, e.target.checked)}
-                    style={{ marginTop: "0.5rem" }}
+                    style={{marginTop: "0.5rem"}}
                 />
             )}
-            <div style={{ flex: 1 }}>
+            <div style={{flex: 1}}>
                 <Accordion label={title}>
                     {hasDiff && (
                         <div className="fr-mb-2w">
@@ -112,9 +112,8 @@ function SnapshotItem(props: {
     );
 }
 
-
 export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Element {
-    const { dataset, platformName, platformUrl } = props;
+    const {dataset, isOpen, onClose, platformName, platformUrl, onOpenCompareModal} = props;
     const [loadingVersions, setLoadingVersions] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [versions, setVersions] = useState<SnapshotVersion[] | null>(null);
@@ -148,7 +147,7 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
 
         (async () => {
             try {
-                const res = await getDatasetVersions(dataset.id, { page: 1, pageSize: 10, includeData: true });
+                const res = await getDatasetVersions(dataset.id, {page: 1, pageSize: 10, includeData: true});
                 if (active) setVersions(res.items);
             } catch (e: any) {
                 if (active) setError(e?.message ?? "Impossible de charger l'historique");
@@ -157,7 +156,9 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
             }
         })();
 
-        return () => { active = false; };
+        return () => {
+            active = false;
+        };
     }, [dataset?.id]);
 
     const baseline = useMemo<SnapshotVersion | null>(() => {
@@ -166,33 +167,63 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
         return null;
     }, [dataset?.currentSnapshot, dataset?.id, versions, versionsDatasetId]);
 
+    const selectedSnapshotObjects = useMemo(() => {
+        const ids = Array.from(selectedSnapshots);
+        if (ids.length !== 2 || !versions) return null;
+
+        const snapA = versions.find(v => v.id === ids[0]);
+        const snapB = versions.find(v => v.id === ids[1]);
+
+        return snapA && snapB ? {snapA, snapB} : null;
+    }, [selectedSnapshots, versions]);
+
+    const handleCompareVersions = useCallback(() => {
+        if (selectedSnapshotObjects?.snapA && selectedSnapshotObjects?.snapB) {
+            compareSnapshotsModal.open();
+        }
+    }, [selectedSnapshotObjects]);
+
     return (
-        <datasetDetailsModal.Component title={dataset?.slug ?? "Détails du dataset"} size="lg" style={{minWidth: "85%"}}>
+        <>
+
+        <datasetDetailsModal.Component
+            title={dataset?.slug ?? "Détails du dataset"}
+            size="lg"
+            isOpen={isOpen}
+            onClose={onClose}
+            style={{minWidth: "85%"}}
+        >
 
             {!dataset ? (
                 <p className="fr-text">Chargement…</p>
             ) : (
                 <>
-                    {error && <Alert severity="error" title="Erreur" description={error} className="fr-mb-2w" />}
+                    {error && <Alert severity="error" title="Erreur" description={error} className="fr-mb-2w"/>}
                     <div className="fr-mb-3w">
                         <p className="fr-text--sm">
                             <strong>Plateforme:</strong>{" "}
                             {platformName ? (
                                 platformUrl ? (
-                                    <a className="fr-link" href={platformUrl} target="_blank" rel="noreferrer">{platformName}</a>
+                                    <a className="fr-link" href={platformUrl} target="_blank"
+                                       rel="noreferrer">{platformName}</a>
                                 ) : platformName
                             ) : dataset.platformId}
                         </p>
                         <p className="fr-text--sm"><strong>Producteur:</strong> {dataset.publisher ?? "—"}</p>
-                        <p className="fr-text--sm"><strong>Créé le:</strong> {new Date(dataset.created).toLocaleString()}</p>
-                        <p className="fr-text--sm"><strong>Modifié le:</strong> {new Date(dataset.modified).toLocaleString()}</p>
-                        <a className="fr-link" href={dataset.page} target="_blank" rel="noreferrer">Voir sur la plateforme</a>
+                        <p className="fr-text--sm"><strong>Créé
+                                                           le:</strong> {new Date(dataset.created).toLocaleString()}
+                        </p>
+                        <p className="fr-text--sm"><strong>Modifié
+                                                           le:</strong> {new Date(dataset.modified).toLocaleString()}
+                        </p>
+                        <a className="fr-link" href={dataset.page} target="_blank" rel="noreferrer">Voir sur la
+                                                                                                    plateforme</a>
                     </div>
 
                     {dataset.currentSnapshot && (
                         <div className="fr-mb-2w">
                             <h6 className="fr-h6">Snapshot courant</h6>
-                            <SnapshotItem snap={dataset.currentSnapshot} />
+                            <SnapshotItem snap={dataset.currentSnapshot}/>
                         </div>
                     )}
 
@@ -205,15 +236,10 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                 {selectedSnapshots.size === 2 && (
                                     <div className="fr-col-auto">
                                         <Button
-                                            iconId="ri-git-compare-line"
-                                            onClick={() => {
-                                                const [aId, bId] = Array.from(selectedSnapshots);
-                                                const snapA = versions?.find(v => v.id === aId);
-                                                const snapB = versions?.find(v => v.id === bId);
-                                                if (snapA && snapB) compareSnapshotsModal.open();
-                                            }}
+                                            onClick={handleCompareVersions}
+                                            priority="secondary"
                                         >
-                                            Comparer
+                                            Comparer les versions
                                         </Button>
                                     </div>
                                 )}
@@ -229,7 +255,11 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                             try {
                                                 setError(null);
                                                 setLoadingVersions(true);
-                                                const res = await getDatasetVersions(dataset.id, { page: 1, pageSize: 10, includeData: true });
+                                                const res = await getDatasetVersions(dataset.id, {
+                                                    page: 1,
+                                                    pageSize: 10,
+                                                    includeData: true
+                                                });
                                                 setVersions(res.items);
                                             } catch (e: any) {
                                                 setError(e?.message ?? "Impossible de charger l'historique");
@@ -242,15 +272,6 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                     </Button>
                                 </div>
                             </div>
-
-                            {(() => {
-                                const [aId, bId] = Array.from(selectedSnapshots);
-                                const snapA = versions?.find(v => v.id === aId);
-                                const snapB = versions?.find(v => v.id === bId);
-                                if (!snapA || !snapB) return null;
-                                const comparisonKey = `${snapA.id}-${snapB.id}`;
-                                return <CompareSnapshotsModal key={comparisonKey} snapshotA={snapA} snapshotB={snapB} />;
-                            })()}
 
                             {versions.map(s => (
                                 <SnapshotItem
@@ -267,5 +288,12 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                 </>
             )}
         </datasetDetailsModal.Component>
+    {selectedSnapshotObjects && (
+        <CompareSnapshotsModal
+            snapshotA={selectedSnapshotObjects.snapA}
+            snapshotB={selectedSnapshotObjects.snapB}
+        />
+    )}
+        </>
     );
 }

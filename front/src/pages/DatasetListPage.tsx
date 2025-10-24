@@ -6,6 +6,8 @@ import { DatasetTable } from "../components/DatasetTable";
 import { DatasetDetailsModal, datasetDetailsModal } from "../components/DatasetDetailsModal";
 import type { DatasetDetail, DatasetListQuery, DatasetSummary, PaginatedResponse, PlatformRef, PublishersRef } from "../types/datasets";
 import { getDatasets, getPlatforms, getPublishers, getDatasetDetail } from "../api/datasets";
+import {useCompareSnapshotsModal} from "../hooks/useModals";
+
 
 export function DatasetListPage(): JSX.Element {
     const [query, setQuery] = useState<DatasetListQuery>({ page: 1, pageSize: 25, sortBy: "modified", order: "desc" });
@@ -132,7 +134,6 @@ export function DatasetListPage(): JSX.Element {
                 platformName={selected ? (platformNameById.get(selected.platformId) ?? null) : null}
                 platformUrl={selected?.page ? new URL(selected.page).origin : null}
             />
-
             <div className="fr-mt-6w">
                 <Button priority="tertiary no outline" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
                     Revenir en haut de page
