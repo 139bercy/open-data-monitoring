@@ -42,45 +42,57 @@ function SnapshotItem(props: {
     !!diff && diff.added.length + diff.removed.length + diff.changed.length > 0;
 
   return (
-    <div
-      className="fr-mb-2w"
-      style={{ display: "flex", alignItems: "center", maxWidth: "80vh" }}
-    >
-      {displayCheckbox && (
-        <input
-          id={`checkbox-${snap.id}`}
-          type="checkbox"
-          checked={selected}
-          onChange={(e) => onSelect?.(snap.id, e.target.checked)}
-          style={{ marginTop: "0.5rem" }}
-        />
-      )}
-      <div style={{ flex: 1 }}>
-        <Accordion label={title}>
-          {hasDiff && (
-            <div className="fr-mb-2w">
-              <p className="fr-text--sm">
-                <strong>Différences vs dernière version</strong>
-              </p>
-              <ul className="fr-pl-2w fr-text--sm">
-                <li>Ajouts: {diff!.added.length}</li>
-                <li>Suppressions: {diff!.removed.length}</li>
-                <li>Modifications: {diff!.changed.length}</li>
-              </ul>
-            </div>
-          )}
+      <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            maxWidth: "80vh",
+            overflow: "hidden"
+          }}
+      >
+        {displayCheckbox && (
+            <input
+                id={`checkbox-${snap.id}`}
+                type="checkbox"
+                checked={selected}
+                onChange={(e) => onSelect?.(snap.id, e.target.checked)}
+                style={{ marginTop: "0.5rem", flexShrink: 0 }}
+            />
+        )}
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <Accordion label={title}>
+            {hasDiff && (
+                <div className="fr-mb-2w">
+                  <p className="fr-text--sm">
+                    <strong>Différences vs dernière version</strong>
+                  </p>
+                  <ul className="fr-pl-2w fr-text--sm">
+                    <li>Ajouts: {diff!.added.length}</li>
+                    <li>Suppressions: {diff!.removed.length}</li>
+                    <li>Modifications: {diff!.changed.length}</li>
+                  </ul>
+                </div>
+            )}
 
-          {"data" in snap && (snap as any).data && (
-            <pre
+            {"data" in snap && (snap as any).data && (
+                <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+          <pre
               className="fr-text--xs"
               aria-label="Snapshot JSON"
-            >
-              {JSON.stringify((snap as any).data, null, 2)}
-            </pre>
-          )}
-        </Accordion>
+              style={{
+                whiteSpace: "pre-wrap",
+                wordWrap: "break-word",
+                margin: 0,
+                maxWidth: "100%"
+              }}
+          >
+            {JSON.stringify((snap as any).data, null, 2)}
+          </pre>
+                </div>
+            )}
+          </Accordion>
+        </div>
       </div>
-    </div>
   );
 }
 
