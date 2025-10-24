@@ -7,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 
+
 class PlatformDTO(BaseModel):
     id: UUID
     name: str
@@ -19,6 +20,7 @@ class PlatformDTO(BaseModel):
     last_sync: Optional[datetime]
     created_at: Optional[datetime]
 
+
 class PlatformCreateDTO(BaseModel):
     name: str
     slug: str
@@ -27,6 +29,7 @@ class PlatformCreateDTO(BaseModel):
     url: str
     key: str
 
+
 class PlatformCreateResponse(BaseModel):
     id: UUID
     name: str
@@ -34,6 +37,7 @@ class PlatformCreateResponse(BaseModel):
     type: str
     url: str
     key: str
+
 
 class PlatformsResponse(BaseModel):
     platforms: List[PlatformDTO]

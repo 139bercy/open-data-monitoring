@@ -4,6 +4,7 @@ from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
 from infrastructure.factories.platform import PlatformAdapterFactory
 
+
 class PlatformMonitoring:
     def __init__(self, repository: PlatformRepository):
         self.factory = PlatformAdapterFactory()

@@ -3,9 +3,15 @@ from typing import List
 from uuid import UUID
 from settings import app as domain_app
 from application.handlers import create_platform
-from interfaces.api.schemas.platforms import PlatformsResponse, PlatformDTO, PlatformCreateDTO, PlatformCreateResponse
+from interfaces.api.schemas.platforms import (
+    PlatformsResponse,
+    PlatformDTO,
+    PlatformCreateDTO,
+    PlatformCreateResponse,
+)
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])
+
 
 @router.get("/", response_model=PlatformsResponse)
 @router.get("", response_model=PlatformsResponse)
@@ -22,14 +28,14 @@ async def get_platforms():
         platforms = _bind_to_platform_model(platforms_raw)
 
         platforms_DTO = [PlatformDTO(**vars(p)) for p in platforms]
-        
+
         return PlatformsResponse(
-            platforms=platforms_DTO,
-            total_platforms=len(platforms)
+            platforms=platforms_DTO, total_platforms=len(platforms)
         )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/", response_model=PlatformCreateResponse)
 @router.post("", response_model=PlatformCreateResponse)
@@ -45,17 +51,18 @@ async def create_platform_endpoint(platform: PlatformCreateDTO):
             raise HTTPException(status_code=500, detail="Failed to create platform")
 
         platform_raw = domain_app.platform.get(platform_id)
-    
+
         return PlatformCreateResponse(
             id=platform_raw.id,
             name=platform_raw.name,
             slug=platform_raw.slug,
             type=platform_raw.type,
             url=platform_raw.url,
-            key=platform_raw.key
+            key=platform_raw.key,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e) + " - " + str(platform))
+
 
 @router.post("/sync/{id}")
 async def sync_platform_endpoint(id: UUID):
@@ -69,13 +76,18 @@ async def sync_platform_endpoint(id: UUID):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 def _bind_to_platform_model(platforms_raw) -> List[PlatformDTO]:
     if not platforms_raw:
         return []
-    
+
     return [
         PlatformDTO(
-            id=UUID(platform["id"]) if isinstance(platform["id"], str) else platform["id"],
+            id=(
+                UUID(platform["id"])
+                if isinstance(platform["id"], str)
+                else platform["id"]
+            ),
             name=platform["name"],
             slug=platform["slug"],
             type=platform["type"],
@@ -84,6 +96,7 @@ def _bind_to_platform_model(platforms_raw) -> List[PlatformDTO]:
             key=platform.get("key"),
             datasets_count=platform.get("datasets_count"),
             last_sync=platform.get("last_sync"),
-            created_at=platform.get("created_at")
-        ) for platform in platforms_raw
+            created_at=platform.get("created_at"),
+        )
+        for platform in platforms_raw
     ]

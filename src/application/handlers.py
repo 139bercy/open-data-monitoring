@@ -36,7 +36,7 @@ def find_platform_from_url(app: App, url: str) -> Platform | None:
         try:
             return app.platform.repository.get_by_domain(get_base_url(url))
         except ValueError:
-            return None 
+            return None
 
 
 def find_dataset_id_from_url(app: App, url: str) -> str | None:

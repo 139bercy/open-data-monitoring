@@ -7,8 +7,7 @@ from application.dtos.dataset import DatasetDTO, DatasetRawDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import DatasetRepository
 from domain.platform.aggregate import Platform
-from domain.platform.ports import (DatasetAdapter, PlatformAdapter,
-                                   PlatformRepository)
+from domain.platform.ports import DatasetAdapter, PlatformAdapter, PlatformRepository
 from domain.unit_of_work import UnitOfWork
 
 
@@ -70,7 +69,17 @@ class InMemoryDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-        id, slug, page, created_at, last_update, published, restricted, download_count, api_calls_count, *args, **kwargs
+        id,
+        slug,
+        page,
+        created_at,
+        last_update,
+        published,
+        restricted,
+        download_count,
+        api_calls_count,
+        *args,
+        **kwargs,
     ):
         dataset = DatasetDTO(
             buid=id,
@@ -148,7 +157,7 @@ class InMemoryDatasetRepository(DatasetRepository):
         """Récupère les statistiques des publishers (nom et nombre de datasets) - Version in-memory"""
         publishers = [dataset.publisher for dataset in self.db if dataset.publisher]
         publisher_counts = Counter(publishers)
-        
+
         return [
             {"publisher": publisher, "dataset_count": count}
             for publisher, count in sorted(publisher_counts.items())

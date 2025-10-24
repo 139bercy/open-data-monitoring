@@ -1,18 +1,28 @@
 """
-Router pour les endpoints datasets (STUB)  
+Router pour les endpoints datasets (STUB)
 TODO: Implémenter les endpoints dataset
 """
 
 from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
-from interfaces.api.schemas.datasets import DatasetCreateResponse, DatasetResponse, DatasetAPI
+from interfaces.api.schemas.datasets import (
+    DatasetCreateResponse,
+    DatasetResponse,
+    DatasetAPI,
+)
 from settings import app as domain_app
 from pprint import pprint
-from application.handlers import find_platform_from_url, find_dataset_id_from_url, fetch_dataset, upsert_dataset
+from application.handlers import (
+    find_platform_from_url,
+    find_dataset_id_from_url,
+    fetch_dataset,
+    upsert_dataset,
+)
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from logger import logger
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
+
 
 @router.post("/add", response_model=DatasetCreateResponse)
 async def add_dataset(url: str):
@@ -31,6 +41,7 @@ async def add_dataset(url: str):
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except DatasetUnreachableError:
         pass
+
 
 @router.get("/tests", response_model=DatasetResponse)
 async def get_tests():
@@ -61,11 +72,11 @@ async def get_tests():
                 last_sync=dataset["last_sync"],
                 created=dataset["created"],
                 modified=dataset["modified"],
-            ) for dataset in datasets_raw
+            )
+            for dataset in datasets_raw
         ]
         return DatasetResponse(
-            datasets=datasets_list,
-            total_datasets=len(datasets_list)
+            datasets=datasets_list, total_datasets=len(datasets_list)
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -81,7 +92,10 @@ async def list_datasets(
     modified_from: str | None = None,
     modified_to: str | None = None,
     q: str | None = None,
-    sort_by: str = Query("modified", pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count)$"),
+    sort_by: str = Query(
+        "modified",
+        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count)$",
+    ),
     order: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = 1,
     page_size: int = 25,
@@ -124,11 +138,25 @@ async def list_datasets(
 
         # Count
         count_query = f"SELECT COUNT(*) AS cnt FROM datasets WHERE {where_sql}"
-        total_rows = domain_app.dataset.repository.client.fetchall(count_query, tuple(params))
+        total_rows = domain_app.dataset.repository.client.fetchall(
+            count_query, tuple(params)
+        )
         total = int(total_rows[0]["cnt"]) if total_rows else 0
 
         # Sorting (NULL-safe): treat NULL as 0 for counts, and as '' for text
-        sort_column = sort_by if sort_by in ("created", "modified", "publisher", "title", "api_calls_count", "downloads_count") else "modified"
+        sort_column = (
+            sort_by
+            if sort_by
+            in (
+                "created",
+                "modified",
+                "publisher",
+                "title",
+                "api_calls_count",
+                "downloads_count",
+            )
+            else "modified"
+        )
         sort_dir = "DESC" if order.lower() != "asc" else "ASC"
         if sort_column == "title":
             order_sql = "COALESCE(title, '')"
@@ -182,7 +210,9 @@ async def list_datasets(
             LIMIT %s OFFSET %s
         """
         list_params = params + [page_size, offset]
-        rows = domain_app.dataset.repository.client.fetchall(list_query, tuple(list_params))
+        rows = domain_app.dataset.repository.client.fetchall(
+            list_query, tuple(list_params)
+        )
 
         items = [
             {
@@ -221,7 +251,9 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             "SELECT id, platform_id, buid, slug, page, publisher, created, modified, published, restricted "
             "FROM datasets WHERE id = %s"
         )
-        rows = domain_app.dataset.repository.client.fetchall(ds_query, (str(dataset_id),))
+        rows = domain_app.dataset.repository.client.fetchall(
+            ds_query, (str(dataset_id),)
+        )
         if not rows:
             raise HTTPException(status_code=404, detail="Dataset not found")
         d = rows[0]
@@ -232,7 +264,9 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             "COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
             "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT 1"
         )
-        cur_rows = domain_app.dataset.repository.client.fetchall(cur_query, (str(dataset_id),))
+        cur_rows = domain_app.dataset.repository.client.fetchall(
+            cur_query, (str(dataset_id),)
+        )
         current_snapshot = None
         if cur_rows:
             r = cur_rows[0]
@@ -257,7 +291,9 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             snapshots = [
                 {
                     "id": r["id"],
-                    "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                    "timestamp": (
+                        r["timestamp"].isoformat() if r.get("timestamp") else None
+                    ),
                     "downloads_count": r.get("downloads_count"),
                     "api_calls_count": r.get("api_calls_count"),
                     "page": d.get("page"),
@@ -288,7 +324,9 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
 
 
 @router.get("/{dataset_id}/versions")
-async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int = 10, include_data: bool = False):
+async def get_dataset_versions(
+    dataset_id: UUID, page: int = 1, page_size: int = 10, include_data: bool = False
+):
     """
     Liste paginée des versions (snapshots) d'un dataset.
     """
@@ -324,6 +362,7 @@ async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int =
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/publisher/{publisher_name}")
 async def get_by_publisher(publisher_name: str):
     """
@@ -358,12 +397,12 @@ async def get_by_publisher(publisher_name: str):
                 last_sync=dataset["last_sync"],
                 created=dataset["created"],
                 modified=dataset["modified"],
-            ) for dataset in datasets_raw
+            )
+            for dataset in datasets_raw
         ]
 
         return DatasetResponse(
-            datasets=datasets_list,
-            total_datasets=len(datasets_list)
+            datasets=datasets_list, total_datasets=len(datasets_list)
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -8,7 +8,9 @@ router = APIRouter(prefix="/publishers", tags=["publishers"])
 
 @router.get("/")
 @router.get("")
-async def get_publishers(platform_id: Optional[UUID] = None, q: Optional[str] = None, limit: int = 50):
+async def get_publishers(
+    platform_id: Optional[UUID] = None, q: Optional[str] = None, limit: int = 50
+):
     """
     Retourne la liste des publishers distincts (chaînes), éventuellement filtrée par plateforme et par recherche.
     Forme de réponse adaptée au front: { "items": ["Publisher A", "Publisher B", ...] }
@@ -42,5 +44,3 @@ async def get_publishers(platform_id: Optional[UUID] = None, q: Optional[str] = 
         return {"items": items}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-

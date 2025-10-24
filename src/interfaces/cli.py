@@ -5,10 +5,14 @@ from uuid import UUID
 
 import click
 
-from application.handlers import (create_platform, fetch_dataset,
-                                  find_dataset_id_from_url,
-                                  find_platform_from_url, sync_platform,
-                                  upsert_dataset)
+from application.handlers import (
+    create_platform,
+    fetch_dataset,
+    find_dataset_id_from_url,
+    find_platform_from_url,
+    sync_platform,
+    upsert_dataset,
+)
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from logger import logger
 from settings import app

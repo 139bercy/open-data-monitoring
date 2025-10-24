@@ -37,7 +37,7 @@ class Dataset:
         self.downloads_count = downloads_count
         self.api_calls_count = api_calls_count
         self.raw = raw
-        self.checksum= None
+        self.checksum = None
         self.versions = []
 
     def is_modified_since(self, date: datetime) -> bool:

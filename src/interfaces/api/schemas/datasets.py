@@ -7,6 +7,7 @@ from uuid import UUID
 from typing import List, Optional
 import datetime
 
+
 class DatasetAPI(BaseModel):
     id: Optional[UUID]
     name: Optional[str] = None
@@ -21,6 +22,7 @@ class DatasetAPI(BaseModel):
     restricted: bool
     last_sync: Optional[datetime.datetime]
 
+
 class DatasetCreateResponse(BaseModel):
     id: UUID
     name: str
@@ -32,6 +34,7 @@ class DatasetCreateResponse(BaseModel):
     url: str
     key: str
 
-class DatasetResponse(BaseModel): 
+
+class DatasetResponse(BaseModel):
     datasets: List[DatasetAPI]
     total_datasets: int

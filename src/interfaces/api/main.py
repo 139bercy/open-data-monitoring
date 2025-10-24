@@ -17,19 +17,10 @@ api_app = FastAPI(
     description="API REST pour le monitoring des plateformes Open Data",
     version="1.0.0",
     openapi_tags=[
-        {
-            "name": "common",
-            "description": "Opérations communes et utilitaires"
-        },
-        {
-            "name": "platforms", 
-            "description": "Gestion des plateformes Open Data"
-        },
-        {
-            "name": "datasets",
-            "description": "Gestion des datasets"
-        }
-    ]
+        {"name": "common", "description": "Opérations communes et utilitaires"},
+        {"name": "platforms", "description": "Gestion des plateformes Open Data"},
+        {"name": "datasets", "description": "Gestion des datasets"},
+    ],
 )
 
 # Configuration CORS pour le développement
@@ -44,16 +35,13 @@ if ENV in ["DEV", "TEST"]:
 
 # Enregistrement des routers
 api_app.include_router(common.router, prefix="/api/v1")
-api_app.include_router(platforms.router, prefix="/api/v1") 
+api_app.include_router(platforms.router, prefix="/api/v1")
 api_app.include_router(datasets.router, prefix="/api/v1")
 api_app.include_router(publishers.router, prefix="/api/v1")
+
 
 # Health check endpoint
 @api_app.get("/health")
 async def health_check():
     """Point de contrôle de santé de l'API"""
-    return {
-        "status": "healthy",
-        "environment": ENV,
-        "version": "1.0.0"
-    } 
+    return {"status": "healthy", "environment": ENV, "version": "1.0.0"}
