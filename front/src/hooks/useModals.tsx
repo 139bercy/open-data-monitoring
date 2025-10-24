@@ -1,5 +1,5 @@
 // hooks/useModals.ts
-import { useCallback, useState } from 'react';
+import { useCallback, useState } from "react";
 
 export type CompareSnapshotsState = {
   isOpen: boolean;
@@ -18,9 +18,5 @@ export function useCompareSnapshotsModal() {
     setState({ isOpen: false });
   }, []);
 
-  return {
-    ...state,
-    open,
-    close,
-  };
+  return { ...state, open, close };
 }

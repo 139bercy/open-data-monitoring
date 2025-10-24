@@ -6,7 +6,8 @@
         "dev": "vite",
         "build": "vite build",
         "preview": "vite preview",
-        "serve": "node server/index.mjs"
+        "serve": "node server/index.mjs",
+        "format": "prettier --write '**/*.tsx'"
     },
     "dependencies": {
         "@codegouvfr/react-dsfr": "^1.28.0",

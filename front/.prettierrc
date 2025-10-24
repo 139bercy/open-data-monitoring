@@ -1,0 +1,10 @@
+{
+  "bracketSameLine": false,
+  "bracketSpacing": true,
+  "objectWrap": "collapse",
+  "semi": true,
+  "singleQuote": false,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "singleAttributePerLine": true
+}
