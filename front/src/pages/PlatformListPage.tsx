@@ -48,7 +48,30 @@ export function PlatformListPage(): JSX.Element {
 
   return (
     <div className="fr-container fr-my-6w">
-      <h1 className="fr-h1">{title}</h1>
+      <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+        <h1 className="fr-h1">{title}</h1>
+        <nav
+            className="fr-breadcrumb"
+            aria-label="fil d’Ariane"
+        >
+          <ol className="fr-breadcrumb__list">
+            <li className="fr-breadcrumb__item">
+              <a
+                  className="fr-breadcrumb__link"
+                  href="/"
+              >
+                Accueil
+              </a>
+            </li>
+            <li
+                className="fr-breadcrumb__item"
+                aria-current="page"
+            >
+              Plateformes
+            </li>
+          </ol>
+        </nav>
+      </div>
 
       <div>
         {loading && <p>Chargement...</p>}
@@ -60,12 +83,14 @@ export function PlatformListPage(): JSX.Element {
             key={platform.id}
             className="fr-card fr-card--grey fr-my-2w"
           >
-            <div className="fr-card__body">
+            <div className="fr-card__body fr-p-2w">
               <div className="fr-grid-row fr-grid-row--gutters">
                 {/* En-tête principal */}
                 <div className="fr-col-12">
                   <h5 className="fr-mb-1w">{platform.name ?? platform.slug}</h5>
-                  <p className="fr-text--sm fr-text--grey fr-m-0">{platform.type}</p>
+                  <p className="fr-text--sm fr-text--grey fr-m-0">
+                    {platform.type}
+                  </p>
                 </div>
 
                 <div className="fr-col-12 fr-col-md-6">
@@ -73,7 +98,9 @@ export function PlatformListPage(): JSX.Element {
                     <p className="fr-text--xs fr-text--uppercase fr-m-0 fr-text--bold">
                       Slug
                     </p>
-                    <p className="fr-text--sm fr-m-0 fr-text--grey">{platform.slug}</p>
+                    <p className="fr-text--sm fr-m-0 fr-text--grey">
+                      {platform.slug}
+                    </p>
                   </div>
                   <div className="fr-mb-2w">
                     <p className="fr-text--xs fr-text--uppercase fr-m-0 fr-text--bold">
@@ -92,7 +119,9 @@ export function PlatformListPage(): JSX.Element {
                       Dernière sync
                     </p>
                     <p className="fr-text--sm fr-m-0 fr-text--grey">
-                      {platform.lastSync ? platform.lastSync.split('T')[0] : "Jamais"}
+                      {platform.lastSync
+                        ? platform.lastSync.split("T")[0]
+                        : "Jamais"}
                     </p>
                   </div>
                   <div className="fr-mb-2w">
@@ -106,20 +135,19 @@ export function PlatformListPage(): JSX.Element {
                 </div>
 
                 {platform.url && (
-                    <div className="fr-col-12 fr-mt-1w">
-                      <a
-                          href={platform.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="fr-link"
-                      >
-                        Accéder à la plateforme →
-                      </a>
-                    </div>
+                  <div className="fr-col-12 fr-mt-1w">
+                    <a
+                      href={platform.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="fr-link"
+                    >
+                      Accéder à la plateforme →
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
-
           </div>
         ))}
       </div>
