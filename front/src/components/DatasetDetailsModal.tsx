@@ -167,7 +167,7 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
     }, [dataset?.currentSnapshot, dataset?.id, versions, versionsDatasetId]);
 
     return (
-        <datasetDetailsModal.Component title={dataset?.slug ?? "Détails du dataset"} size="lg">
+        <datasetDetailsModal.Component title={dataset?.slug ?? "Détails du dataset"} size="lg" style={{minWidth: "85%"}}>
 
             {!dataset ? (
                 <p className="fr-text">Chargement…</p>
