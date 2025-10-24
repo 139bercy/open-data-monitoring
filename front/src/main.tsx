@@ -8,6 +8,7 @@ import { Button } from "@codegouvfr/react-dsfr/Button";
 import "@codegouvfr/react-dsfr/dsfr/dsfr.min.css";
 import { DatasetListPage } from "./pages/DatasetListPage";
 import { PlatformListPage } from "./pages/PlatformListPage";
+import { Home } from "./pages/Home";
 // ...existing code...
 
 startReactDsfr({ defaultColorScheme: "system" });
@@ -41,21 +42,16 @@ function App(): JSX.Element {
       {/* Routes */}
       <Routes>
         <Route
+          path="/"
+          element={<Home />}
+        />
+        <Route
           path="/datasets"
           element={<DatasetListPage />}
         />
         <Route
           path="/platforms"
           element={<PlatformListPage />}
-        />
-        <Route
-          path="/"
-          element={
-            <Navigate
-              to="/datasets"
-              replace
-            />
-          }
         />
         <Route
           path="*"

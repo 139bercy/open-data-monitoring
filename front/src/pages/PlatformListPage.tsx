@@ -85,7 +85,6 @@ export function PlatformListPage(): JSX.Element {
           >
             <div className="fr-card__body fr-p-2w">
               <div className="fr-grid-row fr-grid-row--gutters">
-                {/* En-tête principal */}
                 <div className="fr-col-12">
                   <h5 className="fr-mb-1w">{platform.name ?? platform.slug}</h5>
                   <p className="fr-text--sm fr-text--grey fr-m-0">
