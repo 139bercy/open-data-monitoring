@@ -25,7 +25,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
 
     const publisherOptions = useMemo(
         () => [
-            { value: "", label: "Tous les éditeurs" },
+            { value: "", label: "Tous les producteurs" },
             ...publishers.map(p => ({ value: p, label: p }))
         ],
         [publishers]
@@ -63,7 +63,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
                 </div>
                 <div className="fr-col-12 fr-col-md-4">
                     <Select
-                        label="Éditeur"
+                        label="Producteur"
                         nativeSelectProps={{
                             value: query.publisher ?? "",
                             onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange({ publisher: e.currentTarget.value || undefined, page: 1 }),

@@ -152,7 +152,7 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                 )
                             ) : dataset.platformId}
                         </p>
-                        <p className="fr-text--sm"><strong>Éditeur:</strong> {dataset.publisher ?? "—"}</p>
+                        <p className="fr-text--sm"><strong>Producteur:</strong> {dataset.publisher ?? "—"}</p>
                         <p className="fr-text--sm"><strong>Créé le:</strong> {new Date(dataset.created).toLocaleString()}</p>
                         <p className="fr-text--sm"><strong>Modifié le:</strong> {new Date(dataset.modified).toLocaleString()}</p>
                         <a className="fr-link" href={dataset.page} target="_blank" rel="noreferrer">Voir sur la plateforme</a>
