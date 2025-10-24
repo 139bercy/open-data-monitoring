@@ -5,7 +5,7 @@ import {Button} from "@codegouvfr/react-dsfr/Button";
 import {Alert} from "@codegouvfr/react-dsfr/Alert";
 import type {DatasetDetail, SnapshotVersion} from "../types/datasets";
 import {getDatasetVersions} from "../api/datasets";
-import {compareSnapshotsModal, CompareSnapshotsModal} from "./compareSnapshotsModal";
+import {compareSnapshotsModal, CompareSnapshotsModal} from "./CompareSnapshotsModal";
 
 
 export const datasetDetailsModal = createModal({
@@ -198,37 +198,27 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                         </div>
                     )}
 
-                    {selectedSnapshots.size === 2 && (
-                        <div className="fr-mt-4w fr-text--center">
-                            <Button
-                                iconId="ri-git-compare-line"
-                                onClick={() => {
-                                    const [aId, bId] = Array.from(selectedSnapshots);
-                                    const snapA = versions?.find(v => v.id === aId);
-                                    const snapB = versions?.find(v => v.id === bId);
-                                    if (snapA && snapB) compareSnapshotsModal.open();
-                                }}
-                            >
-                                Comparer les deux snapshots
-                            </Button>
-                            {(() => {
-                                const [aId, bId] = Array.from(selectedSnapshots);
-                                const snapA = versions?.find(v => v.id === aId);
-                                const snapB = versions?.find(v => v.id === bId);
-                                if (!snapA || !snapB) return null;
-                                // Key externe pour forcer démontage/remontage complet à chaque nouvelle paire de snapshots
-                                const comparisonKey = `${snapA.id}-${snapB.id}`;
-                                return <CompareSnapshotsModal key={comparisonKey} snapshotA={snapA} snapshotB={snapB} />;
-                            })()}
-                        </div>
-                    )}
-
                     {Array.isArray(versions) && versionsDatasetId === dataset.id && versions.length > 0 && (
                         <div className="fr-mt-4w">
                             <div className="fr-grid-row fr-grid-row--middle fr-grid-row--gutters fr-mb-2w">
                                 <div className="fr-col">
-                                    <h6 className="fr-h6">Historique des snapshots</h6>
+                                    <h6 className="fr-h6 fr-mb-0">Historique des snapshots</h6>
                                 </div>
+                                {selectedSnapshots.size === 2 && (
+                                    <div className="fr-col-auto">
+                                        <Button
+                                            iconId="ri-git-compare-line"
+                                            onClick={() => {
+                                                const [aId, bId] = Array.from(selectedSnapshots);
+                                                const snapA = versions?.find(v => v.id === aId);
+                                                const snapB = versions?.find(v => v.id === bId);
+                                                if (snapA && snapB) compareSnapshotsModal.open();
+                                            }}
+                                        >
+                                            Comparer les deux snapshots
+                                        </Button>
+                                    </div>
+                                )}
                                 <div className="fr-col-auto">
                                     <Button
                                         iconId="ri-history-line"
@@ -236,7 +226,6 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                         disabled={loadingVersions}
                                         onClick={async () => {
                                             if (!dataset) return;
-                                            // reset previous state when loading for a different dataset
                                             setVersions(null);
                                             setVersionsDatasetId(dataset.id);
                                             try {
@@ -254,7 +243,18 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                         {loadingVersions ? "Chargement…" : "Charger l'historique"}
                                     </Button>
                                 </div>
-                            </div>                            {versions.map(s => (
+                            </div>
+
+                            {(() => {
+                                const [aId, bId] = Array.from(selectedSnapshots);
+                                const snapA = versions?.find(v => v.id === aId);
+                                const snapB = versions?.find(v => v.id === bId);
+                                if (!snapA || !snapB) return null;
+                                const comparisonKey = `${snapA.id}-${snapB.id}`;
+                                return <CompareSnapshotsModal key={comparisonKey} snapshotA={snapA} snapshotB={snapB} />;
+                            })()}
+
+                            {versions.map(s => (
                                 <SnapshotItem
                                     key={s.id}
                                     snap={s}
