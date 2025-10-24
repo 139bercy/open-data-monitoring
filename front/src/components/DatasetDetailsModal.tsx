@@ -71,28 +71,25 @@ function SnapshotItem(props: {
     diff?: DiffSummary;
     selected?: boolean;
     onSelect?: (id: string, checked: boolean) => void;
+    displayCheckbox?: boolean;
 }): JSX.Element {
-    const { snap, diff, selected = false, onSelect } = props;
+    const { snap, diff, selected = false, onSelect, displayCheckbox = false } = props;  // destructuré avec valeur par défaut
     const title = `${new Date(snap.timestamp).toLocaleString()} • API: ${snap.apiCallsCount ?? "—"} • DL: ${snap.downloadsCount ?? "—"}`;
     const hasDiff = !!diff && (diff.added.length + diff.removed.length + diff.changed.length) > 0;
 
     return (
-        <div className="fr-mb-2w" style={{ display: "flex", alignItems: "center", maxWidth: "80vh", overflowX: "auto" }}>
-            <input
-                id={`checkbox-${snap.id}`}
-                type="checkbox"
-                checked={selected}
-                onChange={e => onSelect?.(snap.id, e.target.checked)}
-                style={{ marginTop: "0.5rem" }}
-            />
+        <div className="fr-mb-2w" style={{ display: "flex", alignItems: "center", maxWidth: "80vh" }}>
+            {displayCheckbox && (
+                <input
+                    id={`checkbox-${snap.id}`}
+                    type="checkbox"
+                    checked={selected}
+                    onChange={e => onSelect?.(snap.id, e.target.checked)}
+                    style={{ marginTop: "0.5rem" }}
+                />
+            )}
             <div style={{ flex: 1 }}>
                 <Accordion label={title}>
-                    <div className="fr-mb-2w">
-                        <a className="fr-link" href={snap.page} target="_blank" rel="noreferrer">Lien vers le dataset</a>
-                    </div>
-
-                    {snap.title && <p className="fr-text--sm">{snap.title}</p>}
-
                     {hasDiff && (
                         <div className="fr-mb-2w">
                             <p className="fr-text--sm"><strong>Différences vs dernière version</strong></p>
@@ -114,6 +111,7 @@ function SnapshotItem(props: {
         </div>
     );
 }
+
 
 export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Element {
     const { dataset, platformName, platformUrl } = props;
@@ -215,7 +213,7 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                                 if (snapA && snapB) compareSnapshotsModal.open();
                                             }}
                                         >
-                                            Comparer les deux snapshots
+                                            Comparer
                                         </Button>
                                     </div>
                                 )}
@@ -261,6 +259,7 @@ export function DatasetDetailsModal(props: DatasetDetailsModalProps): JSX.Elemen
                                     diff={baseline ? computeDiff(baseline.data, s.data) : undefined}
                                     selected={selectedSnapshots.has(s.id)}
                                     onSelect={toggleSnapshotSelection}
+                                    displayCheckbox
                                 />
                             ))}
                         </div>
