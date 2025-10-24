@@ -9,6 +9,8 @@ import {
   CompareSnapshotsModal,
   compareSnapshotsModal,
 } from "./CompareSnapshotsModal";
+import { calculateDownloadsPerDay } from "../utils/calculations";
+import { computeDiff, DiffSummary } from "../utils/diff";
 
 export const datasetDetailsModal = createModal({
   id: "dataset-details-modal",
@@ -20,49 +22,6 @@ export type DatasetDetailsModalProps = Readonly<{
   platformName?: string | null;
   platformUrl?: string | null;
 }>;
-
-type DiffSummary = { added: string[]; removed: string[]; changed: string[] };
-
-function flattenObject(value: unknown, prefix = ""): Record<string, unknown> {
-  if (value === null || typeof value !== "object") {
-    return { [prefix || "value"]: value };
-  }
-  const out: Record<string, unknown> = {};
-  const obj = value as Record<string, unknown>;
-  for (const key of Object.keys(obj)) {
-    const next = prefix ? `${prefix}.${key}` : key;
-    const v = obj[key];
-    if (v !== null && typeof v === "object" && !Array.isArray(v)) {
-      Object.assign(out, flattenObject(v, next));
-    } else {
-      out[next] = v;
-    }
-  }
-  return out;
-}
-
-function computeDiff(base: unknown, other: unknown): DiffSummary {
-  const a = flattenObject(base ?? {});
-  const b = flattenObject(other ?? {});
-  const added: string[] = [];
-  const removed: string[] = [];
-  const changed: string[] = [];
-  const aKeys = new Set(Object.keys(a));
-  const bKeys = new Set(Object.keys(b));
-  for (const k of bKeys) {
-    if (!aKeys.has(k)) {
-      added.push(k);
-    } else {
-      const av = JSON.stringify(a[k]);
-      const bv = JSON.stringify(b[k]);
-      if (av !== bv) changed.push(k);
-    }
-  }
-  for (const k of aKeys) {
-    if (!bKeys.has(k)) removed.push(k);
-  }
-  return { added, removed, changed };
-}
 
 function SnapshotItem(props: {
   snap: SnapshotVersion;
@@ -128,14 +87,7 @@ function SnapshotItem(props: {
 export function DatasetDetailsModal(
   props: DatasetDetailsModalProps
 ): JSX.Element {
-  const {
-    dataset,
-    isOpen,
-    onClose,
-    platformName,
-    platformUrl,
-    onOpenCompareModal,
-  } = props;
+  const { dataset, isOpen, onClose, platformName, platformUrl } = props;
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [versions, setVersions] = useState<SnapshotVersion[] | null>(null);
@@ -174,7 +126,7 @@ export function DatasetDetailsModal(
       try {
         const res = await getDatasetVersions(dataset.id, {
           page: 1,
-          pageSize: 10,
+          pageSize: 90,
           includeData: true,
         });
         if (active) setVersions(res.items);
@@ -190,6 +142,12 @@ export function DatasetDetailsModal(
       active = false;
     };
   }, [dataset?.id]);
+
+  const downloadsPerDay = useMemo(() => {
+    return versions && versions.length >= 2
+      ? calculateDownloadsPerDay(versions)
+      : null;
+  }, [versions]);
 
   const baseline = useMemo<SnapshotVersion | null>(() => {
     if (dataset?.currentSnapshot) return dataset.currentSnapshot;
@@ -241,7 +199,7 @@ export function DatasetDetailsModal(
                 {platformName ? (
                   platformUrl ? (
                     <a
-                      className="fr-link"
+                      className="fr-link fr-text--sm"
                       href={platformUrl}
                       target="_blank"
                       rel="noreferrer"
@@ -265,6 +223,17 @@ export function DatasetDetailsModal(
               <p className="fr-text--sm">
                 <strong>Modifié le:</strong>{" "}
                 {new Date(dataset.modified).toLocaleString()}
+              </p>
+              <p className="fr-text--sm">
+                Téléchargements totaux :{" "}
+                {dataset.currentSnapshot?.downloadsCount}
+              </p>
+              <p className="fr-text--sm">
+                Moyenne par jour{" "}
+                {versions && versions.length >= 2
+                  ? `(sur ${versions.length} j.)`
+                  : ""}
+                : {downloadsPerDay ?? "—"} téléchargements/jour
               </p>
               <a
                 className="fr-link"

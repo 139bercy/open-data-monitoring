@@ -1,12 +1,12 @@
 import api from "./api";
 import type {
+    DatasetDetail,
     DatasetListQuery,
     DatasetSummary,
     PaginatedResponse,
-    DatasetDetail,
-    SnapshotVersion,
     PlatformRef,
-    PublishersRef
+    PublishersRef,
+    SnapshotVersion
 } from "../types/datasets";
 
 type PaginatedSnake<T> = {
@@ -126,7 +126,7 @@ export async function getDatasetVersions(id: string, params?: { page?: number; p
         title: s.title ?? null,
         data: s.data
     }));
-    return { items, total: data.total ?? 0, page: data.page ?? query.page, pageSize: data.page_size ?? query.page_size };
+    return {items, total: data.total ?? 0, page: data.page ?? query.page, pageSize: data.page_size ?? query.page_size}
 }
 
 

@@ -1,4 +1,3 @@
-// hooks/useModals.ts
 import { useCallback, useState } from "react";
 
 export type CompareSnapshotsState = {
