@@ -8,6 +8,13 @@ from uuid import UUID
 from datetime import datetime
 
 
+class PlatformSync(BaseModel):
+    platform_id: UUID
+    timestamp: datetime
+    status: str
+    datasets_count: int
+
+
 class PlatformDTO(BaseModel):
     id: UUID
     name: str
@@ -19,6 +26,10 @@ class PlatformDTO(BaseModel):
     datasets_count: int
     last_sync: Optional[datetime]
     created_at: Optional[datetime]
+    syncs: Optional[List[PlatformSync]] = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class PlatformCreateDTO(BaseModel):

@@ -58,6 +58,14 @@ export type DatasetListQuery = {
     pageSize?: number;
 };
 
+export type PlatformSync = {
+    id: string
+    platform_id: string
+    timestamp: string
+    status: string
+    datasets_count: number
+}
+
 export type PlatformRef = {
     id: string;
     name: string;
@@ -68,6 +76,7 @@ export type PlatformRef = {
     key: string;
     lastSync: string
     datasetsCount: number
+    syncs?: PlatformSync[]
 };
 
 export type PublishersRef = string[];

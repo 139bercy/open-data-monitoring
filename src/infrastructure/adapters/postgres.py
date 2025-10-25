@@ -86,7 +86,23 @@ class PostgresPlatformRepository(PlatformRepository):
         )
 
     def all(self):
-        return self.client.fetchall("""SELECT * from platforms;""")
+        return self.client.fetchall("""
+        SELECT 
+    p.*,
+    json_agg(
+        json_build_object(
+            'id', h.id,
+            'platform_id', h.platform_id,
+            'timestamp', h.timestamp,
+            'status', h.status,
+            'datasets_count', h.datasets_count
+        ) ORDER BY h.timestamp DESC
+    ) FILTER (WHERE h.platform_id IS NOT NULL) AS syncs
+FROM platforms p
+LEFT JOIN platform_sync_histories h ON p.id = h.platform_id
+GROUP BY p.id, p.created_at
+ORDER BY p.created_at DESC;
+        """)
 
 
 class PostgresDatasetRepository(DatasetRepository):

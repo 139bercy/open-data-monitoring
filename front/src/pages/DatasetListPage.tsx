@@ -141,31 +141,36 @@ export function DatasetListPage(): JSX.Element {
 
   return (
     <div className="fr-container fr-my-6w">
-      <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <h1 className="fr-h1">{title}</h1>
         <nav
-            className="fr-breadcrumb"
-            aria-label="fil d’Ariane"
+          className="fr-breadcrumb"
+          aria-label="fil d’Ariane"
         >
           <ol className="fr-breadcrumb__list">
             <li className="fr-breadcrumb__item">
               <a
-                  className="fr-breadcrumb__link"
-                  href="/"
+                className="fr-breadcrumb__link"
+                href="/"
               >
                 Accueil
               </a>
             </li>
             <li
-                className="fr-breadcrumb__item"
-                aria-current="page"
+              className="fr-breadcrumb__item"
+              aria-current="page"
             >
               Jeux de données
             </li>
           </ol>
         </nav>
       </div>
-
 
       <DatasetFilters
         query={query}

@@ -24,11 +24,8 @@ async def get_platforms():
     """
     try:
         platforms_raw = domain_app.platform.get_all_platforms()
-
         platforms = _bind_to_platform_model(platforms_raw)
-
         platforms_DTO = [PlatformDTO(**vars(p)) for p in platforms]
-
         return PlatformsResponse(
             platforms=platforms_DTO, total_platforms=len(platforms)
         )
@@ -97,6 +94,7 @@ def _bind_to_platform_model(platforms_raw) -> List[PlatformDTO]:
             datasets_count=platform.get("datasets_count"),
             last_sync=platform.get("last_sync"),
             created_at=platform.get("created_at"),
+            syncs=platform.get("syncs")
         )
         for platform in platforms_raw
     ]
