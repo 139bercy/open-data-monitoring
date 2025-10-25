@@ -58,14 +58,14 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<Paginat
         downloadsCount: it.downloads_count,
         apiCallsCount: it.api_calls_count,
         versionsCount: it.versions_count,
-        page: it.page
+        page: it.page,
+        restricted: it.restricted ?? null
     }));
     return { items, total: data.total ?? 0, page: data.page ?? page, pageSize: data.page_size ?? pageSize };
 }
 
 export async function getPlatforms(): Promise<PlatformRef[]> {
     const data = await api.get<any>("/platforms");
-    console.log(data)
     const array = Array.isArray(data?.items)
         ? data.items
         : Array.isArray(data?.platforms)

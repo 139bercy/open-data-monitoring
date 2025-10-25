@@ -3,7 +3,10 @@ import { Alert } from "@codegouvfr/react-dsfr/Alert";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import type { PlatformRef } from "../types/datasets";
 import { getPlatforms } from "../api/datasets";
-import {platformSyncsModal, PlatformSyncsModal} from "../components/PlatformSyncsModal";
+import {
+  platformSyncsModal,
+  PlatformSyncsModal,
+} from "../components/PlatformSyncsModal";
 
 export function PlatformListPage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
@@ -157,15 +160,15 @@ export function PlatformListPage(): JSX.Element {
                     </div>
                     <div className="fr-col-auto">
                       {platform.syncs?.length >= 1 && (
-                          <Button
-                              priority="secondary"
-                              onClick={() => {
-                                platformSyncsModal.open();
-                                setModalPlatform(platform);
-                              }}
-                          >
-                            Voir synchronisations
-                          </Button>
+                        <Button
+                          priority="secondary"
+                          onClick={() => {
+                            platformSyncsModal.open();
+                            setModalPlatform(platform);
+                          }}
+                        >
+                          Voir synchronisations
+                        </Button>
                       )}
                     </div>
                   </div>

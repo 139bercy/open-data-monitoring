@@ -10,6 +10,7 @@ export type DatasetSummary = {
     apiCallsCount?: number;   // present if include_counts=true
     versionsCount?: number;   // number of versions (dataset_versions)
     page: string;        // source link
+    restricted: boolean | null;
 };
 
 export type SnapshotVersion = {

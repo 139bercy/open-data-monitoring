@@ -140,7 +140,10 @@ export function DatasetListPage(): JSX.Element {
   }, [data.items, platformNameById]);
 
   return (
-    <div className="fr-container fr-my-6w">
+    <div className="fr-container fr-my-6w"
+         style={{ maxWidth: "70%", paddingLeft: 0, paddingRight: 0 }}
+
+    >
       <div
         style={{
           display: "flex",

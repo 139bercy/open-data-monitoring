@@ -69,6 +69,11 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
     const count = Math.max(1, skeletonRowCount ?? Math.min(10, pageSize || 10));
     return Array.from({ length: count }, (_, i) => [
       <span
+          key={`sk-status-${i}`}
+          className="fr-skeleton fr-skeleton--text"
+          aria-hidden="true"
+      />,
+      <span
         key={`sk-title-${i}`}
         className="fr-skeleton fr-skeleton--text"
         aria-hidden="true"
@@ -138,6 +143,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
       <Table
         caption="Liste des jeux de données"
         headers={[
+          "Statut",
           <button
             key="h-title"
             className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
@@ -287,6 +293,13 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
           loading
             ? skeletonRows
             : items.map((item) => [
+                <span
+                  className={`fr-badge ${
+                    item.restricted ? "fr-badge--error" : "fr-badge--success"
+                  }`}
+                >
+                  {item.restricted ? "🔒" : "✓"}
+                </span>,
                 item.title ?? "—",
                 item.platformName ?? item.platformId,
                 item.publisher ?? "—",
