@@ -69,9 +69,9 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
     const count = Math.max(1, skeletonRowCount ?? Math.min(10, pageSize || 10));
     return Array.from({ length: count }, (_, i) => [
       <span
-          key={`sk-status-${i}`}
-          className="fr-skeleton fr-skeleton--text"
-          aria-hidden="true"
+        key={`sk-status-${i}`}
+        className="fr-skeleton fr-skeleton--text"
+        aria-hidden="true"
       />,
       <span
         key={`sk-title-${i}`}
@@ -293,13 +293,24 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
           loading
             ? skeletonRows
             : items.map((item) => [
-                <span
-                  className={`fr-badge ${
-                    item.restricted ? "fr-badge--error" : "fr-badge--success"
-                  }`}
-                >
-                  {item.restricted ? "🔒" : "✓"}
-                </span>,
+                <div style={{ display: "flex", gap: "0.5rem", flexDirection: "column" }}>
+                  <span
+                    className={`fr-badge ${
+                      item.published ? "fr-badge--success" : "fr-badge--warning"
+                    }`}
+                    style={{ minWidth: "4rem", textAlign: "center", alignItems: "center" }}
+                  >
+                    {item.published ? "📢" : "🚧"}
+                  </span>
+                  <span
+                    className={`fr-badge ${
+                      item.restricted ? "fr-badge--error" : "fr-badge--success"
+                    }`}
+                    style={{ minWidth: "4rem", textAlign: "center", alignItems: "center" }}
+                  >
+                    {item.restricted ? "🔒" : "✓"}
+                  </span>
+                </div>,
                 item.title ?? "—",
                 item.platformName ?? item.platformId,
                 item.publisher ?? "—",

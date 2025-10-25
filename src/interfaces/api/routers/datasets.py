@@ -193,6 +193,8 @@ async def list_datasets(
                    d.publisher,
                    d.created,
                    d.modified,
+                   d.restricted,
+                   d.published,
                    d.slug,
                    d.page,
                    COALESCE(
@@ -222,6 +224,8 @@ async def list_datasets(
                 "title": r.get("title"),
                 "created": r["created"].isoformat() if r.get("created") else None,
                 "modified": r["modified"].isoformat() if r.get("modified") else None,
+                "restricted": r.get("restricted"),
+                "published": r.get("published"),
                 "downloads_count": r.get("downloads_count"),
                 "api_calls_count": r.get("api_calls_count"),
                 "versions_count": r.get("versions_count"),

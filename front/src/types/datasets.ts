@@ -11,6 +11,7 @@ export type DatasetSummary = {
     versionsCount?: number;   // number of versions (dataset_versions)
     page: string;        // source link
     restricted: boolean | null;
+    published: boolean | null;
 };
 
 export type SnapshotVersion = {

@@ -59,7 +59,8 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<Paginat
         apiCallsCount: it.api_calls_count,
         versionsCount: it.versions_count,
         page: it.page,
-        restricted: it.restricted ?? null
+        restricted: it.restricted ?? null,
+        published: it.published ?? null
     }));
     return { items, total: data.total ?? 0, page: data.page ?? page, pageSize: data.page_size ?? pageSize };
 }
