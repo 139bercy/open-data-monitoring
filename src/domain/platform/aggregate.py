@@ -14,6 +14,7 @@ class Platform:
         datasets_count=0,
         last_sync=None,
         created_at=None,
+        last_sync_status=None
     ):
         self.id = id
         self.name = name
@@ -24,12 +25,14 @@ class Platform:
         self.key = key
         self.datasets_count = datasets_count
         self.last_sync = last_sync
+        self.last_sync_status = last_sync_status
         self.created_at = created_at
         self.syncs = []
 
     def sync(self, timestamp, status, datasets_count):
         self.datasets_count = datasets_count
         self.last_sync = timestamp
+        self.last_sync_status = status
         return {
             "platform_id": self.id,
             "timestamp": timestamp,

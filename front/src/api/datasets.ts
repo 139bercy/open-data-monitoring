@@ -75,7 +75,7 @@ export async function getPlatforms(): Promise<PlatformRef[]> {
     return array.map((p: any) => ({
         id: p.id, name: p.name, created: p.created_at,
         slug: p.slug, type: p.type, url: p.url, key: p.key, lastSync: p.last_sync,
-        datasetsCount: p.datasets_count, syncs: p.syncs
+        lastSyncStatus: p.last_sync_status, datasetsCount: p.datasets_count, syncs: p.syncs
     }));
 }
 

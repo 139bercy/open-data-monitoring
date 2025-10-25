@@ -94,6 +94,7 @@ def _bind_to_platform_model(platforms_raw) -> List[PlatformDTO]:
             datasets_count=platform.get("datasets_count"),
             last_sync=platform.get("last_sync"),
             created_at=platform.get("created_at"),
+            last_sync_status=platform.get("last_sync_status"),
             syncs=platform.get("syncs")
         )
         for platform in platforms_raw

@@ -11,9 +11,7 @@ import {
 export function PlatformListPage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
   const [platforms, setPlatforms] = useState<PlatformRef[]>([]);
-
   const [modalPlatform, setModalPlatform] = useState<PlatformRef | null>(null);
 
   useEffect(() => {
@@ -131,12 +129,25 @@ export function PlatformListPage(): JSX.Element {
                         Dernière synchronisation
                       </p>
                       <p className="fr-text--sm fr-m-0 fr-text--grey">
-                        {platform.lastSync
-                          ? new Date(platform.lastSync).toLocaleString(
-                              "fr-FR",
-                              { timeZone: "UTC" }
-                            )
-                          : "Jamais"}
+                        <span
+                          className={`fr-badge ${
+                            platform.lastSyncStatus == "success"
+                              ? "fr-badge--success"
+                              : "fr-badge--warning"
+                          }`}
+                          style={{
+                            minWidth: "4rem",
+                            textAlign: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          {platform.lastSync
+                            ? new Date(platform.lastSync).toLocaleString(
+                                "fr-FR",
+                                { timeZone: "UTC" }
+                              )
+                            : "Jamais"}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -162,6 +173,7 @@ export function PlatformListPage(): JSX.Element {
                       {platform.syncs?.length >= 1 && (
                         <Button
                           priority="secondary"
+                          className="fr-btn fr-btn--sm"
                           onClick={() => {
                             platformSyncsModal.open();
                             setModalPlatform(platform);

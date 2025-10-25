@@ -77,6 +77,7 @@ export type PlatformRef = {
     url: string;
     key: string;
     lastSync: string
+    lastSyncStatus: string
     datasetsCount: number
     syncs?: PlatformSync[]
 };

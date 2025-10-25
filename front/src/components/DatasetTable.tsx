@@ -293,12 +293,22 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
           loading
             ? skeletonRows
             : items.map((item) => [
-                <div style={{ display: "flex", gap: "0.5rem", flexDirection: "column" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    flexDirection: "column",
+                  }}
+                >
                   <span
                     className={`fr-badge ${
                       item.published ? "fr-badge--success" : "fr-badge--warning"
                     }`}
-                    style={{ minWidth: "4rem", textAlign: "center", alignItems: "center" }}
+                    style={{
+                      minWidth: "4rem",
+                      textAlign: "center",
+                      alignItems: "center",
+                    }}
                   >
                     {item.published ? "📢" : "🚧"}
                   </span>
@@ -306,7 +316,11 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                     className={`fr-badge ${
                       item.restricted ? "fr-badge--error" : "fr-badge--success"
                     }`}
-                    style={{ minWidth: "4rem", textAlign: "center", alignItems: "center" }}
+                    style={{
+                      minWidth: "4rem",
+                      textAlign: "center",
+                      alignItems: "center",
+                    }}
                   >
                     {item.restricted ? "🔒" : "✓"}
                   </span>

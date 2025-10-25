@@ -58,6 +58,7 @@ export function PlatformSyncsModal(props: {
                           <p className="fr-text--xs fr-text--uppercase fr-m-0 fr-text--bold">
                             Statut
                           </p>
+
                           <p
                             className={`fr-text--sm fr-m-0 ${
                               sync.status === "success"

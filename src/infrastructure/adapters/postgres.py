@@ -18,8 +18,8 @@ class PostgresPlatformRepository(PlatformRepository):
     def save(self, platform: Platform) -> None:
         self.client.execute(
             """INSERT INTO platforms (
-                id, name, slug, type, url, organization_id, key, datasets_count, last_sync
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                id, name, slug, type, url, organization_id, key, datasets_count, last_sync, last_sync_status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 str(platform.id),
                 platform.name,
@@ -30,6 +30,7 @@ class PostgresPlatformRepository(PlatformRepository):
                 platform.key,
                 platform.datasets_count,
                 platform.last_sync,
+                platform.last_sync_status
             ),
         )
 
@@ -72,8 +73,8 @@ class PostgresPlatformRepository(PlatformRepository):
 
     def save_sync(self, platform_id, payload):
         self.client.execute(
-            """UPDATE platforms SET datasets_count = %s, last_sync = %s WHERE id = %s;""",
-            (payload["datasets_count"], payload["timestamp"], str(platform_id)),
+            """UPDATE platforms SET datasets_count = %s, last_sync = %s , last_sync_status = %s WHERE id = %s;""",
+            (payload["datasets_count"], payload["timestamp"], payload["status"], str(platform_id)),
         )
         self.client.execute(
             """INSERT INTO platform_sync_histories (platform_id, timestamp, status, datasets_count) VALUES (%s, %s, %s, %s)""",

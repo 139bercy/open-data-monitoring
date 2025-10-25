@@ -2,16 +2,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS platforms
 (
-    id              uuid PRIMARY KEY,
-    name            varchar(255) NOT NULL,
-    slug            varchar(255) NOT NULL UNIQUE,
-    type            varchar(50)  NOT NULL,
-    url             text         NOT NULL,
-    organization_id varchar(255) NOT NULL,
-    key             varchar(255),
-    datasets_count  int          NOT NULL DEFAULT 0,
-    last_sync       timestamptz,
-    created_at      timestamptz  NOT NULL DEFAULT NOW()
+    id               uuid PRIMARY KEY,
+    name             varchar(255) NOT NULL,
+    slug             varchar(255) NOT NULL UNIQUE,
+    type             varchar(50)  NOT NULL,
+    url              text         NOT NULL,
+    organization_id  varchar(255) NOT NULL,
+    key              varchar(255),
+    datasets_count   int          NOT NULL DEFAULT 0,
+    last_sync        timestamptz,
+    created_at       timestamptz  NOT NULL DEFAULT NOW(),
+    last_sync_status text CHECK ( last_sync_status IN ('success', 'failed'))
 );
 
 COMMENT ON TABLE platforms IS 'Table de stockage des plateformes de données';

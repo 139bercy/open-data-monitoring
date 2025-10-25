@@ -1,0 +1,1 @@
+ALTER TABLE platforms ADD COLUMN IF NOT EXISTS last_sync_status varchar(50) CHECK ( last_sync_status IN ('success', 'failed'));

@@ -26,6 +26,7 @@ class PlatformDTO(BaseModel):
     datasets_count: int
     last_sync: Optional[datetime]
     created_at: Optional[datetime]
+    last_sync_status: Optional[str] = None
     syncs: Optional[List[PlatformSync]] = None
 
     class Config:
