@@ -82,6 +82,18 @@ $ cp .env.sample .env
 $ app --help
 ```
 
+### API
+
+```
+$ python src/run_api.py
+```
+
+### Front
+
+```
+$ ./front/run_front.sh
+```
+
 ---
 
 ## Objectifs
