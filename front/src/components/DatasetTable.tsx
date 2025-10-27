@@ -65,6 +65,8 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
     [total, pageSize]
   );
 
+  console.log(items);
+
   const skeletonRows = useMemo(() => {
     const count = Math.max(1, skeletonRowCount ?? Math.min(10, pageSize || 10));
     return Array.from({ length: count }, (_, i) => [

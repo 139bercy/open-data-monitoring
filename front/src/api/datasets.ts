@@ -61,7 +61,9 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total
         page: it.page,
         restricted: it.restricted ?? null,
         published: it.published ?? null,
+        lastSync: it.last_sync,
         lastSyncStatus: it.last_sync_status,
+        hasDescription: it.has_description
     }));
     return { items, total: data.total ?? 0, page: data.page ?? page, pageSize: data.page_size ?? pageSize };
 }
@@ -113,7 +115,8 @@ export async function getDatasetDetail(id: string, includeSnapshots = false): Pr
         published: data.published ?? null,
         restricted: data.restricted ?? null,
         currentSnapshot: data.current_snapshot ? mapSnap(data.current_snapshot) : null,
-        snapshots: Array.isArray(data.snapshots) ? data.snapshots.map(mapSnap) : undefined
+        snapshots: Array.isArray(data.snapshots) ? data.snapshots.map(mapSnap) : undefined,
+        hasDescription: data.has_description
     };
 }
 

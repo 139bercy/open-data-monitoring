@@ -13,6 +13,7 @@ export type DatasetSummary = {
     restricted: boolean | null;
     published: boolean | null;
     lastSyncStatus: string;
+    hasDescription: boolean;
 };
 
 export type SnapshotVersion = {
@@ -36,6 +37,7 @@ export type DatasetDetail = {
     modified: string;
     published: boolean | null;
     restricted: boolean | null;
+    hasDescription: boolean;
     currentSnapshot: SnapshotVersion | null;
     snapshots?: SnapshotVersion[] | null; // only when include_snapshots=true
 };

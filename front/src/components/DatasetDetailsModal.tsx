@@ -75,7 +75,14 @@ function SnapshotItem(props: {
           )}
 
           {"data" in snap && (snap as any).data && (
-            <div style={{ overflowX: "auto", maxWidth: "100%" }}>
+            <div
+              style={{
+                overflowX: "auto",
+                maxWidth: "100%",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <pre
                 className="fr-text--xs"
                 aria-label="Snapshot JSON"
@@ -110,6 +117,8 @@ export function DatasetDetailsModal(
     new Set()
   );
   const [renderKey, setRenderKey] = useState(0);
+
+  console.log(dataset);
 
   useEffect(() => {
     setRenderKey((r) => r + 1);
@@ -206,6 +215,22 @@ export function DatasetDetailsModal(
               />
             )}
             <div className="fr-mb-3w">
+              <div className="fr-mb-3w">
+                <span
+                  className={`fr-badge ${
+                    dataset.hasDescription
+                      ? "fr-badge--success"
+                      : "fr-badge--error"
+                  }`}
+                  style={{
+                    minWidth: "4rem",
+                    textAlign: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  {dataset.hasDescription ? "Description" : "Description"}{" "}
+                </span>
+              </div>
               <p className="fr-text--sm">
                 <strong>Plateforme:</strong>{" "}
                 {platformName ? (
@@ -256,7 +281,6 @@ export function DatasetDetailsModal(
                 Voir sur la plateforme
               </a>
             </div>
-
             {dataset.currentSnapshot && (
               <div className="fr-mb-2w">
                 <h6 className="fr-h6">Snapshot courant</h6>
