@@ -58,9 +58,9 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             app.dataset.repository.update_dataset_sync_status(
                 platform_id=platform.id, dataset_id=dataset_id, status="failed"
             )
-        instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
-        if instance is None:
-            return
+    instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
+    if instance is None:
+        return
     with app.uow:
         instance.calculate_hash()
         existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)
@@ -72,15 +72,15 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             return instance.id
         existing_dataset = app.dataset.repository.get_by_buid(instance.buid)
         if existing_dataset:
-            logger.info(
-                f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created"
-            )
             instance.id = existing_dataset.id
             app.dataset.repository.add(dataset=instance)
             add_version(app=app, dataset_id=str(existing_dataset.id), instance=instance)
             dataset_id = existing_dataset.id
+            logger.info(
+                f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created"
+            )
         else:
-            logger.warn(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
+            logger.warning(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
             app.dataset.repository.add(dataset=instance)
             add_version(app=app, dataset_id=str(instance.id), instance=instance)
             dataset_id = instance.id

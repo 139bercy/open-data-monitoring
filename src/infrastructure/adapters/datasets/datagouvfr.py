@@ -1,6 +1,7 @@
 import requests
 
 from application.dtos.dataset import DatasetDTO
+from domain.datasets.value_objects import DatasetQuality
 from domain.platform.ports import DatasetAdapter
 from exceptions import DatasetUnreachableError
 
@@ -42,6 +43,11 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             ),
             None,
         )
+        quality = DatasetQuality(
+            downloads_count=metrics.get("resources_downloads", None),
+            api_calls_count=None,
+            has_description=True if kwargs.get("description", None) else False,
+        )
         dataset = DatasetDTO(
             buid=id,
             slug=slug,
@@ -53,5 +59,6 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             restricted=False if archived is None else True,
             downloads_count=metrics.get("resources_downloads", None),
             api_calls_count=None,
+            quality=quality,
         )
         return dataset

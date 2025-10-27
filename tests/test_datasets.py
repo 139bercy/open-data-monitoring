@@ -1,9 +1,7 @@
 from uuid import UUID
 
-import pytest
 
 from application.handlers import upsert_dataset
-from exceptions import DatasetUnreachableError
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
 
@@ -20,6 +18,8 @@ def test_create_opendatasoft_dataset(app, platform, ods_dataset):
     # Assert
     assert isinstance(result.id, UUID)
     assert len(result.versions) == 1
+    assert result.quality.has_description is not None
+    print(result.quality)
 
 
 def test_should_handle_unreachable_dataset(app, platform, ods_dataset):

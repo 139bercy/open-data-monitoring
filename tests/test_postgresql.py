@@ -81,6 +81,7 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     assert isinstance(result.id, UUID)
     assert result.id == dataset_id
     assert result.last_sync_status == "success"
+    assert result.quality.has_description is not None
 
 
 def test_postgresql_get_dataset_checksum_by_buid(
@@ -115,11 +116,14 @@ def test_postgresql_dataset_has_changed(
         platform=platform,
         dataset=ods_dataset,
     )
+    result = app.dataset.repository.get(dataset_id=dataset_id)
     # Act
     new = {**ods_dataset, "field": "new"}
     upsert_dataset(app=app, platform=platform, dataset=new)
     result = app.dataset.repository.get(dataset_id=dataset_id)
+
     # Assert
+    repr([version.dataset_id for version in result.versions])
     assert result.id == dataset_id
     assert len(result.versions) == 2
 

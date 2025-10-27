@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from uuid import uuid4
 from typing import cast
 
@@ -36,6 +37,7 @@ class DatasetMonitoring:
                 api_calls_count=dto.api_calls_count,
                 raw=dataset,
             )
+            result.add_quality(**asdict(dto.quality))
             return result
         except TypeError as e:
             logger.error(

@@ -37,5 +37,3 @@ class InMemoryDatasetAdapter(DatasetAdapter):
             api_calls_count=api_calls_count,
         )
         return dataset
-
-

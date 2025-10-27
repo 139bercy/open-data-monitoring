@@ -61,9 +61,16 @@ def setup_test_database():
     postgres.execute(f"CREATE DATABASE {TEST_DB};")
 
     try:
-        with psycopg2.connect(
-            dbname=TEST_DB, user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT
-        ) as migration_conn, migration_conn.cursor() as cur:
+        with (
+            psycopg2.connect(
+                dbname=TEST_DB,
+                user=TEST_USER,
+                password=TEST_PASSWORD,
+                host=HOST,
+                port=PORT,
+            ) as migration_conn,
+            migration_conn.cursor() as cur,
+        ):
             cur.execute(open("db/init.sql").read())
             migration_conn.commit()
     finally:

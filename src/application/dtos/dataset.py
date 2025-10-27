@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
+from domain.datasets.value_objects import DatasetQuality
+
 
 @dataclass
 class DatasetDTO:
@@ -15,6 +17,7 @@ class DatasetDTO:
     restricted: bool
     downloads_count: int
     api_calls_count: int
+    quality: DatasetQuality
 
 
 @dataclass

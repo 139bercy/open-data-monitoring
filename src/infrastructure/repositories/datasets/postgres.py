@@ -44,17 +44,22 @@ class PostgresDatasetRepository(DatasetRepository):
                     dataset.restricted,
                 ),
             )
+            self.client.execute(
+                "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description) "
+                "VALUES (%s, %s, %s, %s)"
+                "ON CONFLICT (id) DO UPDATE SET "
+                "downloads_count = EXCLUDED.downloads_count, "
+                "api_calls_count = EXCLUDED.api_calls_count, "
+                "has_description = EXCLUDED.has_description",
+                (
+                    str(dataset.id),
+                    dataset.quality.downloads_count,
+                    dataset.quality.api_calls_count,
+                    dataset.quality.has_description,
+                ),
+            )
         except Exception as e:
             print(e)
-
-    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
-        row = self.client.fetchone(
-            "SELECT * FROM datasets WHERE buid = %s", (dataset_buid,)
-        )
-        if row:
-            row["id"] = uuid.UUID(row["id"])
-            return Dataset.from_dict(row)
-        return None
 
     def add_version(
         self,
@@ -64,6 +69,7 @@ class PostgresDatasetRepository(DatasetRepository):
         downloads_count: int,
         api_calls_count: int,
     ) -> None:
+        print("DB ADD VERSION")
         self.client.execute(
             "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count, api_calls_count) VALUES (%s, %s, %s, %s, %s)",
             (
@@ -75,26 +81,53 @@ class PostgresDatasetRepository(DatasetRepository):
             ),
         )
 
+    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
+        row = self.client.fetchone(
+            "SELECT * FROM datasets WHERE buid = %s", (dataset_buid,)
+        )
+        if row:
+            row["id"] = uuid.UUID(row["id"])
+            return Dataset.from_dict(row)
+        return None
+
     def get(self, dataset_id) -> Dataset:
         data = self.client.fetchone(
             """
-            SELECT d.*, COALESCE(jsonb_agg(jsonb_build_object(
+            SELECT d.*, 
+            COALESCE(jsonb_agg(jsonb_build_object(
+                'version_id', dv.id,
                 'dataset_id', dv.dataset_id,
                 'snapshot', dv.snapshot,
                 'checksum', dv.checksum, 
                 'downloads_count', dv.downloads_count, 
                 'api_calls_count', dv.api_calls_count
-            ) ORDER BY dv.timestamp), '[]'::jsonb) AS versions
+            ) ORDER BY dv.timestamp), '[]'::jsonb) AS versions,
+           (
+               SELECT jsonb_build_object(
+                              'downloads_count', dq.downloads_count,
+                              'api_calls_count', dq.api_calls_count,
+                              'has_description', dq.has_description
+                          )
+               FROM dataset_quality dq
+               WHERE dq.dataset_id = d.id
+               LIMIT 1
+           ) AS quality
             FROM datasets d
-            LEFT JOIN dataset_versions dv ON dv.dataset_id = d.id
-            WHERE d.id = %s 
-            GROUP BY d.id;
+            JOIN dataset_versions dv ON dv.dataset_id = d.id
+            JOIN dataset_quality dq ON d.id = dq.dataset_id
+            WHERE d.id = %s
+            GROUP BY d.id LIMIT 1;
             """,
             (str(dataset_id),),
         )
         data["id"] = uuid.UUID(data["id"])
         dataset = Dataset.from_dict(data)
-        for version in data["versions"]:
+        dataset.add_quality(**data["quality"])
+        versions = self.client.fetchall(
+            "SELECT dataset_id, snapshot, checksum, downloads_count, api_calls_count from dataset_versions WHERE dataset_id = %s;",
+            (str(dataset_id),),
+        )
+        for version in versions:
             dataset.add_version(**version)
         return dataset
 
@@ -123,7 +156,6 @@ class PostgresDatasetRepository(DatasetRepository):
             f"""SELECT id FROM datasets WHERE platform_id = %s AND slug = %s; """,
             (str(platform_id), slug),
         )
-        print(result)
         return result["id"]
 
     def update_dataset_sync_status(self, platform_id, dataset_id, status):

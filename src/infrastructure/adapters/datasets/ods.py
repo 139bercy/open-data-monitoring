@@ -3,6 +3,7 @@ import os
 import requests
 
 from application.dtos.dataset import DatasetDTO
+from domain.datasets.value_objects import DatasetQuality
 from domain.platform.ports import DatasetAdapter
 from exceptions import DatasetUnreachableError
 
@@ -54,6 +55,13 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         *args,
         **kwargs,
     ) -> DatasetDTO:
+        quality = DatasetQuality(
+            downloads_count=kwargs.get("download_count", None),
+            api_calls_count=kwargs.get("api_call_count", None),
+            has_description=(
+                True if metadata.get("default", {}).get("description", None) else False
+            ),
+        )
         dataset = DatasetDTO(
             buid=uid,
             slug=dataset_id,
@@ -67,5 +75,6 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             restricted=is_restricted,
             downloads_count=kwargs.get("download_count", None),
             api_calls_count=kwargs.get("api_call_count", None),
+            quality=quality,
         )
         return dataset

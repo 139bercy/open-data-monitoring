@@ -3,9 +3,11 @@ import json
 from datetime import datetime
 from uuid import UUID
 from dataclasses import asdict
+from typing import List
 
 from common import JsonSerializer
 from domain.datasets.entities import DatasetVersion
+from domain.datasets.value_objects import DatasetQuality
 
 
 class Dataset:
@@ -40,8 +42,9 @@ class Dataset:
         self.api_calls_count = api_calls_count
         self.raw = raw
         self.checksum = None
-        self.versions = []
+        self.versions: List[DatasetVersion] | None = []
         self.last_sync_status = last_sync_status
+        self.quality = None
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -68,6 +71,13 @@ class Dataset:
             api_calls_count=api_calls_count,
         )
         self.versions.append(version)
+
+    def add_quality(self, downloads_count, api_calls_count, has_description):
+        self.quality = DatasetQuality(
+            downloads_count=downloads_count,
+            api_calls_count=api_calls_count,
+            has_description=has_description,
+        )
 
     @classmethod
     def from_dict(cls, data):
@@ -104,6 +114,8 @@ class Dataset:
         return f"<Dataset: {self.slug}>"
 
     def __str__(self):
-        versions = [asdict(version) for version in self.versions]
-        self.versions = versions
+        versions, quality = [asdict(version) for version in self.versions], asdict(
+            self.quality
+        )
+        self.versions, self.quality = versions, quality
         return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)
