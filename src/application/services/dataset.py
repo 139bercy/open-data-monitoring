@@ -1,6 +1,6 @@
 from dataclasses import asdict
-from uuid import uuid4
 from typing import cast
+from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset

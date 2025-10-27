@@ -58,17 +58,13 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         quality = DatasetQuality(
             downloads_count=kwargs.get("download_count", None),
             api_calls_count=kwargs.get("api_call_count", None),
-            has_description=(
-                True if metadata.get("default", {}).get("description", None) else False
-            ),
+            has_description=(True if metadata.get("default", {}).get("description", None) else False),
         )
         dataset = DatasetDTO(
             buid=uid,
             slug=dataset_id,
             page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
-            publisher=metadata.get("default", {})
-            .get("publisher", {})
-            .get("value", None),
+            publisher=metadata.get("default", {}).get("publisher", {}).get("value", None),
             created=created_at,
             modified=updated_at,
             published=is_published,

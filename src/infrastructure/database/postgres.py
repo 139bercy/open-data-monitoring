@@ -4,9 +4,7 @@ import psycopg2.extras
 
 class PostgresClient:
     def __init__(self, dbname, user, password, host="localhost", port=5432):
-        self.connection = psycopg2.connect(
-            dbname=dbname, user=user, password=password, host=host, port=port
-        )
+        self.connection = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
         self.connection.autocommit = False
 
     def execute(self, query, params=None):

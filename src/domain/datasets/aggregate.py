@@ -1,9 +1,9 @@
 import hashlib
 import json
-from datetime import datetime
-from uuid import UUID
 from dataclasses import asdict
+from datetime import datetime
 from typing import List
+from uuid import UUID
 
 from common import JsonSerializer
 from domain.datasets.entities import DatasetVersion
@@ -84,22 +84,16 @@ class Dataset:
         return cls(
             id=UUID(data["id"]) if not isinstance(data["id"], UUID) else data["id"],
             platform_id=(
-                UUID(data["platform_id"])
-                if not isinstance(data["platform_id"], UUID)
-                else data["platform_id"]
+                UUID(data["platform_id"]) if not isinstance(data["platform_id"], UUID) else data["platform_id"]
             ),
             buid=data["buid"],
             slug=data["slug"],
             page=data["page"],
             created=(
-                data["created"]
-                if isinstance(data["created"], datetime)
-                else datetime.fromisoformat(data["created"])
+                data["created"] if isinstance(data["created"], datetime) else datetime.fromisoformat(data["created"])
             ),
             modified=(
-                data["modified"]
-                if isinstance(data["modified"], datetime)
-                else datetime.fromisoformat(data["modified"])
+                data["modified"] if isinstance(data["modified"], datetime) else datetime.fromisoformat(data["modified"])
             ),
             published=bool(data.get("published", True)),
             restricted=bool(data.get("restricted", False)),
@@ -114,8 +108,6 @@ class Dataset:
         return f"<Dataset: {self.slug}>"
 
     def __str__(self):
-        versions, quality = [asdict(version) for version in self.versions], asdict(
-            self.quality
-        )
+        versions, quality = [asdict(version) for version in self.versions], asdict(self.quality)
         self.versions, self.quality = versions, quality
         return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)

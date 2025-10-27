@@ -1,14 +1,11 @@
-from fastapi import APIRouter, HTTPException
 from typing import List
 from uuid import UUID
-from settings import app as domain_app
+
+from fastapi import APIRouter, HTTPException
+
 from application.handlers import create_platform
-from interfaces.api.schemas.platforms import (
-    PlatformsResponse,
-    PlatformDTO,
-    PlatformCreateDTO,
-    PlatformCreateResponse,
-)
+from interfaces.api.schemas.platforms import PlatformCreateDTO, PlatformCreateResponse, PlatformDTO, PlatformsResponse
+from settings import app as domain_app
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])
 
@@ -26,9 +23,7 @@ async def get_platforms():
         platforms_raw = domain_app.platform.get_all_platforms()
         platforms = _bind_to_platform_model(platforms_raw)
         platforms_DTO = [PlatformDTO(**vars(p)) for p in platforms]
-        return PlatformsResponse(
-            platforms=platforms_DTO, total_platforms=len(platforms)
-        )
+        return PlatformsResponse(platforms=platforms_DTO, total_platforms=len(platforms))
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -80,11 +75,7 @@ def _bind_to_platform_model(platforms_raw) -> List[PlatformDTO]:
 
     return [
         PlatformDTO(
-            id=(
-                UUID(platform["id"])
-                if isinstance(platform["id"], str)
-                else platform["id"]
-            ),
+            id=(UUID(platform["id"]) if isinstance(platform["id"], str) else platform["id"]),
             name=platform["name"],
             slug=platform["slug"],
             type=platform["type"],

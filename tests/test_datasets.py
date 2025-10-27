@@ -1,6 +1,5 @@
 from uuid import UUID
 
-
 from application.handlers import upsert_dataset
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
@@ -55,9 +54,7 @@ def test_dataset_schema(app, platform, ods_dataset):
     assert result.versions[0]["api_calls_count"] is not None
 
 
-def test_create_opendatasoft_dataset_platform_does_not_exist(
-    app, platform, ods_dataset
-):
+def test_create_opendatasoft_dataset_platform_does_not_exist(app, platform, ods_dataset):
     # Arrange
     platform.type = "opendatasoft"
     dataset_id = upsert_dataset(
@@ -147,9 +144,7 @@ def test_get_checksum_by_buid(app, platform, ods_dataset):
     platform.type = "opendatasoft"
     upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
     # Act
-    checksum = app.dataset.repository.get_checksum_by_buid(
-        dataset_buid=ods_dataset["uid"]
-    )
+    checksum = app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
     # Assert
     assert checksum is not None
     assert len(checksum) == 64

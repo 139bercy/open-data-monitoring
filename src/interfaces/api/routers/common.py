@@ -25,15 +25,10 @@ async def get_publishers_endpoint():
 
         # Transform raw data to Pydantic models
         publishers = [
-            PublisherStats(
-                publisher=pub["publisher"], dataset_count=pub["dataset_count"]
-            )
-            for pub in publishers_data
+            PublisherStats(publisher=pub["publisher"], dataset_count=pub["dataset_count"]) for pub in publishers_data
         ]
 
-        return PublishersResponse(
-            publishers=publishers, total_publishers=len(publishers)
-        )
+        return PublishersResponse(publishers=publishers, total_publishers=len(publishers))
 
     except Exception as e:
         # TODO: Ajouter un système d'exceptions API structuré

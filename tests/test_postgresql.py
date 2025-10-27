@@ -84,9 +84,7 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     assert result.quality.has_description is not None
 
 
-def test_postgresql_get_dataset_checksum_by_buid(
-    platform_app, platform, db_transaction, ods_dataset
-):
+def test_postgresql_get_dataset_checksum_by_buid(platform_app, platform, db_transaction, ods_dataset):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"
@@ -97,16 +95,12 @@ def test_postgresql_get_dataset_checksum_by_buid(
         dataset=ods_dataset,
     )
     # Act
-    checksum = app.dataset.repository.get_checksum_by_buid(
-        dataset_buid=ods_dataset["uid"]
-    )
+    checksum = app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
     # Assert
     assert len(checksum) == 64
 
 
-def test_postgresql_dataset_has_changed(
-    platform_app, platform, db_transaction, ods_dataset
-):
+def test_postgresql_dataset_has_changed(platform_app, platform, db_transaction, ods_dataset):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"
@@ -116,21 +110,16 @@ def test_postgresql_dataset_has_changed(
         platform=platform,
         dataset=ods_dataset,
     )
-    result = app.dataset.repository.get(dataset_id=dataset_id)
     # Act
     new = {**ods_dataset, "field": "new"}
     upsert_dataset(app=app, platform=platform, dataset=new)
-    result = app.dataset.repository.get(dataset_id=dataset_id)
-
     # Assert
-    repr([version.dataset_id for version in result.versions])
+    result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.id == dataset_id
     assert len(result.versions) == 2
 
 
-def test_postgresql_should_handle_unreachable_dataset(
-    platform_app, platform, db_transaction, ods_dataset
-):
+def test_postgresql_should_handle_unreachable_dataset(platform_app, platform, db_transaction, ods_dataset):
     # Arrange
     platform_id = create_platform(platform_app, platform_1)
     platform.id, platform.type = platform_id, "opendatasoft"

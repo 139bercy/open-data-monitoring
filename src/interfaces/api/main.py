@@ -8,7 +8,7 @@ via des endpoints HTTP. Suit les principes DDD en réutilisant les handlers exis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from interfaces.api.routers import common, platforms, datasets, publishers
+from interfaces.api.routers import common, datasets, platforms, publishers
 from settings import ENV
 
 # Configuration de l'application FastAPI

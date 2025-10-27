@@ -40,9 +40,7 @@ class InMemoryDatasetRepository(DatasetRepository):
     def get(self, dataset_id) -> Dataset:
         dataset = next((item for item in self.db if item.id == dataset_id), None)
         if dataset is not None:
-            dataset.versions = [
-                item for item in self.versions if item["dataset_id"] == dataset_id
-            ]
+            dataset.versions = [item for item in self.versions if item["dataset_id"] == dataset_id]
         if dataset is None:
             raise ValueError(f"Dataset with id {dataset_id} not found")
         return dataset
@@ -65,8 +63,7 @@ class InMemoryDatasetRepository(DatasetRepository):
         publisher_counts = Counter(publishers)
 
         return [
-            {"publisher": publisher, "dataset_count": count}
-            for publisher, count in sorted(publisher_counts.items())
+            {"publisher": publisher, "dataset_count": count} for publisher, count in sorted(publisher_counts.items())
         ]
 
     def get_id_by_slug(self, platform_id, slug):

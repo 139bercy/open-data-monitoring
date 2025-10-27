@@ -4,7 +4,7 @@ from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.datasets.aggregate import Dataset
 from domain.platform.aggregate import Platform
-from exceptions import DatasetUnreachableError, DatasetHasNotChanged
+from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 from settings import App
@@ -52,9 +52,7 @@ def find_dataset_id_from_url(app: App, url: str) -> str | None:
 def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     with app.uow:
         if dataset.get("sync_status", None) == "failed":
-            dataset_id = app.dataset.repository.get_id_by_slug(
-                platform_id=platform.id, slug=dataset["slug"]
-            )
+            dataset_id = app.dataset.repository.get_id_by_slug(platform_id=platform.id, slug=dataset["slug"])
             app.dataset.repository.update_dataset_sync_status(
                 platform_id=platform.id, dataset_id=dataset_id, status="failed"
             )
@@ -76,9 +74,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             app.dataset.repository.add(dataset=instance)
             add_version(app=app, dataset_id=str(existing_dataset.id), instance=instance)
             dataset_id = existing_dataset.id
-            logger.info(
-                f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created"
-            )
+            logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
         else:
             logger.warning(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
             app.dataset.repository.add(dataset=instance)
@@ -107,9 +103,7 @@ def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
         dataset = adapter.fetch(platform.url, platform.key, dataset_id)
         return dataset
     except DatasetUnreachableError:
-        logger.error(
-            f"{platform.type.upper()} - Fetch Dataset - Dataset '{dataset_id}' not found"
-        )
+        logger.error(f"{platform.type.upper()} - Fetch Dataset - Dataset '{dataset_id}' not found")
         return {"platform_id": platform.id, "slug": dataset_id, "sync_status": "failed"}
 
 

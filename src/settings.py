@@ -7,7 +7,7 @@ from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from domain.unit_of_work import UnitOfWork
 from infrastructure.database.postgres import PostgresClient
-from infrastructure.unit_of_work import PostgresUnitOfWork, InMemoryUnitOfWork
+from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = os.path.join(BASE_DIR, ".env")

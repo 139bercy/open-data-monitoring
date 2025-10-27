@@ -2,8 +2,9 @@
 Schemas Pydantic pour les endpoints publishers
 """
 
-from pydantic import BaseModel
 from typing import List
+
+from pydantic import BaseModel
 
 
 class PublisherStats(BaseModel):

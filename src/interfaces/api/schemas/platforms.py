@@ -2,10 +2,11 @@
 Schemas Pydantic pour les endpoints platforms
 """
 
-from pydantic import BaseModel
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
+
+from pydantic import BaseModel
 
 
 class PlatformSync(BaseModel):

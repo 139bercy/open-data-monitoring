@@ -11,9 +11,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
         query = f"{url}/api/1/datasets/{dataset_id}/"
         response = requests.get(query)
         if response.status_code != 200:
-            raise DatasetUnreachableError(
-                f"DATAGOUVFR :: {response.status_code} for '{query}'"
-            )
+            raise DatasetUnreachableError(f"DATAGOUVFR :: {response.status_code} for '{query}'")
         return response.json()
 
     @staticmethod
@@ -36,11 +34,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
         **kwargs,
     ):
         publisher = next(
-            (
-                item.get("name")
-                for item in contact_points
-                if item["role"] == "publisher"
-            ),
+            (item.get("name") for item in contact_points if item["role"] == "publisher"),
             None,
         )
         quality = DatasetQuality(

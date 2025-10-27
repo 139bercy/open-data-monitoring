@@ -2,10 +2,12 @@
 Script de lancement de l'API Open Data Monitoring
 """
 
+import os
+
 import uvicorn
+
 from interfaces.api.main import api_app
 from settings import ENV
-import os
 
 if __name__ == "__main__":
     # Configuration adaptée à l'environnement

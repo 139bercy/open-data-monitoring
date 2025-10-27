@@ -6,8 +6,8 @@ import psycopg2
 import pytest
 
 from domain.platform.aggregate import Platform
-from infrastructure.unit_of_work import InMemoryUnitOfWork
 from infrastructure.database.postgres import PostgresClient
+from infrastructure.unit_of_work import InMemoryUnitOfWork
 from settings import App
 from tests.fixtures.fixtures import platform_1
 
@@ -53,9 +53,7 @@ def platform(app):
 
 @pytest.fixture()
 def setup_test_database():
-    postgres = PostgresClient(
-        dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT
-    )
+    postgres = PostgresClient(dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT)
     postgres.connection.set_session(autocommit=True)
     postgres.execute(f"DROP DATABASE IF EXISTS {TEST_DB};")
     postgres.execute(f"CREATE DATABASE {TEST_DB};")
