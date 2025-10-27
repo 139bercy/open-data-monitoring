@@ -41,6 +41,25 @@ function SnapshotItem(props: {
   const hasDiff =
     !!diff && diff.added.length + diff.removed.length + diff.changed.length > 0;
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "absolute";
+        textarea.style.left = "-999999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        textarea.remove();
+      }
+    } catch (err) {
+      console.error("Erreur copie:", err);
+    }
+  };
+
   return (
     <div
       style={{
@@ -83,6 +102,15 @@ function SnapshotItem(props: {
                 flexDirection: "column",
               }}
             >
+              <button
+                className="fr-btn fr-btn--secondary"
+                onClick={() =>
+                  copyToClipboard(JSON.stringify((snap as any).data, null, 2))
+                }
+                style={{ width: "100%" }}
+              >
+                Copier
+              </button>
               <pre
                 className="fr-text--xs"
                 aria-label="Snapshot JSON"
