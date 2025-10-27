@@ -8,7 +8,7 @@ from application.commands.platform import SyncPlatform
 from application.handlers import create_platform, upsert_dataset
 from application.services.dataset import DatasetMonitoring
 from exceptions import DatasetUnreachableError
-from infrastructure.adapters.postgres import PostgresDatasetRepository
+from infrastructure.repositories.datasets.postgres import PostgresDatasetRepository
 from infrastructure.unit_of_work import PostgresUnitOfWork
 from settings import App, app
 from tests.fixtures.fixtures import platform_1
@@ -134,12 +134,11 @@ def test_postgresql_should_handle_unreachable_dataset(
     dataset_id = upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
     # Act
-    with pytest.raises(DatasetUnreachableError):
-        upsert_dataset(
-            app=app,
-            platform=platform,
-            dataset={"slug": dataset.slug, "sync_status": "failed"},
-        )
-        # Assert
-        result = app.dataset.repository.get(dataset_id=dataset_id)
-        assert result.last_sync_status == "failed"
+    upsert_dataset(
+        app=app,
+        platform=platform,
+        dataset={"slug": dataset.slug, "sync_status": "failed"},
+    )
+    # Assert
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    assert result.last_sync_status == "failed"

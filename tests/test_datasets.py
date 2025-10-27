@@ -4,7 +4,7 @@ import pytest
 
 from application.handlers import upsert_dataset
 from exceptions import DatasetUnreachableError
-from infrastructure.adapters.ods import OpendatasoftDatasetAdapter
+from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
 
 def test_create_opendatasoft_dataset(app, platform, ods_dataset):
@@ -28,15 +28,14 @@ def test_should_handle_unreachable_dataset(app, platform, ods_dataset):
     dataset_id = upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
     # Act
-    with pytest.raises(DatasetUnreachableError):
-        upsert_dataset(
-            app=app,
-            platform=platform,
-            dataset={"slug": dataset.slug, "sync_status": "failed"},
-        )
-        # Assert
-        result = app.dataset.repository.get(dataset_id=dataset_id)
-        assert result.last_sync_status == "failed"
+    upsert_dataset(
+        app=app,
+        platform=platform,
+        dataset={"slug": dataset.slug, "sync_status": "failed"},
+    )
+    # Assert
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    assert result.last_sync_status == "failed"
 
 
 def test_dataset_schema(app, platform, ods_dataset):

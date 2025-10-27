@@ -6,9 +6,8 @@ from dotenv import load_dotenv
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from domain.unit_of_work import UnitOfWork
-from infrastructure.adapters.in_memory import InMemoryUnitOfWork
 from infrastructure.database.postgres import PostgresClient
-from infrastructure.unit_of_work import PostgresUnitOfWork
+from infrastructure.unit_of_work import PostgresUnitOfWork, InMemoryUnitOfWork
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = os.path.join(BASE_DIR, ".env")

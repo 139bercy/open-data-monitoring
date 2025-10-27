@@ -1,7 +1,7 @@
 from domain.platform.ports import AbstractDatasetAdapterFactory, DatasetAdapter
-from infrastructure.adapters.datagouvfr import DatagouvDatasetAdapter
-from infrastructure.adapters.in_memory import InMemoryDatasetAdapter
-from infrastructure.adapters.ods import OpendatasoftDatasetAdapter
+from infrastructure.adapters.datasets.datagouvfr import DatagouvDatasetAdapter
+from infrastructure.adapters.datasets.in_memory import InMemoryDatasetAdapter
+from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
 
 class DatasetAdapterFactory(AbstractDatasetAdapterFactory):

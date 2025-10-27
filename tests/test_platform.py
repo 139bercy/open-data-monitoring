@@ -7,9 +7,9 @@ from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
 from application.handlers import create_platform, find_platform_from_url, sync_platform
-from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
-from infrastructure.adapters.in_memory import InMemoryAdapter
-from infrastructure.adapters.ods import OpendatasoftAdapter
+from infrastructure.adapters.platforms.datagouvfr import DataGouvPlatformAdapter
+from infrastructure.adapters.platforms.in_memory import InMemoryAdapter
+from infrastructure.adapters.platforms.ods import OpendatasoftPlatformAdapter
 from infrastructure.factories.platform import PlatformAdapterFactory
 from tests.fixtures.fixtures import platform_1
 
@@ -57,7 +57,7 @@ def test_factory_should_return_opendatasoft():
         key="TEST_API_KEY",
         slug="slug",
     )
-    assert isinstance(adapter, OpendatasoftAdapter)
+    assert isinstance(adapter, OpendatasoftPlatformAdapter)
 
 
 def test_factory_should_return_data_gouv_fr():
@@ -69,7 +69,7 @@ def test_factory_should_return_data_gouv_fr():
         key="TEST_API_KEY",
         slug="slug",
     )
-    assert isinstance(adapter, DataGouvFrAdapter)
+    assert isinstance(adapter, DataGouvPlatformAdapter)
 
 
 def test_factory_should_return_in_memory():

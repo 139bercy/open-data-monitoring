@@ -1,7 +1,7 @@
 from domain.platform.ports import AbstractPlatformAdapterFactory, PlatformAdapter
-from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
-from infrastructure.adapters.in_memory import InMemoryAdapter
-from infrastructure.adapters.ods import OpendatasoftAdapter
+from infrastructure.adapters.platforms.datagouvfr import DataGouvPlatformAdapter
+from infrastructure.adapters.platforms.in_memory import InMemoryAdapter
+from infrastructure.adapters.platforms.ods import OpendatasoftPlatformAdapter
 
 
 class PlatformAdapterFactory(AbstractPlatformAdapterFactory):
@@ -9,9 +9,9 @@ class PlatformAdapterFactory(AbstractPlatformAdapterFactory):
         self, platform_type: str, url: str, key: str, slug: str
     ) -> PlatformAdapter:
         if platform_type == "opendatasoft":
-            return OpendatasoftAdapter(url=url, key=key, slug=slug)
+            return OpendatasoftPlatformAdapter(url=url, key=key, slug=slug)
         elif platform_type == "datagouvfr":
-            return DataGouvFrAdapter(url=url, key=key, slug=slug)
+            return DataGouvPlatformAdapter(url=url, key=key, slug=slug)
         elif platform_type == "test":
             return InMemoryAdapter(url=url, key=key, slug=slug)
         else:

@@ -1,8 +1,8 @@
 from domain.unit_of_work import UnitOfWork
-from infrastructure.adapters.postgres import (
-    PostgresDatasetRepository,
-    PostgresPlatformRepository,
-)
+from infrastructure.repositories.datasets.in_memory import InMemoryDatasetRepository
+from infrastructure.repositories.datasets.postgres import PostgresDatasetRepository
+from infrastructure.repositories.platforms.in_memory import InMemoryPlatformRepository
+from infrastructure.repositories.platforms.postgres import PostgresPlatformRepository
 from infrastructure.database.postgres import PostgresClient
 
 
@@ -47,4 +47,39 @@ class PostgresUnitOfWork(UnitOfWork):
     def datasets(self) -> PostgresDatasetRepository:
         if self._datasets is None:
             self._datasets = PostgresDatasetRepository(self.client)
+        return self._datasets
+
+
+class InMemoryUnitOfWork(UnitOfWork):
+    def __init__(self):
+        self._platforms = InMemoryPlatformRepository([])
+        self._datasets = InMemoryDatasetRepository([])
+        self._in_transaction = False
+        self._pending_changes = []
+
+    def __enter__(self):
+        self._in_transaction = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._in_transaction = False
+        if exc_type is not None:
+            self.rollback()
+        else:
+            self.commit()
+
+    def commit(self):
+        if self._in_transaction:
+            self._pending_changes = []
+
+    def rollback(self):
+        if self._in_transaction:
+            self._pending_changes = []
+
+    @property
+    def platforms(self) -> InMemoryPlatformRepository:
+        return self._platforms
+
+    @property
+    def datasets(self) -> InMemoryDatasetRepository:
         return self._datasets

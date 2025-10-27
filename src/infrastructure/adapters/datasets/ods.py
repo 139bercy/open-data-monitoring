@@ -1,36 +1,10 @@
-import datetime
 import os
 
 import requests
 
 from application.dtos.dataset import DatasetDTO
-from domain.platform.ports import DatasetAdapter, PlatformAdapter
+from domain.platform.ports import DatasetAdapter
 from exceptions import DatasetUnreachableError
-
-
-def load_json_by_id(data, dataset_id) -> dict:
-    """Charge un fichier JSON et crée un dictionnaire indexé par une clé"""
-    return next((item for item in data if item["dataset_id"] == dataset_id), None)
-
-
-class OpendatasoftAdapter(PlatformAdapter):
-    def __init__(self, url: str, key: str, slug: str):
-        self.url = url
-        self.key = os.environ[key]
-        self.slug = slug
-
-    def fetch(self) -> dict:
-        response = requests.get(
-            f"{self.url}/api/v2/catalog/datasets",
-            headers={"Authorization": f"Apikey {self.key}"},
-            params={"offset+limit": 1000},
-        )
-        sync_data = {
-            "timestamp": datetime.datetime.now(),
-            "status": "success" if response.status_code == 200 else "failed",
-            "datasets_count": response.json()["total_count"],
-        }
-        return sync_data
 
 
 class OpendatasoftDatasetAdapter(DatasetAdapter):
