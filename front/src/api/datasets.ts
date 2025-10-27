@@ -16,7 +16,7 @@ type PaginatedSnake<T> = {
     page_size: number;
 };
 
-export async function getDatasets(query: DatasetListQuery = {}): Promise<PaginatedResponse<DatasetSummary>> {
+export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total: number; pageSize: number; page: number; items: { created: any; apiCallsCount: any; versionsCount: any; lastSyncStatus: any; platformId: any; published: any; title: any; downloadsCount: any; restricted: any; publisher: any; modified: any; id: any; page: any; platformName: any }[] }> {
     const {
         platformId,
         publisher,
@@ -47,7 +47,7 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<Paginat
     };
 
     const data = await api.get<PaginatedSnake<any>>("/datasets", apiQuery);
-    const items: DatasetSummary[] = (data.items ?? []).map((it: any) => ({
+    const items: { created: any; apiCallsCount: any; versionsCount: any; lastSyncStatus: any; platformId: any; published: any; title: any; downloadsCount: any; restricted: any; publisher: any; modified: any; id: any; page: any; platformName: any }[] = (data.items ?? []).map((it: any) => ({
         id: it.id,
         platformId: it.platform_id,
         platformName: it.platform_name,
@@ -60,7 +60,8 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<Paginat
         versionsCount: it.versions_count,
         page: it.page,
         restricted: it.restricted ?? null,
-        published: it.published ?? null
+        published: it.published ?? null,
+        lastSyncStatus: it.last_sync_status,
     }));
     return { items, total: data.total ?? 0, page: data.page ?? page, pageSize: data.page_size ?? pageSize };
 }

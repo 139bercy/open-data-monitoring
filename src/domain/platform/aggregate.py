@@ -14,7 +14,7 @@ class Platform:
         datasets_count=0,
         last_sync=None,
         created_at=None,
-        last_sync_status=None
+        last_sync_status="pending",
     ):
         self.id = id
         self.name = name

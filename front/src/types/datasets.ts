@@ -12,6 +12,7 @@ export type DatasetSummary = {
     page: string;        // source link
     restricted: boolean | null;
     published: boolean | null;
+    lastSyncStatus: string;
 };
 
 export type SnapshotVersion = {

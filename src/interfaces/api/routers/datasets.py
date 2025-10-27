@@ -11,7 +11,6 @@ from interfaces.api.schemas.datasets import (
     DatasetAPI,
 )
 from settings import app as domain_app
-from pprint import pprint
 from application.handlers import (
     find_platform_from_url,
     find_dataset_id_from_url,
@@ -70,6 +69,7 @@ async def get_tests():
                 published=dataset["published"],
                 restricted=dataset["restricted"],
                 last_sync=dataset["last_sync"],
+                last_sync_status=["last_sync_status"],
                 created=dataset["created"],
                 modified=dataset["modified"],
             )
@@ -203,7 +203,9 @@ async def list_datasets(
                    ) AS title,
                    lv.api_calls_count AS api_calls_count,
                    lv.downloads_count AS downloads_count,
-                   COALESCE(vc.versions_count, 0) AS versions_count
+                   COALESCE(vc.versions_count, 0) AS versions_count, 
+                   last_sync, 
+                   last_sync_status
             FROM datasets d
             LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
             LEFT JOIN version_counts vc ON vc.dataset_id = d.id
@@ -230,6 +232,8 @@ async def list_datasets(
                 "api_calls_count": r.get("api_calls_count"),
                 "versions_count": r.get("versions_count"),
                 "page": r.get("page"),
+                "last_sync": r.get("last_sync"),
+                "last_sync_status": r.get("last_sync_status"),
             }
             for r in rows
         ]

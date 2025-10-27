@@ -2,6 +2,7 @@ import hashlib
 import json
 from datetime import datetime
 from uuid import UUID
+from dataclasses import asdict
 
 from common import JsonSerializer
 from domain.datasets.entities import DatasetVersion
@@ -23,6 +24,7 @@ class Dataset:
         api_calls_count: int,
         raw: dict,
         publisher: str | None = None,
+        last_sync_status: str = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -39,6 +41,7 @@ class Dataset:
         self.raw = raw
         self.checksum = None
         self.versions = []
+        self.last_sync_status = last_sync_status
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -94,10 +97,13 @@ class Dataset:
             publisher=data.get("publisher"),
             downloads_count=data.get("downloads_count"),
             api_calls_count=data.get("api_calls_count"),
+            last_sync_status=data.get("last_sync_status"),
         )
 
     def __repr__(self):
         return f"<Dataset: {self.slug}>"
 
     def __str__(self):
+        versions = [asdict(version) for version in self.versions]
+        self.versions = versions
         return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)

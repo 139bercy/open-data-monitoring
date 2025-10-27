@@ -302,6 +302,26 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 >
                   <span
                     className={`fr-badge ${
+                      item.lastSyncStatus === "success"
+                        ? "fr-badge--success"
+                        : item.lastSyncStatus === "pending"
+                          ? "fr-badge--info"
+                          : "fr-badge--error"
+                    }`}
+                    style={{
+                      minWidth: "4rem",
+                      textAlign: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    {item.lastSyncStatus === "success"
+                      ? "🟢"
+                      : item.lastSyncStatus === "pending"
+                        ? "🟡"
+                        : "🔴"}{" "}
+                  </span>
+                  <span
+                    className={`fr-badge ${
                       item.published ? "fr-badge--success" : "fr-badge--warning"
                     }`}
                     style={{

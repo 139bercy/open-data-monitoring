@@ -7,6 +7,7 @@ from freezegun import freeze_time
 from application.commands.platform import SyncPlatform
 from application.handlers import create_platform, upsert_dataset
 from application.services.dataset import DatasetMonitoring
+from exceptions import DatasetUnreachableError
 from infrastructure.adapters.postgres import PostgresDatasetRepository
 from infrastructure.unit_of_work import PostgresUnitOfWork
 from settings import App, app
@@ -79,6 +80,7 @@ def test_postgresql_create_dataset(platform_app, platform, db_transaction, ods_d
     # Assert
     assert isinstance(result.id, UUID)
     assert result.id == dataset_id
+    assert result.last_sync_status == "success"
 
 
 def test_postgresql_get_dataset_checksum_by_buid(
@@ -120,3 +122,24 @@ def test_postgresql_dataset_has_changed(
     # Assert
     assert result.id == dataset_id
     assert len(result.versions) == 2
+
+
+def test_postgresql_should_handle_unreachable_dataset(
+    platform_app, platform, db_transaction, ods_dataset
+):
+    # Arrange
+    platform_id = create_platform(platform_app, platform_1)
+    platform.id, platform.type = platform_id, "opendatasoft"
+    app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
+    dataset_id = upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
+    dataset = app.dataset.repository.get(dataset_id=dataset_id)
+    # Act
+    with pytest.raises(DatasetUnreachableError):
+        upsert_dataset(
+            app=app,
+            platform=platform,
+            dataset={"slug": dataset.slug, "sync_status": "failed"},
+        )
+        # Assert
+        result = app.dataset.repository.get(dataset_id=dataset_id)
+        assert result.last_sync_status == "failed"

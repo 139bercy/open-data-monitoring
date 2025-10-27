@@ -72,11 +72,11 @@ def cli_sync_platform(id):
 
 
 @cli.group("dataset")
-def cli_platform():
+def cli_dataset():
     """Dataset management"""
 
 
-@cli_platform.command("add")
+@cli_dataset.command("add")
 @click.argument("url")
 @click.option("-o", "--output", is_flag=True, default=False, help="Print dataset")
 def cli_add_dataset(url, output):
@@ -86,10 +86,10 @@ def cli_add_dataset(url, output):
     if dataset_id is None:
         logger.warning(f"Dataset not found for url: {url}")
         return
-    dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-    if output:
-        pprint(dataset)
     try:
+        dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
+        if output:
+            pprint(dataset)
         upsert_dataset(app=app, platform=platform, dataset=dataset)
     except DatasetHasNotChanged as e:
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")

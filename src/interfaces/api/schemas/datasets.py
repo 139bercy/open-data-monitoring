@@ -21,6 +21,7 @@ class DatasetAPI(BaseModel):
     published: bool
     restricted: bool
     last_sync: Optional[datetime.datetime]
+    last_sync_status: str
 
 
 class DatasetCreateResponse(BaseModel):

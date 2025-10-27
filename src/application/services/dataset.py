@@ -39,5 +39,5 @@ class DatasetMonitoring:
             return result
         except TypeError as e:
             logger.error(
-                f"{platform.type.upper()} - Dataset '{dataset}' has encoutered an error"
+                f"{platform.type.upper()} - Dataset {dataset.get('dataset_id')} - {dataset.get('slug')} has encountered an error"
             )

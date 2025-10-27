@@ -30,7 +30,7 @@ class PostgresPlatformRepository(PlatformRepository):
                 platform.key,
                 platform.datasets_count,
                 platform.last_sync,
-                platform.last_sync_status
+                platform.last_sync_status,
             ),
         )
 
@@ -74,7 +74,12 @@ class PostgresPlatformRepository(PlatformRepository):
     def save_sync(self, platform_id, payload):
         self.client.execute(
             """UPDATE platforms SET datasets_count = %s, last_sync = %s , last_sync_status = %s WHERE id = %s;""",
-            (payload["datasets_count"], payload["timestamp"], payload["status"], str(platform_id)),
+            (
+                payload["datasets_count"],
+                payload["timestamp"],
+                payload["status"],
+                str(platform_id),
+            ),
         )
         self.client.execute(
             """INSERT INTO platform_sync_histories (platform_id, timestamp, status, datasets_count) VALUES (%s, %s, %s, %s)""",
@@ -87,7 +92,8 @@ class PostgresPlatformRepository(PlatformRepository):
         )
 
     def all(self):
-        return self.client.fetchall("""
+        return self.client.fetchall(
+            """
         SELECT 
     p.*,
     json_agg(
@@ -103,7 +109,8 @@ FROM platforms p
 LEFT JOIN platform_sync_histories h ON p.id = h.platform_id
 GROUP BY p.id, p.created_at
 ORDER BY p.created_at DESC;
-        """)
+        """
+        )
 
 
 class PostgresDatasetRepository(DatasetRepository):
@@ -214,3 +221,37 @@ class PostgresDatasetRepository(DatasetRepository):
         ORDER BY publisher;
         """
         return self.client.fetchall(query) or []
+
+    def get_id_by_slug(self, platform_id, slug):
+        result = self.client.fetchone(
+            f"""SELECT id FROM datasets WHERE platform_id = %s AND slug = %s; """,
+            (str(platform_id), slug),
+        )
+        print(result)
+        return result["id"]
+
+    def update_dataset_sync_status(self, platform_id, dataset_id, status):
+        self.client.execute(
+            """UPDATE datasets SET last_sync = now(), last_sync_status = %s WHERE platform_id = %s AND id = %s;""",
+            (status, str(platform_id), str(dataset_id)),
+        )
+
+    def get_slugs(self, platform_id):
+        result = [
+            data["slug"]
+            for data in self.client.fetchall(
+                """SELECT slug FROM datasets WHERE platform_id = %s ORDER BY slug;""",
+                (str(platform_id),),
+            )
+        ]
+        return result
+
+    def get_buids(self, platform_id):
+        result = [
+            data["buid"]
+            for data in self.client.fetchall(
+                """SELECT buid FROM datasets WHERE platform_id = %s;""",
+                (str(platform_id),),
+            )
+        ]
+        return result

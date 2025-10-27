@@ -104,9 +104,9 @@ class InMemoryDatasetRepository(DatasetRepository):
     def add(self, dataset: Dataset):
         for i, existing in enumerate(self.db):
             if existing.id == dataset.id:
-                self.db[i] = dataset  # Update existing entry
+                self.db[i] = dataset
                 return
-        self.db.append(dataset)  # Insert if not found
+        self.db.append(dataset)
 
     def add_version(
         self,
@@ -126,17 +126,12 @@ class InMemoryDatasetRepository(DatasetRepository):
             }
         )
 
-    def get(self, dataset_id):
+    def get(self, dataset_id) -> Dataset:
         dataset = next((item for item in self.db if item.id == dataset_id), None)
         if dataset is not None:
-            next(
-                (
-                    dataset.add_version(**item)
-                    for item in self.versions
-                    if item["dataset_id"] == dataset_id
-                ),
-                None,
-            )
+            dataset.versions = [
+                item for item in self.versions if item["dataset_id"] == dataset_id
+            ]
         if dataset is None:
             raise ValueError(f"Dataset with id {dataset_id} not found")
         return dataset
@@ -162,6 +157,18 @@ class InMemoryDatasetRepository(DatasetRepository):
             {"publisher": publisher, "dataset_count": count}
             for publisher, count in sorted(publisher_counts.items())
         ]
+
+    def get_id_by_slug(self, platform_id, slug):
+        dataset = next((item for item in self.db if item.slug == slug), None)
+        if dataset is not None:
+            return dataset.id
+        return
+
+    def update_dataset_sync_status(self, platform_id, dataset_id, status):
+        instance = self.get(dataset_id=dataset_id)
+        instance.last_sync_status = status
+        self.add(instance)
+        return
 
 
 class InMemoryUnitOfWork(UnitOfWork):

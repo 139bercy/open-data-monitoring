@@ -3,6 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS platforms
 (
     id               uuid PRIMARY KEY,
+    created_at       timestamptz  NOT NULL DEFAULT NOW(),
     name             varchar(255) NOT NULL,
     slug             varchar(255) NOT NULL UNIQUE,
     type             varchar(50)  NOT NULL,
@@ -11,8 +12,7 @@ CREATE TABLE IF NOT EXISTS platforms
     key              varchar(255),
     datasets_count   int          NOT NULL DEFAULT 0,
     last_sync        timestamptz,
-    created_at       timestamptz  NOT NULL DEFAULT NOW(),
-    last_sync_status text CHECK ( last_sync_status IN ('success', 'failed'))
+    last_sync_status text CHECK ( last_sync_status IN ('success', 'failed', 'pending'))
 );
 
 COMMENT ON TABLE platforms IS 'Table de stockage des plateformes de données';
@@ -49,18 +49,19 @@ CREATE INDEX IF NOT EXISTS idx_platform_sync_chrono ON platform_sync_histories (
 
 CREATE TABLE IF NOT EXISTS datasets
 (
-    id          uuid PRIMARY KEY,
-    platform_id uuid         NOT NULL REFERENCES platforms (id),
-    timestamp   timestamptz  NOT NULL DEFAULT NOW(),
-    buid        varchar(255) NOT NULL,
-    slug        varchar(255) NOT NULL,
-    page        text         NOT NULL,
-    publisher   varchar(255),
-    created     timestamptz  NOT NULL,
-    modified    timestamptz  NOT NULL,
-    published   bool                  DEFAULT NULL,
-    restricted  bool                  DEFAULT NULL,
-    last_sync   timestamptz
+    id               uuid PRIMARY KEY,
+    platform_id      uuid         NOT NULL REFERENCES platforms (id),
+    timestamp        timestamptz  NOT NULL DEFAULT NOW(),
+    buid             varchar(255) NOT NULL,
+    slug             varchar(255) NOT NULL,
+    page             text         NOT NULL,
+    publisher        varchar(255),
+    created          timestamptz  NOT NULL,
+    modified         timestamptz  NOT NULL,
+    published        bool                  DEFAULT NULL,
+    restricted       bool                  DEFAULT NULL,
+    last_sync        timestamptz,
+    last_sync_status text CHECK ( last_sync_status IN ('pending', 'success', 'failed'))
 );
 
 COMMENT ON TABLE datasets IS 'Stockage central des métadonnées de datasets';

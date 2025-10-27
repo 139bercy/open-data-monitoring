@@ -6,8 +6,7 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import (create_platform, find_platform_from_url,
-                                  sync_platform)
+from application.handlers import create_platform, find_platform_from_url, sync_platform
 from infrastructure.adapters.datagouvfr import DataGouvFrAdapter
 from infrastructure.adapters.in_memory import InMemoryAdapter
 from infrastructure.adapters.ods import OpendatasoftAdapter

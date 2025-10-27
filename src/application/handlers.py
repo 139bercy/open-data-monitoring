@@ -4,7 +4,7 @@ from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.datasets.aggregate import Dataset
 from domain.platform.aggregate import Platform
-from exceptions import DatasetUnreachableError
+from exceptions import DatasetUnreachableError, DatasetHasNotChanged
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 from settings import App
@@ -50,13 +50,19 @@ def find_dataset_id_from_url(app: App, url: str) -> str | None:
 
 
 def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
-    if not dataset:
-        raise DatasetUnreachableError(f"{platform.type.upper()} - Dataset not found. ")
-    instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
-    if instance is None:
-        return None
-    instance.calculate_hash()
     with app.uow:
+        if dataset.get("sync_status", None) == "failed":
+            dataset_id = app.dataset.repository.get_id_by_slug(
+                platform_id=platform.id, slug=dataset["slug"]
+            )
+            app.dataset.repository.update_dataset_sync_status(
+                platform_id=platform.id, dataset_id=dataset_id, status="failed"
+            )
+        instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
+        if instance is None:
+            return
+    with app.uow:
+        instance.calculate_hash()
         existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)
         if existing_checksum == instance.checksum:
             logger.debug(
@@ -78,6 +84,9 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             app.dataset.repository.add(dataset=instance)
             add_version(app=app, dataset_id=str(instance.id), instance=instance)
             dataset_id = instance.id
+        app.dataset.repository.update_dataset_sync_status(
+            platform_id=platform.id, dataset_id=instance.id, status="success"
+        )
         return dataset_id
 
 
@@ -98,8 +107,10 @@ def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
         dataset = adapter.fetch(platform.url, platform.key, dataset_id)
         return dataset
     except DatasetUnreachableError:
-        logger.error(f"{platform.type.upper()} - Dataset '{dataset_id}' not found")
-        return None
+        logger.error(
+            f"{platform.type.upper()} - Fetch Dataset - Dataset '{dataset_id}' not found"
+        )
+        return {"platform_id": platform.id, "slug": dataset_id, "sync_status": "failed"}
 
 
 def get_publishers_stats(app: App) -> list[dict[str, any]]:
