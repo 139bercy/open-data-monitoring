@@ -12,7 +12,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from application.handlers import find_platform_from_url, upsert_dataset
+from application.handlers import find_platform_from_url, upsert_dataset, create_platform
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from logger import logger
 from settings import BASE_DIR, ENV_PATH, app
@@ -127,8 +127,31 @@ def process_data_gouv():
     params = {"organization": organization, "page_size": 1000}
 
     response = requests.get(url, params=params)
-    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w") as file:
-        data = response.json()["data"]
+    # Robustifier la lecture du JSON retourné par data.gouv :
+    # - certaines réponses contiennent une clé 'data' ; d'autres retournent
+    #   directement une liste. On gère les deux cas et on journalise le
+    #   contenu inattendu pour débogage.
+    try:
+        payload = response.json()
+    except Exception as e:
+        logger.error(f"❌ Impossible de décoder la réponse data.gouv : {e}")
+        return
+
+    if isinstance(payload, dict) and "data" in payload:
+        # parfois 'data' peut être None; coerce en liste vide si nécessaire
+        data = payload["data"] or []
+    elif isinstance(payload, list):
+        data = payload
+    else:
+        # Cas inattendu : sauvegarder la réponse brute pour analyse
+        logger.error("⚠️ Réponse data.gouv inattendue, sauvegarde pour inspection")
+        with open(os.path.join(OUTPUT_DIR, "data-gouv-raw.json"), "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        # Essayer d'extraire une liste depuis 'results' si présente,
+        # avec fallback sur liste vide pour éviter TypeError en aval
+        data = payload.get("results", []) if isinstance(payload, dict) else []
+
+    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w", encoding="utf-8") as file:
         text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
         file.write(text)
 
@@ -149,15 +172,36 @@ def process_data_eco():
     with open(os.path.join(OUTPUT_DIR, "data-eco.json"), "r") as file:
         data = json.load(file)
         for dataset in data:
-            platform = find_platform_from_url(
-                app=app, url="https://data.economie.gouv.fr"
-            )
+            # Chercher la platform existante par domaine. Si elle n'existe pas,
+            # on la crée automatiquement avec des valeurs raisonnables afin
+            # que l'ingestion puisse s'exécuter de façon idempotente.
+            # Cela évite que l'ingestion soit silencieusement ignorée parce
+            # que la plateforme n'a pas été enregistrée manuellement.
+            platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
             try:
                 if platform is None:
-                    continue
+                    logger.info("Platform introuvable pour data.economie.gouv.fr — création automatique")
+                    platform_payload = {
+                        "name": "Data Economie",
+                        "slug": "data-economie",
+                        "organization_id": "opendatamef",
+                        "type": "opendatasoft",
+                        "url": "https://data.economie.gouv.fr",
+                        "key": os.environ.get("DATA_ECO_API_KEY"),
+                    }
+                    try:
+                        # create_platform gère l'insert via l'application (DDD)
+                        create_platform(app=app, data=platform_payload)
+                        # recharger la platform fraîchement créée
+                        platform = find_platform_from_url(app=app, url=platform_payload["url"])
+                    except Exception as ce:
+                        logger.error(f"Erreur lors de la création automatique de la platform: {ce}")
+                        # si on n'a pas pu créer la platform, on skip ce dataset
+                        continue
+
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
             except Exception as e:
-                logger.debug(f'OPENDATASOFT - {dataset["dataset_id"]} - {e}')
+                logger.debug(f'OPENDATASOFT - {dataset.get("dataset_id", "?" )} - {e}')
 
 
 if __name__ == "__main__":

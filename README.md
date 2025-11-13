@@ -27,6 +27,32 @@ You can also run `make docker-down` to stop the container or :
 $ docker compose down --remove-orphans -v
 ```
 
+### Commandes Docker utiles (développement et tests)
+
+- Arrêter tout et supprimer les volumes (démarrage propre) :
+
+```bash
+docker compose down -v
+```
+
+- Rebuild des images et démarrage de tous les services en arrière-plan :
+
+```bash
+docker compose up --build -d
+```
+
+- Exécuter la suite de tests dans un conteneur `backend` éphémère en ciblant le service Postgres `test` :
+
+```bash
+docker compose run --rm \
+	-e ODM_TEST_USER_PASSWORD=password \
+	-e ODM_TEST_DATABASE_HOST=test \
+	-e ODM_TEST_DATABASE_PORT=5433 \
+	backend pytest -q -r a
+```
+
+La commande ci‑dessus lance `pytest` à l'intérieur du conteneur `backend` tout en pointant sur la base `test` (pratique pour reproduire le comportement d'un CI en local).
+
 ### Load data
 
 Before running the tasks, you need to create a platform for the domain you want to monitor :

@@ -16,7 +16,10 @@ os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 TEST_DB = "odm_test"
 TEST_USER = "postgres"
 TEST_PASSWORD = os.environ["ODM_TEST_USER_PASSWORD"]
-HOST = "localhost"
+# Dans l'environnement CI / conteneur, le service Postgres peut être résolu
+# par le nom de service Docker (ex: 'db'). On permet donc d'overrider
+# l'hôte via la variable d'environnement `ODM_TEST_DATABASE_HOST`.
+HOST = os.environ.get("ODM_TEST_DATABASE_HOST", "localhost")
 PORT = os.environ["ODM_TEST_DATABASE_PORT"]
 
 

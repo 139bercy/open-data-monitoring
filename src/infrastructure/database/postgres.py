@@ -13,8 +13,23 @@ class PostgresClient:
         """Execute a query without returning results (INSERT, UPDATE, DELETE)"""
         with self.connection.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
             try:
+                # Safety: ensure we never send a NULL `modified` value to the
+                # datasets table (DB enforces NOT NULL). If an INSERT into
+                # datasets is attempted and the `modified` parameter is None,
+                # fallback to the `created` value (params layout defined in
+                # PostgresDatasetRepository.add).
+                if params and isinstance(params, (list, tuple)) and "INSERT INTO datasets" in (
+                    query or ""
+                ):
+                    p = list(params)
+                    # params ordering in add(): id, platform_id, buid, slug, page, publisher, created, modified, published, restricted
+                    if len(p) >= 8 and p[7] is None:
+                        p[7] = p[6]
+                        params = tuple(p)
                 cur.execute(query, params)
             except Exception as e:
+                import traceback
+
                 print(cur.mogrify(query, params))
                 print(e)
                 self.rollback()

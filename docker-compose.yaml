@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   db:
     container_name: open-data-monitoring-db
@@ -7,24 +9,92 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=odm
     ports:
-      - "5432:5432"
+      - "3403:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data:delegated
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d odm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   test:
     container_name: odm-test-db
     image: postgres:16.9
-    command: -p 5433
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=odm_test
+    command: -p 5433
     ports:
-      - "5433:5433"
+      - "3404:5433"
     volumes:
       - test_data:/var/lib/postgresql/data:delegated
       - ./db/init.sql:/docker-entrypoint-initdb.d/10-init.sql
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: open-data-monitoring-backend
+    env_file:
+      - .env.sample
+    environment:
+      # Variables pour l'application (settings.py)
+      - DB_HOST=db
+      - DB_NAME=odm
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_PORT=5432
+      - OPEN_DATA_MONITORING_ENV=DEV
+      - API_PORT=3402
+      # Variables système
+      - PYTHONUNBUFFERED=1
+      - ODM_CONSOLE_LOGGING_ONLY=true
+    ports:
+      - "3402:3402"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Service d'ingestion one-shot : exécute le script d'ingestion pour peupler la BDD.
+  # Utilise la même image / build que le backend et s'exécute une seule fois (restart:no).
+  ingestion:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    container_name: open-data-monitoring-ingestion
+    env_file:
+      - .env.sample
+    environment:
+      - DB_HOST=db
+      - DB_NAME=odm
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_PORT=5432
+      - OPEN_DATA_MONITORING_ENV=DEV
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "utils/tasks.py"]
+    restart: "no"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    container_name: open-data-monitoring-frontend
+    environment:
+      - PROXY_PORT=3401
+      - API_URL=http://backend:3402
+    ports:
+      - "3401:3401"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

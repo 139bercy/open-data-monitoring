@@ -10,3 +10,4 @@ pydantic_core==2.33.2
 pytest==8.3.5
 python-dotenv==1.1.0
 requests==2.32.4
+uvicorn[standard]==0.22.0
