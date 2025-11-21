@@ -1,4 +1,4 @@
-### Dockerfile Frontend (multi-stage)
+"### Dockerfile Frontend (multi-stage)
 # Étape 1 : Construction de l'application Vite
 FROM node:18-alpine AS builder
 
@@ -23,3 +23,4 @@ EXPOSE 3401
 
 WORKDIR /app/server
 CMD ["node", "index.mjs"]
+"

@@ -25,7 +25,17 @@ class App:
 
 
 if ENV == "PROD":  # pragma: no cover
-    raise NotImplementedError
+    # En production on initialise le client Postgres avec les variables
+    # d'environnement. Cela évite de lever une exception et permet au
+    # backend de démarrer correctement derrière un reverse-proxy (nginx).
+    client = PostgresClient(
+        dbname=os.environ["DB_NAME"],
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        host=os.environ.get("DB_HOST", "db"),
+        port=int(os.environ.get("DB_PORT", 5432)),
+    )
+    app = App(uow=PostgresUnitOfWork(client))
 elif ENV == "TEST":
     print(f"App environment = {ENV}")
     app = App(uow=InMemoryUnitOfWork())
