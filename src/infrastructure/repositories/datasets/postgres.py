@@ -5,11 +5,11 @@ from click import UUID
 from psycopg2._json import Json
 
 from domain.datasets.aggregate import Dataset
-from domain.datasets.ports import DatasetRepository
+from domain.datasets.ports import AbstractDatasetRepository
 from infrastructure.database.postgres import PostgresClient
 
 
-class PostgresDatasetRepository(DatasetRepository):
+class PostgresDatasetRepository(AbstractDatasetRepository):
     def __init__(self, client: PostgresClient):
         self.client = client
 

@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Optional
 
 from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
@@ -31,7 +32,7 @@ def sync_platform(app: App, platform_id: UUID) -> None:
         app.platform.sync_platform(platform_id=cmd.id)
 
 
-def find_platform_from_url(app: App, url: str) -> Platform | None:
+def find_platform_from_url(app: App, url: str) -> Optional[Platform]:
     with app.uow:
         try:
             return app.platform.repository.get_by_domain(get_base_url(url))
@@ -39,7 +40,7 @@ def find_platform_from_url(app: App, url: str) -> Platform | None:
             return None
 
 
-def find_dataset_id_from_url(app: App, url: str) -> str | None:
+def find_dataset_id_from_url(app: App, url: str) -> Optional[str]:
     platform = find_platform_from_url(app=app, url=url)
     if platform is None:
         return None
@@ -96,7 +97,7 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     )
 
 
-def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
+def fetch_dataset(platform: Platform, dataset_id: str) -> Optional[dict]:
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     try:

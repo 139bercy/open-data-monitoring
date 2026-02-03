@@ -2,7 +2,6 @@ import api from "./api";
 import type {
     DatasetDetail,
     DatasetListQuery,
-    DatasetSummary,
     PaginatedResponse,
     PlatformRef,
     PublishersRef,

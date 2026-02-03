@@ -1,10 +1,10 @@
 from dataclasses import asdict
-from typing import cast
+from typing import cast, Optional
 from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
-from domain.datasets.ports import DatasetRepository
+from domain.datasets.ports import AbstractDatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
 from infrastructure.factories.dataset import DatasetAdapterFactory
@@ -12,11 +12,11 @@ from logger import logger
 
 
 class DatasetMonitoring:
-    def __init__(self, repository: DatasetRepository):
+    def __init__(self, repository: AbstractDatasetRepository):
         self.factory: DatasetAdapterFactory = DatasetAdapterFactory()
-        self.repository: DatasetRepository = repository
+        self.repository: AbstractDatasetRepository = repository
 
-    def add_dataset(self, platform: Platform | None, dataset: dict) -> Dataset | None:
+    def add_dataset(self, platform: Optional[Platform], dataset: dict) -> Optional[Dataset]:
         if platform is None:
             return None
         adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)

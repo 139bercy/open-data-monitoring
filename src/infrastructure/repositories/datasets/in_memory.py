@@ -1,13 +1,11 @@
-from collections import Counter
 from typing import Optional
 from uuid import UUID
 
-from application.dtos.dataset import DatasetRawDTO
 from domain.datasets.aggregate import Dataset
-from domain.datasets.ports import DatasetRepository
+from domain.datasets.ports import AbstractDatasetRepository
 
 
-class InMemoryDatasetRepository(DatasetRepository):
+class InMemoryDatasetRepository(AbstractDatasetRepository):
     def __init__(self, db):
         self.db = db
         self.versions = []
@@ -45,7 +43,7 @@ class InMemoryDatasetRepository(DatasetRepository):
             raise ValueError(f"Dataset with id {dataset_id} not found")
         return dataset
 
-    def get_checksum_by_buid(self, dataset_buid) -> Optional[DatasetRawDTO]:
+    def get_checksum_by_buid(self, dataset_buid) -> Optional[str]:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
         if dataset is not None:
             return dataset.checksum

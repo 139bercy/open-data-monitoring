@@ -2,7 +2,7 @@ import hashlib
 import json
 from dataclasses import asdict
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from common import JsonSerializer
@@ -25,7 +25,7 @@ class Dataset:
         downloads_count: int,
         api_calls_count: int,
         raw: dict,
-        publisher: str | None = None,
+        publisher: Optional[str] = None,
         last_sync_status: str = None,
     ):
         self.id = id

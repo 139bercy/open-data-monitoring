@@ -10,6 +10,24 @@ build-backend = "setuptools.build_meta"
 source = [
     "src/",
 ]
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--showlocals --capture=fd --tb=short --maxfail=1 -v"
+testpaths = ["tests"]
+pythonpath = "src"
+norecursedirs = ["venv", "dev"]
+
+[tool.flake8]
+ignore = ["D203", "W291"]
+max-line-length = 120
+exclude = [
+    ".git",
+    "migrations",
+    "__pycache__",
+    "setup.py"
+]
+max-complexity = 10
+
 [tool.coverage.run]
 omit = [
     "*/**/__init__.py",

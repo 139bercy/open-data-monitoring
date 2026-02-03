@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 
 
@@ -10,7 +11,7 @@ class Platform:
         type: str,
         url: str,
         organization_id: str,
-        key: str | None,
+        key: Optional[str],
         datasets_count=0,
         last_sync=None,
         created_at=None,
