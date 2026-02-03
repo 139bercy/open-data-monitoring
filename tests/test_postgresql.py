@@ -135,3 +135,13 @@ def test_postgresql_should_handle_unreachable_dataset(platform_app, platform, db
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.last_sync_status == "failed"
+
+
+def test_postgresql_add_dataset_should_raise_an_error_on_fk_violation(app, platform, db_transaction, ods_dataset):
+    # Arrange
+    platform.id = UUID("00000000-0000-0000-0000-000000000000")
+    app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
+    dataset = app.dataset.add_dataset(platform=platform, dataset=ods_dataset)
+    # Act & Assert
+    with pytest.raises(Exception):
+        app.dataset.repository.add(dataset)

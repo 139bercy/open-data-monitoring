@@ -14,52 +14,49 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         self.client = client
 
     def add(self, dataset: Dataset) -> None:
-        try:
-            self.client.execute(
-                """
-                INSERT INTO datasets (
-                    id, platform_id, buid, slug, page, publisher, created, modified, published, restricted
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (id) DO UPDATE SET
-                    platform_id = EXCLUDED.platform_id,
-                    buid = EXCLUDED.buid,
-                    slug = EXCLUDED.slug,
-                    page = EXCLUDED.page,
-                    publisher = EXCLUDED.publisher,
-                    created = EXCLUDED.created,
-                    modified = EXCLUDED.modified,
-                    published = EXCLUDED.published,
-                    restricted = EXCLUDED.restricted
-                """,
-                (
-                    str(dataset.id),
-                    str(dataset.platform_id),
-                    dataset.buid,
-                    dataset.slug,
-                    dataset.page,
-                    dataset.publisher,
-                    dataset.created,
-                    dataset.modified,
-                    dataset.published,
-                    dataset.restricted,
-                ),
-            )
-            self.client.execute(
-                "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description) "
-                "VALUES (%s, %s, %s, %s)"
-                "ON CONFLICT (id) DO UPDATE SET "
-                "downloads_count = EXCLUDED.downloads_count, "
-                "api_calls_count = EXCLUDED.api_calls_count, "
-                "has_description = EXCLUDED.has_description",
-                (
-                    str(dataset.id),
-                    dataset.quality.downloads_count,
-                    dataset.quality.api_calls_count,
-                    dataset.quality.has_description,
-                ),
-            )
-        except Exception as e:
-            print(e)
+        self.client.execute(
+            """
+            INSERT INTO datasets (
+                id, platform_id, buid, slug, page, publisher, created, modified, published, restricted
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                platform_id = EXCLUDED.platform_id,
+                buid = EXCLUDED.buid,
+                slug = EXCLUDED.slug,
+                page = EXCLUDED.page,
+                publisher = EXCLUDED.publisher,
+                created = EXCLUDED.created,
+                modified = EXCLUDED.modified,
+                published = EXCLUDED.published,
+                restricted = EXCLUDED.restricted
+            """,
+            (
+                str(dataset.id),
+                str(dataset.platform_id),
+                dataset.buid,
+                dataset.slug,
+                dataset.page,
+                dataset.publisher,
+                dataset.created,
+                dataset.modified,
+                dataset.published,
+                dataset.restricted,
+            ),
+        )
+        self.client.execute(
+            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description) "
+            "VALUES (%s, %s, %s, %s)"
+            "ON CONFLICT (id) DO UPDATE SET "
+            "downloads_count = EXCLUDED.downloads_count, "
+            "api_calls_count = EXCLUDED.api_calls_count, "
+            "has_description = EXCLUDED.has_description",
+            (
+                str(dataset.id),
+                dataset.quality.downloads_count,
+                dataset.quality.api_calls_count,
+                dataset.quality.has_description,
+            ),
+        )
 
     def add_version(
         self,
