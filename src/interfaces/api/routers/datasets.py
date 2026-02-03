@@ -223,7 +223,7 @@ async def list_datasets(
                 "page": r.get("page"),
                 "last_sync": r.get("last_sync"),
                 "last_sync_status": r.get("last_sync_status"),
-                "has_description": r.get("has_description")
+                "has_description": r.get("has_description"),
             }
             for r in rows
         ]

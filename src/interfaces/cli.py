@@ -1,9 +1,12 @@
+import os
 import csv
 from datetime import datetime
 from pprint import pprint
 from uuid import UUID
 
 import click
+import json
+import requests
 
 from application.handlers import (
     create_platform,
@@ -14,6 +17,7 @@ from application.handlers import (
     upsert_dataset,
 )
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
+from interfaces.cli_quality import cli_quality
 from logger import logger
 from settings import app
 
@@ -21,6 +25,10 @@ from settings import app
 @click.group()
 def cli():
     """Application manager"""
+
+
+# Register quality commands
+cli.add_command(cli_quality)
 
 
 @cli.group("platform")
@@ -95,6 +103,19 @@ def cli_add_dataset(url, output):
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except DatasetUnreachableError:
         pass
+
+
+@cli_dataset.command("get")
+@click.argument("dataset_id")
+def cli_get_dataset(dataset_id):
+    """Retrieve dataset on Opendatasoft"""
+    catalog = requests.get(
+        f"https://{os.environ.get("ODS_DOMAIN")}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
+        headers={"Authorization": f"Apikey {os.environ.get("DATA_ECO_API_KEY")}"},
+    )
+    pprint(catalog.json())
+    with open("dataset.json", "w") as f:
+        json.dump(catalog.json(), f, indent=2)
 
 
 @cli.group("common")

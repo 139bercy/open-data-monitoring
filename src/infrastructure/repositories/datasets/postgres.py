@@ -66,7 +66,6 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         downloads_count: int,
         api_calls_count: int,
     ) -> None:
-        print("DB ADD VERSION")
         self.client.execute(
             "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count, api_calls_count) VALUES (%s, %s, %s, %s, %s)",
             (
