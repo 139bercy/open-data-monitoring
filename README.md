@@ -1,5 +1,12 @@
 # Open Data Monitoring
 
+Cette application permet d'agréger, de surveiller et d'historiser les données provenant de plusieurs plateformes Open Data.
+
+Objectifs :
+- Agrégation : centraliser les métadonnées de datasets provenant de différentes sources (notamment data.gouv.fr et les plateformes Huwise).
+- Historisation : suivre les modifications apportées aux datasets au fil du temps.
+- Restitution : fournir une interface web de visualisation des données, destinée aux métiers et correspondants Open Data.
+
 ## Install
 
 ### Install dependencies
@@ -93,12 +100,3 @@ $ python src/run_api.py
 ```
 $ ./front/run_front.sh
 ```
-
----
-
-## Objectifs
-
-- [x] Agréger des datasets publics de plusieurs plateformes Open Data
-- [ ] Identifier les jeux de données communs sur les différentes plateformes
-- [x] Historiser les changements
-- [x] Fournir une interface de restitution aux métiers et aux correspondants Open Data
