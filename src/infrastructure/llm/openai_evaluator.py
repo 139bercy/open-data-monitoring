@@ -33,7 +33,7 @@ class OpenAIEvaluator(LLMEvaluator):
         self.client = OpenAI(api_key=self.api_key)
         self.model_name = model_name
 
-    def evaluate_metadata(self, dataset: Dataset, dcat_reference: str, charter: str) -> MetadataEvaluation:
+    def evaluate_metadata(self, dataset: Dataset, dcat_reference: str, charter: str, output: str) -> MetadataEvaluation:
         """
         Evaluate dataset metadata using OpenAI.
 
@@ -41,6 +41,7 @@ class OpenAIEvaluator(LLMEvaluator):
             dataset: Dataset to evaluate
             dcat_reference: DCAT reference (Markdown)
             charter: Open Data charter (Markdown)
+            output: Output format (text or json)
 
         Returns:
             MetadataEvaluation with scores and suggestions
@@ -48,24 +49,42 @@ class OpenAIEvaluator(LLMEvaluator):
         logger.info(f"Evaluating metadata for dataset {dataset['dataset_id']} with OpenAI")
 
         # Build prompts
-        system_prompt = build_system_prompt(dcat_reference, charter)
-        user_prompt = build_user_prompt(dataset["metas"])
+        system_prompt = build_system_prompt(dcat_reference, charter, output)
+        user_prompt = build_user_prompt(dataset["metas"], output)
 
         # Call OpenAI
         try:
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-                response_format={"type": "json_object"},  # JSON mode
-                temperature=0.1,  # Low temperature for consistency
-                max_tokens=2048,
-            )
+            # Configure response format based on output type
+            api_params = {
+                "model": self.model_name,
+                "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                "temperature": 0.1,
+                "max_tokens": 2048,
+            }
+            
+            # Only enable JSON mode for json output
+            if output == "json":
+                api_params["response_format"] = {"type": "json_object"}
+            
+            response = self.client.chat.completions.create(**api_params)
 
             # Parse response
             response_text = response.choices[0].message.content
             logger.debug(f"OpenAI response: {response_text[:500]}...")
 
-            # Validate with Pydantic
+            # For text output, return raw text wrapped in a simple evaluation object
+            if output == "text":
+                return MetadataEvaluation(
+                    dataset_id=dataset["dataset_id"],
+                    dataset_slug=dataset["dataset_id"],
+                    evaluated_at=datetime.now(),
+                    overall_score=0.0,  # Not applicable for text format
+                    criteria_scores={},  # Not applicable for text format
+                    suggestions=[],  # Not applicable for text format
+                    raw_text=response_text  # Store raw text evaluation
+                )
+
+            # For JSON output, validate with Pydantic
             evaluation_data = json.loads(response_text)
             validated = EvaluationResponse(**evaluation_data)
 

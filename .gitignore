@@ -185,7 +185,6 @@ pyrightconfig.json
 *.dump
 
 ##
-docs
 dev/*
 tmp.py
 *.json

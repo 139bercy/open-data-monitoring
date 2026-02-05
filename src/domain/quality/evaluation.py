@@ -41,6 +41,7 @@ class MetadataEvaluation:
     overall_score: float  # 0-100
     criteria_scores: dict[str, CriterionScore]
     suggestions: list[Suggestion]
+    raw_text: Optional[str] = None  # For text-format evaluations
 
     def get_scores_by_category(self, category: str) -> list[CriterionScore]:
         """Get all criterion scores for a specific category."""

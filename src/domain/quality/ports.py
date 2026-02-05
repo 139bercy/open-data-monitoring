@@ -9,7 +9,7 @@ class LLMEvaluator(ABC):
     """Abstract interface for LLM-based metadata quality evaluation."""
 
     @abstractmethod
-    def evaluate_metadata(self, dataset: Dataset, dcat_reference: str, charter: str) -> MetadataEvaluation:
+    def evaluate_metadata(self, dataset: Dataset, dcat_reference: str, charter: str, output: str) -> MetadataEvaluation:
         """
         Evaluate dataset metadata quality using LLM.
 
@@ -17,6 +17,7 @@ class LLMEvaluator(ABC):
             dataset: Dataset to evaluate
             dcat_reference: DCAT reference documentation (Markdown)
             charter: Open Data charter documentation (Markdown)
+            output: Choose output format between text or json
 
         Returns:
             MetadataEvaluation with scores and suggestions

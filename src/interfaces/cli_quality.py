@@ -32,7 +32,18 @@ def cli_quality():
     help="LLM provider to use (default: openai)",
 )
 @click.option("--model", default=None, help="Model to use (default: gpt-4o-mini for OpenAI, llama3.1 for Ollama)")
-def cli_evaluate_quality(dataset_id: str, dcat: str, charter: str, provider: str, model: Optional[str]):
+@click.option(
+    "--output",
+    type=click.Choice(["text", "json"]),
+    default="json",
+    help="Output format (default: json)",
+)
+@click.option(
+    "--report",
+    is_flag=True,
+    help="Export to md file",
+)
+def cli_evaluate_quality(dataset_id: str, dcat: str, charter: str, provider: str, model: Optional[str], output: str, report: bool):
     """Evaluate metadata quality for a dataset."""
     console.print(f"\n[bold]Evaluating dataset {dataset_id}...[/bold]\n")
     try:
@@ -45,16 +56,19 @@ def cli_evaluate_quality(dataset_id: str, dcat: str, charter: str, provider: str
         service = QualityAssessmentService(evaluator=evaluator, uow=app.uow)
 
         # Run evaluation
-        evaluation = service.evaluate_dataset(dataset_id=dataset_id, dcat_path=dcat, charter_path=charter)
+        evaluation = service.evaluate_dataset(dataset_id=dataset_id, dcat_path=dcat, charter_path=charter, output=output)
 
         # Display results
-        _display_evaluation(evaluation)
-
+        report = _display_evaluation(evaluation, output)
+        if report:
+            with open("report.md", "w") as file:
+                file.write(report)
+            console.print(f"[green]Evaluation has been exported to report.md")
     except FileNotFoundError as e:
         console.print(f"[red]Error: {e}[/red]")
-    # except Exception as e:
-    #     logger.error(f"Evaluation failed: {e}")
-    #     console.print(f"[red]Evaluation failed: {e}[/red]")
+    except Exception as e:
+        logger.error(f"Evaluation failed: {e}")
+        console.print(f"[red]Evaluation failed: {e}[/red]")
 
 
 @cli_quality.command("report")
@@ -64,8 +78,15 @@ def cli_quality_report(dataset_id: str):
     console.print(f"[yellow]Report command not yet implemented. " f"Use 'evaluate' to run a new evaluation.[/yellow]")
 
 
-def _display_evaluation(evaluation):
+def _display_evaluation(evaluation, output: str):
     """Display evaluation results in a formatted table."""
+    # For text format, just print the raw text
+    if output == "text":
+        console.print("\n[bold]Audit Qualité Métadonnées[/bold]\n")
+        console.print(evaluation.raw_text)
+        return 
+    
+    # For JSON format, display structured results
     # Overall score
     score_color = "green" if evaluation.overall_score >= 70 else "yellow" if evaluation.overall_score >= 50 else "red"
     console.print(f"\n[bold]Dataset:[/bold] {evaluation.dataset_slug}")

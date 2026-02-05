@@ -1,12 +1,9 @@
 """Quality assessment service for metadata evaluation."""
 import os
-
 from pathlib import Path
-from typing import Optional
-from uuid import UUID
+
 import requests
 
-from domain.datasets.aggregate import Dataset
 from domain.quality.evaluation import MetadataEvaluation
 from domain.quality.ports import LLMEvaluator
 from domain.unit_of_work import UnitOfWork
@@ -27,7 +24,7 @@ class QualityAssessmentService:
         self.evaluator = evaluator
         self.uow = uow
 
-    def evaluate_dataset(self, dataset_id: str, dcat_path: str, charter_path: str) -> MetadataEvaluation:
+    def evaluate_dataset(self, dataset_id: str, dcat_path: str, charter_path: str, output: str) -> MetadataEvaluation:
         """
         Evaluate metadata quality for a dataset.
 
@@ -35,6 +32,7 @@ class QualityAssessmentService:
             dataset_id: ID of dataset to evaluate
             dcat_path: Path to DCAT reference markdown file
             charter_path: Path to charter markdown file
+            output: Output format (text or json)
 
         Returns:
             MetadataEvaluation with scores and suggestions
@@ -51,16 +49,17 @@ class QualityAssessmentService:
         # dataset.versions = [dataset.versions[-1]]
 
         response = requests.get(
-            f"https://{os.environ.get("ODS_DOMAIN")}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
-            headers={"Authorization": f"Apikey {os.environ.get("DATA_ECO_API_KEY")}"},
+            f'https://{os.environ.get("ODS_DOMAIN")}/api/explore/v2.1/catalog/datasets/{dataset_id}/',
+            headers={"Authorization": f'Apikey {os.environ.get("DATA_ECO_API_KEY")}'}
         )
         dataset = response.json()
 
         # Evaluate
-        evaluation = self.evaluator.evaluate_metadata(dataset=dataset, dcat_reference=dcat_reference, charter=charter)
+        evaluation = self.evaluator.evaluate_metadata(
+            dataset=dataset, dcat_reference=dcat_reference, charter=charter, output=output)
 
         logger.info(
-            f"Evaluation complete for {dataset.get("dataset_id")}: "
+            f"Evaluation complete for {dataset.get('dataset_id')}: "
             f"score={evaluation.overall_score:.1f}, "
             f"suggestions={len(evaluation.suggestions)}"
         )
