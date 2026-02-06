@@ -30,7 +30,7 @@ def test_postgresql_get_platform_by_domain(pg_app):
     # Act
     result = pg_app.platform.repository.get_by_domain("mydomain.net")
     # Assert
-    assert result.slug == "my-platform"
+    assert str(result.slug) == "my-platform"
 
 
 def test_postgresl_sync_platform(pg_app):
@@ -94,7 +94,7 @@ def test_postgresql_dataset_has_changed(pg_app, pg_ods_platform, ods_dataset):
         dataset=ods_dataset,
     )
     # Act
-    new = {**ods_dataset, "field": "new"}
+    new = {**ods_dataset, "updated_at": "2024-01-01T12:00:00+00:00"}
     upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=new)
     # Assert
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)

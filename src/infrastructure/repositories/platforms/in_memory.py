@@ -26,7 +26,7 @@ class InMemoryPlatformRepository(PlatformRepository):
         return platform
 
     def get_by_domain(self, domain) -> Platform:
-        platform = next((item for item in self.db if domain in item.url), None)
+        platform = next((item for item in self.db if domain in str(item.url)), None)
         if platform is not None:
             return platform
         raise ValueError(f"Platform with domain {domain} not found")

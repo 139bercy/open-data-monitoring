@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from application.handlers import upsert_dataset, check_deleted_datasets
@@ -126,7 +127,7 @@ def test_hash_changes_with_data_changes(app, ods_platform, ods_dataset):
     dataset = app.dataset.add_dataset(platform=ods_platform, dataset=ods_dataset, adapter=OpendatasoftDatasetAdapter())
     # Act
     hash1 = dataset.calculate_hash()
-    dataset.raw["modified"] = "2024-01-01T00:00:00Z"
+    dataset.modified = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
     hash2 = dataset.calculate_hash()
     # Assert
     assert hash1 != hash2  # Hash should change when data changes
@@ -155,7 +156,7 @@ def test_dataset_version_has_changed(app, ods_platform, ods_dataset):
     # Arrange
     upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
     # Act & Assert
-    new = {**ods_dataset, "field": "new"}
+    new = {**ods_dataset, "updated_at": "2024-01-01T12:00:00+00:00"}
     upsert_dataset(app=app, platform=ods_platform, dataset=new)
     assert len(app.dataset.repository.db) == 1
     assert len(app.dataset.repository.versions) == 2

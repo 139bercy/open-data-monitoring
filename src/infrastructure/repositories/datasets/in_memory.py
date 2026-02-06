@@ -66,7 +66,7 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         ]
 
     def get_id_by_slug(self, platform_id, slug):
-        dataset = next((item for item in self.db if item.slug == slug), None)
+        dataset = next((item for item in self.db if str(item.slug) == str(slug)), None)
         if dataset is not None:
             return dataset.id
         return

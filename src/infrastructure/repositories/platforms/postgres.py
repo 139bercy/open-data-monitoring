@@ -18,9 +18,9 @@ class PostgresPlatformRepository(PlatformRepository):
             (
                 str(platform.id),
                 platform.name,
-                platform.slug,
+                str(platform.slug),
                 platform.type,
-                platform.url,
+                str(platform.url),
                 platform.organization_id,
                 platform.key,
                 platform.datasets_count,

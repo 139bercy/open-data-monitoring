@@ -1,3 +1,4 @@
+from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict
@@ -6,6 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from common import JsonSerializer
+from domain.common.value_objects import Slug, Url
 from domain.datasets.entities import DatasetVersion
 from domain.datasets.value_objects import DatasetQuality
 
@@ -16,8 +18,8 @@ class Dataset:
         id: UUID,
         platform_id: UUID,
         buid: str,
-        slug: str,
-        page: str,
+        slug: str | Slug,
+        page: str | Url,
         created: datetime,
         modified: datetime,
         published: bool,
@@ -32,8 +34,8 @@ class Dataset:
         self.id = id
         self.platform_id = platform_id
         self.buid = buid
-        self.slug = slug
-        self.page = page
+        self.slug = slug if isinstance(slug, Slug) else Slug(slug)
+        self.page = page if isinstance(page, Url) else Url(page)
         self.publisher = publisher
         self.created = created
         self.modified = modified
@@ -52,10 +54,25 @@ class Dataset:
         return self.modified > date
 
     def calculate_hash(self) -> str:
-        snapshot_str = json.dumps(self.raw, sort_keys=True)
-        checksum = hashlib.sha256(snapshot_str.encode()).hexdigest()
-        self.checksum = checksum
-        return checksum
+        """
+        Calculates a stable hash based ONLY on domain fields.
+        This ensures the hash is independent of the external raw dictionary structure.
+        """
+        # We only use core identifying and versioned data fields
+        state = {
+            "buid": self.buid,
+            "slug": str(self.slug),
+            "page": str(self.page),
+            "created": self.created.isoformat() if isinstance(self.created, datetime) else self.created,
+            "modified": self.modified.isoformat() if isinstance(self.modified, datetime) else self.modified,
+            "published": self.published,
+            "restricted": self.restricted,
+            "publisher": self.publisher,
+        }
+        
+        state_str = json.dumps(state, sort_keys=True)
+        self.checksum = hashlib.sha256(state_str.encode()).hexdigest()
+        return self.checksum
 
     def add_version(
         self,

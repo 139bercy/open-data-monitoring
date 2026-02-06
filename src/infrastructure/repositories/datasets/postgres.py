@@ -34,8 +34,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 str(dataset.id),
                 str(dataset.platform_id),
                 dataset.buid,
-                dataset.slug,
-                dataset.page,
+                str(dataset.slug),
+                str(dataset.page),
                 dataset.publisher,
                 dataset.created,
                 dataset.modified,
@@ -149,7 +149,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
     def get_id_by_slug(self, platform_id, slug):
         result = self.client.fetchone(
             f"""SELECT id FROM datasets WHERE platform_id = %s AND slug = %s; """,
-            (str(platform_id), slug),
+            (str(platform_id), str(slug)),
         )
         return result["id"]
 

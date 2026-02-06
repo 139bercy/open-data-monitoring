@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import asdict
 from uuid import uuid4
 from typing import Optional, cast

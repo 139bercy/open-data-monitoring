@@ -1,5 +1,8 @@
+from __future__ import annotations
 from typing import Optional
 from uuid import UUID
+
+from domain.common.value_objects import Slug, Url
 
 
 class Platform:
@@ -7,9 +10,9 @@ class Platform:
         self,
         id: UUID,
         name: str,
-        slug: str,
+        slug: str | Slug,
         type: str,
-        url: str,
+        url: str | Url,
         organization_id: str,
         key: Optional[str],
         datasets_count=0,
@@ -19,10 +22,10 @@ class Platform:
     ):
         self.id = id
         self.name = name
-        self.slug = slug
+        self.slug = slug if isinstance(slug, Slug) else Slug(slug)
         self.organization_id = organization_id
         self.type = type
-        self.url = url
+        self.url = url if isinstance(url, Url) else Url(url)
         self.key = key
         self.datasets_count = datasets_count
         self.last_sync = last_sync

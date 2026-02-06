@@ -100,7 +100,7 @@ def test_get_platform_by_domain(app):
     # Arrange & Act
     create_platform(app, platform_1)
     result = app.platform.repository.get_by_domain("mydomain.net")
-    assert result.slug == "my-platform"
+    assert str(result.slug) == "my-platform"
 
 
 def test_sync_platform(app):
