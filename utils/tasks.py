@@ -27,7 +27,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 API_ENDPOINTS = [
     {
         "url": "https://data.economie.gouv.fr/api/automation/v1.0/datasets",
-        "params": {"limit": 1000},
+        "params": {"limit": 5000},
         "filename": "data-eco-automation.json",
     },
     {
@@ -35,13 +35,13 @@ API_ENDPOINTS = [
         "params": {
             "where": 'domain_id="opendatamef"',
             "order_by": "modified DESC",
-            "limit": 1000,
+            "limit": 5000,
         },
         "filename": "data-eco-monitoring.json",
     },
     {
         "url": "https://data.economie.gouv.fr/api/explore/v2.1/catalog/exports/json",
-        "params": {"limit": 1000},
+        "params": {"limit": 5000},
         "filename": "data-eco-catalog.json",
     },
 ]
@@ -122,26 +122,26 @@ def merge_data_eco_datasets():
 
 
 def process_data_gouv():
-    # organization = os.environ["DATA_GOUV_ORGANIZATION"]
-    # url = f"http://www.data.gouv.fr/api/1/datasets/"
-    # params = {"organization": organization, "page_size": 1000}
-    #
-    # response = requests.get(url, params=params)
-    # with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w") as file:
-    #     data = response.json()["data"]
-    #     text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
-    #     file.write(text)
-    #
-    # with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
-    #     data = json.load(file)
-    #     for dataset in data:
-    #         platform = find_platform_from_url(app=app, url=dataset["page"])
-    #         try:
-    #             upsert_dataset(app=app, platform=platform, dataset=dataset)
-    #         except DatasetHasNotChanged as e:
-    #             logger.error(f' - {dataset["dataset_id"]} - {e}')
-    #         except DatasetUnreachableError:
-    #             pass
+    organization = os.environ["DATA_GOUV_ORGANIZATION"]
+    url = f"http://www.data.gouv.fr/api/1/datasets/"
+    params = {"organization": organization, "page_size": 1000}
+    
+    response = requests.get(url, params=params)
+    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w") as file:
+        data = response.json()["data"]
+        text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+        file.write(text)
+    
+    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
+        data = json.load(file)
+        for dataset in data:
+            platform = find_platform_from_url(app=app, url=dataset["page"])
+            try:
+                upsert_dataset(app=app, platform=platform, dataset=dataset)
+            except DatasetHasNotChanged as e:
+                logger.error(f' - {dataset["dataset_id"]} - {e}')
+            except DatasetUnreachableError:
+                pass
 
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
         data = json.load(file)
@@ -170,5 +170,5 @@ def process_data_eco():
 
 
 if __name__ == "__main__":
-    # process_data_eco()
+    process_data_eco()
     process_data_gouv()

@@ -1,5 +1,4 @@
-"""Pydantic models for parsing LLM responses."""
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -17,8 +16,8 @@ class SuggestionResponse(BaseModel):
     """LLM response for a metadata improvement suggestion."""
 
     field: str
-    current_value: Optional[str] = None
-    suggested_value: str
+    current_value: Optional[Union[str, list[str]]] = None
+    suggested_value: Union[str, list[str]]
     reason: str
     priority: str = Field(..., pattern="^(high|medium|low)$")
 

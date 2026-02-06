@@ -1,7 +1,6 @@
-"""Domain models for metadata quality evaluation."""
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any, Union
 from uuid import UUID
 
 
@@ -25,8 +24,8 @@ class Suggestion:
     """Improvement suggestion for a metadata field."""
 
     field: str
-    current_value: Optional[str]
-    suggested_value: str
+    current_value: Optional[Union[str, list[str]]]
+    suggested_value: Union[str, list[str]]
     reason: str
     priority: str  # "high", "medium", "low"
 
