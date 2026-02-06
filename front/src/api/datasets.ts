@@ -5,6 +5,7 @@ import type {
     PaginatedResponse,
     PlatformRef,
     PublishersRef,
+    DatasetSummary,
     SnapshotVersion
 } from "../types/datasets";
 
@@ -15,7 +16,7 @@ type PaginatedSnake<T> = {
     page_size: number;
 };
 
-export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total: number; pageSize: number; page: number; items: { created: any; apiCallsCount: any; versionsCount: any; lastSyncStatus: any; platformId: any; published: any; title: any; downloadsCount: any; restricted: any; publisher: any; modified: any; id: any; page: any; platformName: any }[] }> {
+export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total: number; pageSize: number; page: number; items: (DatasetSummary & { platformName?: string })[] }> {
     const {
         platformId,
         publisher,
@@ -46,7 +47,7 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total
     };
 
     const data = await api.get<PaginatedSnake<any>>("/datasets", apiQuery);
-    const items: { created: any; apiCallsCount: any; versionsCount: any; lastSyncStatus: any; platformId: any; published: any; title: any; downloadsCount: any; restricted: any; publisher: any; modified: any; id: any; page: any; platformName: any }[] = (data.items ?? []).map((it: any) => ({
+    const items: (DatasetSummary & { platformName?: string })[] = (data.items ?? []).map((it: any) => ({
         id: it.id,
         platformId: it.platform_id,
         platformName: it.platform_name,
@@ -63,7 +64,8 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total
         lastSync: it.last_sync,
         lastSyncStatus: it.last_sync_status,
         hasDescription: it.has_description,
-        isDeleted: it.deleted ?? null
+        isDeleted: it.deleted ?? null,
+        quality: it.quality
     }));
     return { items, total: data.total ?? 0, page: data.page ?? page, pageSize: data.page_size ?? pageSize };
 }
@@ -117,7 +119,8 @@ export async function getDatasetDetail(id: string, includeSnapshots = false): Pr
         currentSnapshot: data.current_snapshot ? mapSnap(data.current_snapshot) : null,
         snapshots: Array.isArray(data.snapshots) ? data.snapshots.map(mapSnap) : undefined,
         hasDescription: data.has_description,
-        isDeleted: data.deleted ?? null
+        isDeleted: data.deleted ?? null,
+        quality: data.quality
     };
 }
 
@@ -138,6 +141,10 @@ export async function getDatasetVersions(id: string, params?: { page?: number; p
         data: s.data
     }));
     return { items, total: data.total ?? 0, page: data.page ?? query.page, pageSize: data.page_size ?? query.page_size }
+}
+export async function evaluateDataset(id: string): Promise<any> {
+    const data = await api.post<any>(`/datasets/${id}/evaluate`, {});
+    return data;
 }
 
 

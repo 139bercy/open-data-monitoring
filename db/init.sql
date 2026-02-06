@@ -81,7 +81,8 @@ CREATE TABLE IF NOT EXISTS dataset_quality (
     downloads_count int DEFAULT 0,
     api_calls_count int DEFAULT 0,
     has_description bool DEFAULT FALSE,
-    is_slug_valid bool DEFAULT TRUE
+    is_slug_valid bool DEFAULT TRUE,
+    evaluation_results jsonb
 );
 COMMENT ON TABLE dataset_quality IS 'Stockage des données de qualité des jeux de données';
 COMMENT ON COLUMN dataset_quality.downloads_count IS 'téléchargements du jeu de données depuis sa création';

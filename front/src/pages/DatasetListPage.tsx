@@ -208,7 +208,6 @@ export function DatasetListPage(): JSX.Element {
           setQuery((q) => ({ ...q, page: 1, pageSize: size }))
         }
         onRowClick={handleOpenDetails}
-        style={{ width: "100%" }}
       />
 
       <DatasetDetailsModal

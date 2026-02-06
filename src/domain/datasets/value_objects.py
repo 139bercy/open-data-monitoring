@@ -8,3 +8,4 @@ class DatasetQuality:
     api_calls_count: Optional[int]
     has_description: bool
     is_slug_valid: bool
+    evaluation_results: Optional[dict] = None

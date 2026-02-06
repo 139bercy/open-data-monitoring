@@ -45,12 +45,13 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ),
         )
         self.client.execute(
-            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid) "
-            "VALUES (%s, %s, %s, %s, %s)"
+            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results) "
+            "VALUES (%s, %s, %s, %s, %s, %s)"
             "ON CONFLICT (id) DO UPDATE SET "
             "downloads_count = EXCLUDED.downloads_count, "
             "api_calls_count = EXCLUDED.api_calls_count, "
             "has_description = EXCLUDED.has_description, "
+            "evaluation_results = EXCLUDED.evaluation_results, "
             "is_slug_valid = EXCLUDED.is_slug_valid",
             (
                 str(dataset.id),
@@ -58,6 +59,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 dataset.quality.api_calls_count,
                 dataset.quality.has_description,
                 dataset.quality.is_slug_valid,
+                Json(dataset.quality.evaluation_results) if dataset.quality.evaluation_results else None,
             ),
         )
 
@@ -104,10 +106,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                               'downloads_count', dq.downloads_count,
                               'api_calls_count', dq.api_calls_count,
                               'has_description', dq.has_description,
-                              'is_slug_valid', dq.is_slug_valid
+                              'is_slug_valid', dq.is_slug_valid,
+                              'evaluation_results', dq.evaluation_results
                           )
                FROM dataset_quality dq
                WHERE dq.dataset_id = d.id
+               ORDER BY dq.timestamp DESC
                LIMIT 1
            ) AS quality
             FROM datasets d

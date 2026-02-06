@@ -8,7 +8,9 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query
 
 from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
+from application.services.quality_assessment import QualityAssessmentService
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
+from infrastructure.llm.openai_evaluator import OpenAIEvaluator
 from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse
 from logger import logger
 from settings import app as domain_app
@@ -177,6 +179,11 @@ async def list_datasets(
                 SELECT dataset_id, COUNT(*) AS versions_count
                 FROM dataset_versions
                 GROUP BY dataset_id
+            ),
+            latest_quality AS (
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results
+                FROM dataset_quality
+                ORDER BY dataset_id, timestamp DESC
             )
             SELECT d.id,
                    d.platform_id,
@@ -197,11 +204,13 @@ async def list_datasets(
                    d.last_sync, 
                    d.last_sync_status, 
                    d.deleted,
-                   dq.has_description as has_description
+                   dq.has_description as has_description,
+                   dq.is_slug_valid as is_slug_valid,
+                   dq.evaluation_results as evaluation_results
             FROM datasets d
             LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
             LEFT JOIN version_counts vc ON vc.dataset_id = d.id
-            LEFT JOIN dataset_quality dq ON d.id = dq.dataset_id
+            LEFT JOIN latest_quality dq ON d.id = dq.dataset_id
             WHERE {where_sql}
             ORDER BY {order_sql} {sort_dir}
             LIMIT %s OFFSET %s
@@ -227,6 +236,11 @@ async def list_datasets(
                 "last_sync_status": r.get("last_sync_status"),
                 "deleted": r.get("deleted"),
                 "has_description": r.get("has_description"),
+                "quality": {
+                    "has_description": r.get("has_description"),
+                    "is_slug_valid": r.get("is_slug_valid"),
+                    "evaluation_results": r.get("evaluation_results"),
+                }
             }
             for r in rows
         ]
@@ -249,9 +263,14 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
     try:
         # Base dataset
         ds_query = (
-            "SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.deleted, dq.has_description "
+            "SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.deleted, "
+            "dq.has_description, dq.is_slug_valid, dq.evaluation_results "
             "FROM datasets d "
-            "LEFT JOIN dataset_quality dq ON d.id = dq.dataset_id "
+            "LEFT JOIN ("
+            "    SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results "
+            "    FROM dataset_quality "
+            "    ORDER BY dataset_id, timestamp DESC"
+            ") dq ON d.id = dq.dataset_id "
             "WHERE  d.id = %s"
         )
         rows = domain_app.dataset.repository.client.fetchall(ds_query, (str(dataset_id),))
@@ -313,6 +332,11 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             "restricted": d.get("restricted"),
             "deleted": d.get("deleted"),
             "has_description": d.get("has_description", None),
+            "quality": {
+                "has_description": d.get("has_description"),
+                "is_slug_valid": d.get("is_slug_valid"),
+                "evaluation_results": d.get("evaluation_results"),
+            },
             "current_snapshot": current_snapshot,
             "snapshots": snapshots,
         }
@@ -398,7 +422,39 @@ async def get_by_publisher(publisher_name: str):
             )
             for dataset in datasets_raw
         ]
-
-        return DatasetResponse(datasets=datasets_list, total_datasets=len(datasets_list))
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+        }
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{dataset_id}/evaluate")
+async def evaluate_dataset(dataset_id: UUID):
+    """
+    Déclenche une évaluation de qualité par LLM pour un dataset.
+    """
+    try:
+        # Initialize service (OpenAI by default for now)
+        evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
+        service = QualityAssessmentService(evaluator=evaluator, uow=domain_app.uow)
+        
+        # Paths to reference docs (should be configurable or standard)
+        dcat_path = "docs/quality/dcat_reference.md"
+        charter_path = "docs/quality/charter_opendata.md"
+        
+        evaluation = service.evaluate_dataset(
+            dataset_id=str(dataset_id),
+            dcat_path=dcat_path,
+            charter_path=charter_path,
+            output="json"
+        )
+        
+        from dataclasses import asdict
+        return asdict(evaluation)
+    except Exception as e:
+        logger.error(f"Evaluation failed for {dataset_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))

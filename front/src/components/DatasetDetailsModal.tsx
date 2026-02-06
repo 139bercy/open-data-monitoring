@@ -4,7 +4,7 @@ import { createModal } from "@codegouvfr/react-dsfr/Modal";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import { Alert } from "@codegouvfr/react-dsfr/Alert";
 import type { DatasetDetail, SnapshotVersion } from "../types/datasets";
-import { getDatasetVersions } from "../api/datasets";
+import { getDatasetVersions, evaluateDataset, getDatasetDetail } from "../api/datasets";
 import {
   CompareSnapshotsModal,
   compareSnapshotsModal,
@@ -134,7 +134,39 @@ function SnapshotItem(props: {
 export function DatasetDetailsModal(
   props: DatasetDetailsModalProps
 ): JSX.Element {
-  const { dataset, isOpen, onClose, platformName, platformUrl } = props;
+  const { dataset: initialDataset, platformName, platformUrl } = props;
+  const [dataset, setDataset] = useState<DatasetDetail | null>(initialDataset || null);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evalError, setEvalError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    setDataset(initialDataset || null);
+  }, [initialDataset]);
+
+  const refreshDataset = async () => {
+    if (!dataset?.id) return;
+    try {
+      const updated = await getDatasetDetail(dataset.id, false);
+      setDataset(updated);
+    } catch (e) {
+      console.error("Erreur refresh:", e);
+    }
+  };
+
+  const handleEvaluate = async () => {
+    if (!dataset?.id) return;
+    setEvaluating(true);
+    setEvalError(null);
+    try {
+      await evaluateDataset(dataset.id);
+      await refreshDataset();
+    } catch (err: any) {
+      setEvalError(err.message ?? "L'audit a échoué");
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [versions, setVersions] = useState<SnapshotVersion[] | null>(null);
@@ -225,9 +257,7 @@ export function DatasetDetailsModal(
     <>
       <datasetDetailsModal.Component
         title={dataset?.slug ?? "Détails du dataset"}
-        size="lg"
-        isOpen={isOpen}
-        onClose={onClose}
+        size="large"
         style={{ minWidth: "85%" }}
       >
         {!dataset ? (
@@ -300,19 +330,112 @@ export function DatasetDetailsModal(
                   : ""}
                 : {downloadsPerDay ?? "—"} téléchargements/jour
               </p>
-              <a
-                className="fr-link"
-                href={dataset.page}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Voir sur la plateforme
-              </a>
+              <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+                <a
+                  className="fr-link"
+                  href={dataset.page}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Voir sur la plateforme
+                </a>
+                <Button
+                  priority="secondary"
+                  size="small"
+                  iconId={evaluating ? undefined : "ri-ai-generate"}
+                  onClick={handleEvaluate}
+                  disabled={evaluating || dataset.isDeleted === true}
+                >
+                  {evaluating ? "Audit en cours..." : "Relancer l'audit qualité (AI)"}
+                </Button>
+              </div>
+              {evalError && (
+                <Alert
+                  severity="error"
+                  title="Erreur Audit"
+                  description={evalError}
+                  className="fr-mt-2w"
+                  small
+                />
+              )}
             </div>
             {dataset.currentSnapshot && (
               <div className="fr-mb-2w">
                 <h6 className="fr-h6">Snapshot courant</h6>
                 <SnapshotItem snap={dataset.currentSnapshot} />
+              </div>
+            )}
+
+            {!dataset.isDeleted && dataset.quality?.evaluation_results && (
+              <div className="fr-mt-4w fr-p-3w" style={{ backgroundColor: "var(--background-alt-blue-france)", borderRadius: "8px" }}>
+                <div className="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                  <div className="fr-col">
+                    <h5 className="fr-h5 fr-mb-0">Audit Qualité (IA)</h5>
+                    <p className="fr-text--xs fr-mb-0">Réalisé le {new Date(dataset.quality.evaluation_results.evaluated_at).toLocaleString()}</p>
+                  </div>
+                  <div className="fr-col-auto">
+                    <div className="fr-p-2w" style={{ 
+                      borderRadius: "50%", 
+                      width: "80px", 
+                      height: "80px", 
+                      display: "flex", 
+                      alignItems: "center", 
+                      justifyContent: "center",
+                      border: "4px solid",
+                      borderColor: dataset.quality.evaluation_results.overall_score >= 70 ? "var(--text-default-success)" : 
+                                   dataset.quality.evaluation_results.overall_score >= 50 ? "var(--text-default-warning)" : 
+                                   "var(--text-default-error)",
+                      backgroundColor: "white"
+                    }}>
+                      <span className="fr-h4 fr-mb-0" style={{ fontWeight: "bold" }}>
+                        {Math.round(dataset.quality.evaluation_results.overall_score)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="fr-mb-3w">
+                  <h6 className="fr-h6 fr-mb-1w">Scores par critère</h6>
+                  {Object.entries(dataset.quality.evaluation_results.criteria_scores).map(([key, score]: [string, any]) => (
+                    <Accordion key={key} label={`${score.criterion} - ${Math.round(score.score)}/100`}>
+                      <div className="fr-text--sm">
+                        <p className="fr-mb-1w"><strong>Catégorie:</strong> {score.category}</p>
+                        <p className="fr-mb-1w"><strong>Poids:</strong> {(score.weight * 100).toFixed(0)}%</p>
+                        {score.issues.length > 0 ? (
+                          <>
+                            <p className="fr-mb-1w"><strong>Points d'attention :</strong></p>
+                            <ul className="fr-text--xs">
+                              {score.issues.map((issue: string, idx: number) => <li key={idx} className="fr-mb-0">{issue}</li>)}
+                            </ul>
+                          </>
+                        ) : (
+                          <p className="fr-mb-0 fr-text--default-success">✓ Conforme</p>
+                        )}
+                      </div>
+                    </Accordion>
+                  ))}
+                </div>
+
+                {dataset.quality.evaluation_results.suggestions && dataset.quality.evaluation_results.suggestions.length > 0 && (
+                  <div>
+                    <h6 className="fr-h6 fr-mb-2w">Suggestions d'amélioration</h6>
+                    <div className="fr-grid-row fr-grid-row--gutters">
+                      {dataset.quality.evaluation_results.suggestions.map((s: any, idx: number) => (
+                        <div key={idx} className="fr-col-12 fr-col-md-6 fr-mb-2w">
+                          <div className="fr-card fr-card--sm fr-p-2w" style={{ height: "100%" }}>
+                            <div className="fr-card__body">
+                              <div className="fr-badge fr-badge--sm fr-badge--info fr-mb-1w">
+                                Champ: {s.field}
+                              </div>
+                              <p className="fr-text--sm fr-mb-1w"><strong>Suggestion:</strong> {Array.isArray(s.suggested_value) ? s.suggested_value.join(', ') : s.suggested_value}</p>
+                              <p className="fr-text--xs fr-mb-0" style={{ fontStyle: "italic" }}>{s.reason}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

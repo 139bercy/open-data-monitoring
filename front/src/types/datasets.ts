@@ -15,6 +15,11 @@ export type DatasetSummary = {
     lastSyncStatus: string;
     hasDescription: boolean;
     isDeleted: boolean | null;
+    quality?: {
+        has_description: boolean;
+        is_slug_valid: boolean;
+        evaluation_results: any | null;
+    };
 };
 
 export type SnapshotVersion = {
@@ -40,6 +45,11 @@ export type DatasetDetail = {
     restricted: boolean | null;
     hasDescription: boolean;
     isDeleted: boolean | null;
+    quality?: {
+        has_description: boolean;
+        is_slug_valid: boolean;
+        evaluation_results: any | null;
+    };
     currentSnapshot: SnapshotVersion | null;
     snapshots?: SnapshotVersion[] | null; // only when include_snapshots=true
 };

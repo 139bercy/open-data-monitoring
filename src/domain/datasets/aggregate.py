@@ -91,12 +91,13 @@ class Dataset:
         )
         self.versions.append(version)
 
-    def add_quality(self, downloads_count, api_calls_count, has_description, is_slug_valid=True):
+    def add_quality(self, downloads_count, api_calls_count, has_description, is_slug_valid=True, evaluation_results=None):
         self.quality = DatasetQuality(
             downloads_count=downloads_count,
             api_calls_count=api_calls_count,
             has_description=has_description,
             is_slug_valid=is_slug_valid,
+            evaluation_results=evaluation_results,
         )
 
     @classmethod
