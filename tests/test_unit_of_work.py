@@ -7,18 +7,7 @@ from infrastructure.unit_of_work import PostgresUnitOfWork
 from tests.fixtures.fixtures import platform_1
 
 
-@pytest.fixture
-def platform():
-    platform = Platform(
-        id=uuid4(),
-        name=platform_1["name"],
-        slug=platform_1["slug"],
-        organization_id=platform_1["organization_id"],
-        type=platform_1["type"],
-        url=platform_1["url"],
-        key=platform_1["key"],
-    )
-    return platform
+@pytest.mark.usefixtures("setup_test_database")
 
 
 def test_unit_of_work_commit(db_transaction, platform):

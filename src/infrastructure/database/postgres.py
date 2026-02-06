@@ -16,6 +16,7 @@ class PostgresClient:
                 print(cur.mogrify(query, params))
                 print(e)
                 self.rollback()
+                raise e
 
     def fetchone(self, query, params=None):
         """Execute a query and return a single result as a dict"""

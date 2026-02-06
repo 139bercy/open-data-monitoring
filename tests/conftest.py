@@ -1,5 +1,7 @@
-import json
 import os
+os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
+
+import json
 import uuid
 
 import psycopg2
@@ -7,11 +9,10 @@ import pytest
 
 from domain.platform.aggregate import Platform
 from infrastructure.database.postgres import PostgresClient
-from infrastructure.unit_of_work import InMemoryUnitOfWork
+from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
 from settings import App
+from application.handlers import create_platform
 from tests.fixtures.fixtures import platform_1
-
-os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
 TEST_DB = "odm_test"
 TEST_USER = "postgres"
@@ -48,6 +49,18 @@ def app():
 @pytest.fixture
 def platform(app):
     platform = Platform(id=uuid.uuid4(), **platform_1)
+    return platform
+
+
+@pytest.fixture
+def ods_platform(platform):
+    platform.type = "opendatasoft"
+    return platform
+
+
+@pytest.fixture
+def datagouv_platform(platform):
+    platform.type = "datagouvfr"
     return platform
 
 
@@ -107,3 +120,28 @@ def db_transaction(setup_test_database):
     finally:
         client.rollback()
         client.close()
+
+
+@pytest.fixture
+def pg_app(db_transaction):
+    uow = PostgresUnitOfWork(client=db_transaction)
+    return App(uow=uow)
+
+
+@pytest.fixture
+def pg_platform(pg_app):
+    platform_id = create_platform(pg_app, platform_1)
+    platform = pg_app.platform.get(platform_id=platform_id)
+    return platform
+
+
+@pytest.fixture
+def pg_ods_platform(pg_platform):
+    pg_platform.type = "opendatasoft"
+    return pg_platform
+
+
+@pytest.fixture
+def pg_datagouv_platform(pg_platform):
+    pg_platform.type = "datagouvfr"
+    return pg_platform

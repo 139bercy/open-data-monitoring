@@ -16,8 +16,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         self.client.execute(
             """
             INSERT INTO datasets (
-                id, platform_id, buid, slug, page, publisher, created, modified, published, restricted
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                id, platform_id, buid, slug, page, publisher, created, modified, published, restricted, deleted
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 platform_id = EXCLUDED.platform_id,
                 buid = EXCLUDED.buid,
@@ -27,7 +27,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 created = EXCLUDED.created,
                 modified = EXCLUDED.modified,
                 published = EXCLUDED.published,
-                restricted = EXCLUDED.restricted
+                restricted = EXCLUDED.restricted,
+                deleted = EXCLUDED.deleted
             """,
             (
                 str(dataset.id),
@@ -40,6 +41,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 dataset.modified,
                 dataset.published,
                 dataset.restricted,
+                dataset.is_deleted,
             ),
         )
         self.client.execute(

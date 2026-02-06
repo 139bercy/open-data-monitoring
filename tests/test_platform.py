@@ -14,7 +14,7 @@ from infrastructure.factories.platform import PlatformAdapterFactory
 from tests.fixtures.fixtures import platform_1
 
 
-def test_create_platform(app, testfile):
+def test_create_platform(app):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
@@ -22,7 +22,7 @@ def test_create_platform(app, testfile):
     assert isinstance(platform.id, UUID)
 
 
-def test_api_key_should_be_hidden(app, testfile):
+def test_api_key_should_be_hidden(app):
     # Arrange & Act
     platform_id = create_platform(app, platform_1)
     # Assert
@@ -39,7 +39,7 @@ def test_find_platform_from_url(app):
     assert platform.name == "My Platform"
 
 
-def test_should_return_all_platforms(app, testfile):
+def test_should_return_all_platforms(app):
     # Arrange
     create_platform(app, platform_1)
     # Act
@@ -96,7 +96,7 @@ def test_factory_wrong_platform_type_should_raise_exception():
         )
 
 
-def test_get_platform_by_domain(app, testfile):
+def test_get_platform_by_domain(app):
     # Arrange & Act
     create_platform(app, platform_1)
     result = app.platform.repository.get_by_domain("mydomain.net")
