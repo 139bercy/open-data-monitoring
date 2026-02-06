@@ -45,7 +45,7 @@ async def get_tests():
     """
     try:
         query = """
-        SELECT d.*
+        SELECT d.*, d.deleted
         FROM datasets d JOIN platforms p ON p.id = d.platform_id
         WHERE d.slug ILIKE '%test%' AND p.type = 'opendatasoft'
         ORDER BY timestamp DESC
@@ -65,6 +65,7 @@ async def get_tests():
                 last_sync_status=["last_sync_status"],
                 created=dataset["created"],
                 modified=dataset["modified"],
+                deleted=dataset["deleted"],
             )
             for dataset in datasets_raw
         ]
@@ -195,6 +196,7 @@ async def list_datasets(
                    COALESCE(vc.versions_count, 0) AS versions_count, 
                    d.last_sync, 
                    d.last_sync_status, 
+                   d.deleted,
                    dq.has_description as has_description
             FROM datasets d
             LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
@@ -223,6 +225,7 @@ async def list_datasets(
                 "page": r.get("page"),
                 "last_sync": r.get("last_sync"),
                 "last_sync_status": r.get("last_sync_status"),
+                "deleted": r.get("deleted"),
                 "has_description": r.get("has_description"),
             }
             for r in rows
@@ -246,7 +249,7 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
     try:
         # Base dataset
         ds_query = (
-            "SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, dq.has_description "
+            "SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.deleted, dq.has_description "
             "FROM datasets d "
             "LEFT JOIN dataset_quality dq ON d.id = dq.dataset_id "
             "WHERE  d.id = %s"
@@ -308,6 +311,7 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             "modified": d["modified"].isoformat() if d.get("modified") else None,
             "published": d.get("published"),
             "restricted": d.get("restricted"),
+            "deleted": d.get("deleted"),
             "has_description": d.get("has_description", None),
             "current_snapshot": current_snapshot,
             "snapshots": snapshots,
@@ -366,7 +370,7 @@ async def get_by_publisher(publisher_name: str):
     """
     try:
         query = """
-        SELECT p.name, d.timestamp, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.last_sync
+        SELECT p.name, d.timestamp, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.last_sync, d.deleted
         FROM datasets d
         JOIN platforms p ON p.id = d.platform_id
         WHERE d.publisher ILIKE %s
@@ -390,6 +394,7 @@ async def get_by_publisher(publisher_name: str):
                 last_sync=dataset["last_sync"],
                 created=dataset["created"],
                 modified=dataset["modified"],
+                deleted=dataset["deleted"],
             )
             for dataset in datasets_raw
         ]

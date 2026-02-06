@@ -21,6 +21,7 @@ class DatasetAPI(BaseModel):
     modified: datetime.datetime
     published: bool
     restricted: bool
+    deleted: bool = False
     last_sync: Optional[datetime.datetime]
     last_sync_status: str
 

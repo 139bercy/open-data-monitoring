@@ -346,6 +346,19 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                   >
                     {item.restricted ? "🔒" : "✓"}
                   </span>
+                  {item.isDeleted && (
+                    <span
+                      className="fr-badge fr-badge--error"
+                      style={{
+                        minWidth: "4rem",
+                        textAlign: "center",
+                        alignItems: "center",
+                      }}
+                      title="Supprimé sur la plateforme"
+                    >
+                      🗑️
+                    </span>
+                  )}
                 </div>,
                 item.title ?? "—",
                 item.platformName ?? item.platformId,

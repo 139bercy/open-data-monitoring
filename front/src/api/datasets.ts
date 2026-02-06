@@ -62,7 +62,8 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total
         published: it.published ?? null,
         lastSync: it.last_sync,
         lastSyncStatus: it.last_sync_status,
-        hasDescription: it.has_description
+        hasDescription: it.has_description,
+        isDeleted: it.deleted ?? null
     }));
     return { items, total: data.total ?? 0, page: data.page ?? page, pageSize: data.page_size ?? pageSize };
 }
@@ -115,7 +116,8 @@ export async function getDatasetDetail(id: string, includeSnapshots = false): Pr
         restricted: data.restricted ?? null,
         currentSnapshot: data.current_snapshot ? mapSnap(data.current_snapshot) : null,
         snapshots: Array.isArray(data.snapshots) ? data.snapshots.map(mapSnap) : undefined,
-        hasDescription: data.has_description
+        hasDescription: data.has_description,
+        isDeleted: data.deleted ?? null
     };
 }
 
@@ -135,7 +137,7 @@ export async function getDatasetVersions(id: string, params?: { page?: number; p
         title: s.title ?? null,
         data: s.data
     }));
-    return {items, total: data.total ?? 0, page: data.page ?? query.page, pageSize: data.page_size ?? query.page_size}
+    return { items, total: data.total ?? 0, page: data.page ?? query.page, pageSize: data.page_size ?? query.page_size }
 }
 
 
