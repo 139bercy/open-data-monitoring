@@ -20,7 +20,7 @@ class Slug(ValueObject):
     def __post_init__(self):
         if not self.value or not isinstance(self.value, str):
             raise InvalidDomainValue("Slug must be a non-empty string")
-        if not re.match(r"^[a-z0-9-]+$", self.value):
+        if not re.match(r"^[a-z0-9-_]+$", self.value):
             raise InvalidDomainValue(f"Invalid slug format: {self.value}")
 
     def __str__(self):

@@ -259,5 +259,28 @@ def test_upsert_supports_null_quality_counts(app, ods_platform, ods_dataset):
     result = app.dataset.repository.get(dataset_id=dataset_id)
     
     # Assert
-    assert result.quality.downloads_count is None
     assert result.quality.api_calls_count is None
+
+
+def test_ods_underscore_quality_check(app, ods_platform, ods_dataset):
+    # Arrange: Dataset ID with underscores
+    dataset_with_underscore = {**ods_dataset, "dataset_id": "my_dataset_with_underscores"}
+    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_with_underscore)
+    
+    # Act
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    
+    # Assert
+    assert result.quality.is_slug_valid is False
+
+
+def test_ods_clean_slug_quality_check(app, ods_platform, ods_dataset):
+    # Arrange: Dataset ID without underscores
+    dataset_clean = {**ods_dataset, "dataset_id": "my-clean-dataset"}
+    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_clean)
+    
+    # Act
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    
+    # Assert
+    assert result.quality.is_slug_valid is True

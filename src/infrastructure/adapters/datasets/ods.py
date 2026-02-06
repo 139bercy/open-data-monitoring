@@ -59,6 +59,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             downloads_count=kwargs.get("download_count", None),
             api_calls_count=kwargs.get("api_call_count", None),
             has_description=(True if metadata.get("default", {}).get("description", None) else False),
+            is_slug_valid="_" not in dataset_id,
         )
         dataset = DatasetDTO(
             buid=uid,

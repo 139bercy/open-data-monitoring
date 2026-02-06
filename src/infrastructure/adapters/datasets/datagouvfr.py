@@ -41,6 +41,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             downloads_count=metrics.get("resources_downloads", None),
             api_calls_count=None,
             has_description=True if kwargs.get("description", None) else False,
+            is_slug_valid=True,
         )
         dataset = DatasetDTO(
             buid=id,

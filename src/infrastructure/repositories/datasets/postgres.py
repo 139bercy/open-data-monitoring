@@ -45,17 +45,19 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ),
         )
         self.client.execute(
-            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description) "
-            "VALUES (%s, %s, %s, %s)"
+            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid) "
+            "VALUES (%s, %s, %s, %s, %s)"
             "ON CONFLICT (id) DO UPDATE SET "
             "downloads_count = EXCLUDED.downloads_count, "
             "api_calls_count = EXCLUDED.api_calls_count, "
-            "has_description = EXCLUDED.has_description",
+            "has_description = EXCLUDED.has_description, "
+            "is_slug_valid = EXCLUDED.is_slug_valid",
             (
                 str(dataset.id),
                 dataset.quality.downloads_count,
                 dataset.quality.api_calls_count,
                 dataset.quality.has_description,
+                dataset.quality.is_slug_valid,
             ),
         )
 
@@ -101,7 +103,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                SELECT jsonb_build_object(
                               'downloads_count', dq.downloads_count,
                               'api_calls_count', dq.api_calls_count,
-                              'has_description', dq.has_description
+                              'has_description', dq.has_description,
+                              'is_slug_valid', dq.is_slug_valid
                           )
                FROM dataset_quality dq
                WHERE dq.dataset_id = d.id
