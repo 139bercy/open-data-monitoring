@@ -58,7 +58,10 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             app.dataset.repository.update_dataset_sync_status(
                 platform_id=platform.id, dataset_id=dataset_id, status="failed"
             )
-    instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
+            
+    factory = DatasetAdapterFactory()
+    adapter = factory.create(platform_type=platform.type)
+    instance = app.dataset.add_dataset(platform=platform, dataset=dataset, adapter=adapter)
     if instance is None:
         return
     # On force la réactivation si le dataset est trouvé par le crawler

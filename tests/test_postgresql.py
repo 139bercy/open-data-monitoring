@@ -12,6 +12,8 @@ from infrastructure.repositories.datasets.postgres import PostgresDatasetReposit
 from infrastructure.unit_of_work import PostgresUnitOfWork
 from settings import App, app
 from domain.platform.aggregate import Platform
+from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
+from infrastructure.factories.dataset import DatasetAdapterFactory
 from tests.fixtures.fixtures import platform_1
 
 
@@ -118,7 +120,7 @@ def test_postgresql_should_handle_unreachable_dataset(pg_app, pg_ods_platform, o
 def test_postgresql_add_dataset_should_raise_an_error_on_fk_violation(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
     pg_ods_platform.id = UUID("00000000-0000-0000-0000-000000000000")
-    dataset = pg_app.dataset.add_dataset(platform=pg_ods_platform, dataset=ods_dataset)
+    dataset = pg_app.dataset.add_dataset(platform=pg_ods_platform, dataset=ods_dataset, adapter=OpendatasoftDatasetAdapter())
     # Act & Assert
     with pytest.raises(Exception):
         pg_app.dataset.repository.add(dataset)

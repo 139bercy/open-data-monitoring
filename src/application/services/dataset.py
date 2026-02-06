@@ -4,42 +4,33 @@ from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
+from domain.datasets.factory import DatasetFactory
 from domain.datasets.ports import AbstractDatasetRepository
 from domain.platform.aggregate import Platform
 from domain.platform.ports import DatasetAdapter
-from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 
 
 class DatasetMonitoring:
     def __init__(self, repository: AbstractDatasetRepository):
-        self.factory: DatasetAdapterFactory = DatasetAdapterFactory()
-        self.repository: AbstractDatasetRepository = repository
+        self.repository = repository
 
-    def add_dataset(self, platform: Optional[Platform], dataset: dict) -> Optional[Dataset]:
+    def add_dataset(self, platform: Optional[Platform], dataset: dict, adapter: DatasetAdapter) -> Optional[Dataset]:
+        """
+        Creates a Dataset aggregate. The adapter is now passed from the orchestration layer
+        to avoid having the service depend on an infrastructure factory.
+        """
         if platform is None:
             return None
-        adapter: DatasetAdapter = self.factory.create(platform_type=platform.type)
+        
         try:
-            dto: DatasetDTO = cast(DatasetDTO, adapter.map(**dataset))
-            result = Dataset(
-                id=uuid4(),
-                buid=dto.buid,
-                platform_id=platform.id,
-                slug=dto.slug,
-                page=dto.page,
-                publisher=dto.publisher,
-                created=dto.created,
-                modified=dto.modified,
-                published=dto.published,
-                restricted=dto.restricted,
-                downloads_count=dto.downloads_count,
-                api_calls_count=dto.api_calls_count,
-                raw=dataset,
+            return DatasetFactory.create_from_adapter(
+                adapter=adapter,
+                platform=platform,
+                raw_data=dataset
             )
-            result.add_quality(**asdict(dto.quality))
-            return result
-        except TypeError as e:
+        except Exception as e:
             logger.error(
-                f"{platform.type.upper()} - Dataset {dataset.get('dataset_id')} - {dataset.get('slug')} has encountered an error"
+                f"{platform.type.upper()} - Dataset {dataset.get('dataset_id')} - {dataset.get('slug')} has encountered an error: {e}"
             )
+            return None

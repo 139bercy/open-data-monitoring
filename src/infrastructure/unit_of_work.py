@@ -1,4 +1,6 @@
 from domain.unit_of_work import UnitOfWork
+from domain.datasets.ports import AbstractDatasetRepository
+from domain.platform.ports import PlatformRepository
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.repositories.datasets.in_memory import InMemoryDatasetRepository
 from infrastructure.repositories.datasets.postgres import PostgresDatasetRepository
@@ -38,13 +40,13 @@ class PostgresUnitOfWork(UnitOfWork):
             self._datasets = None
 
     @property
-    def platforms(self) -> PostgresPlatformRepository:
+    def platforms(self) -> PlatformRepository:
         if self._platforms is None:
             self._platforms = PostgresPlatformRepository(self.client)
         return self._platforms
 
     @property
-    def datasets(self) -> PostgresDatasetRepository:
+    def datasets(self) -> AbstractDatasetRepository:
         if self._datasets is None:
             self._datasets = PostgresDatasetRepository(self.client)
         return self._datasets
@@ -77,9 +79,9 @@ class InMemoryUnitOfWork(UnitOfWork):
             self._pending_changes = []
 
     @property
-    def platforms(self) -> InMemoryPlatformRepository:
+    def platforms(self) -> PlatformRepository:
         return self._platforms
 
     @property
-    def datasets(self) -> InMemoryDatasetRepository:
+    def datasets(self) -> AbstractDatasetRepository:
         return self._datasets

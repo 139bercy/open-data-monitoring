@@ -113,7 +113,7 @@ def test_hash_dataset(app, ods_platform, ods_dataset):
 
 def test_hash_consistency(app, ods_platform, ods_dataset):
     # Arrange
-    dataset = app.dataset.add_dataset(platform=ods_platform, dataset=ods_dataset)
+    dataset = app.dataset.add_dataset(platform=ods_platform, dataset=ods_dataset, adapter=OpendatasoftDatasetAdapter())
     # Act
     hash1 = dataset.calculate_hash()
     hash2 = dataset.calculate_hash()
@@ -123,7 +123,7 @@ def test_hash_consistency(app, ods_platform, ods_dataset):
 
 def test_hash_changes_with_data_changes(app, ods_platform, ods_dataset):
     # Arrange
-    dataset = app.dataset.add_dataset(platform=ods_platform, dataset=ods_dataset)
+    dataset = app.dataset.add_dataset(platform=ods_platform, dataset=ods_dataset, adapter=OpendatasoftDatasetAdapter())
     # Act
     hash1 = dataset.calculate_hash()
     dataset.raw["modified"] = "2024-01-01T00:00:00Z"
