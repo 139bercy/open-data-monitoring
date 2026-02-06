@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
 class DatasetQuality:
-    downloads_count: int
-    api_calls_count: int
+    downloads_count: Optional[int]
+    api_calls_count: Optional[int]
     has_description: bool

@@ -44,3 +44,7 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
     @abc.abstractmethod
     def update_dataset_sync_status(self, platform_id, dataset_id, status):
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def update_dataset_state(self, dataset: Dataset) -> None:
+        raise NotImplementedError

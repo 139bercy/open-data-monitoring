@@ -110,8 +110,8 @@ def cli_add_dataset(url, output):
 def cli_get_dataset(dataset_id):
     """Retrieve dataset on Opendatasoft"""
     catalog = requests.get(
-        f"https://{os.environ.get("ODS_DOMAIN")}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
-        headers={"Authorization": f"Apikey {os.environ.get("DATA_ECO_API_KEY")}"},
+        f"https://{os.environ.get('ODS_DOMAIN')}/api/explore/v2.1/catalog/datasets/{dataset_id}/",
+        headers={"Authorization": f"Apikey {os.environ.get('DATA_ECO_API_KEY')}"},
     )
     pprint(catalog.json())
     with open("dataset.json", "w") as f:

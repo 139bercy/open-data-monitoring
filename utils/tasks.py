@@ -12,7 +12,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from application.handlers import find_platform_from_url, upsert_dataset
+from application.handlers import find_platform_from_url, upsert_dataset, check_deleted_datasets
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from logger import logger
 from settings import BASE_DIR, ENV_PATH, app
@@ -51,7 +51,7 @@ API_ENDPOINTS = [
 def fetch_and_save_data(url: str, params: dict, filename: str) -> dict:
     """Récupère des données via API et les sauvegarde dans un fichier JSON"""
     try:
-        response = requests.get(url, headers=HEADERS, params=params, timeout=30)
+        response = requests.get(url, headers=HEADERS, params=params, timeout=60)
         response.raise_for_status()
         data = response.json()
 
@@ -122,44 +122,53 @@ def merge_data_eco_datasets():
 
 
 def process_data_gouv():
-    organization = os.environ["DATA_GOUV_ORGANIZATION"]
-    url = f"http://www.data.gouv.fr/api/1/datasets/"
-    params = {"organization": organization, "page_size": 1000}
-
-    response = requests.get(url, params=params)
-    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w") as file:
-        data = response.json()["data"]
-        text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
-        file.write(text)
+    # organization = os.environ["DATA_GOUV_ORGANIZATION"]
+    # url = f"http://www.data.gouv.fr/api/1/datasets/"
+    # params = {"organization": organization, "page_size": 1000}
+    #
+    # response = requests.get(url, params=params)
+    # with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w") as file:
+    #     data = response.json()["data"]
+    #     text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+    #     file.write(text)
+    #
+    # with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
+    #     data = json.load(file)
+    #     for dataset in data:
+    #         platform = find_platform_from_url(app=app, url=dataset["page"])
+    #         try:
+    #             upsert_dataset(app=app, platform=platform, dataset=dataset)
+    #         except DatasetHasNotChanged as e:
+    #             logger.error(f' - {dataset["dataset_id"]} - {e}')
+    #         except DatasetUnreachableError:
+    #             pass
 
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
         data = json.load(file)
-        for dataset in data:
-            platform = find_platform_from_url(app=app, url=dataset["page"])
-            try:
-                upsert_dataset(app=app, platform=platform, dataset=dataset)
-            except DatasetHasNotChanged as e:
-                logger.error(f' - {dataset["dataset_id"]} - {e}')
-            except DatasetUnreachableError:
-                pass
+        platform = find_platform_from_url(
+            app=app, url="https://www.data.gouv.fr/"
+        )
+        check_deleted_datasets(app=app, platform=platform, datasets=data)
 
 
 def process_data_eco():
     merge_data_eco_datasets()
     with open(os.path.join(OUTPUT_DIR, "data-eco.json"), "r") as file:
         data = json.load(file)
+        platform = find_platform_from_url(
+            app=app, url="https://data.economie.gouv.fr"
+        )
+        check_deleted_datasets(app=app, platform=platform, datasets=data)
         for dataset in data:
-            platform = find_platform_from_url(
-                app=app, url="https://data.economie.gouv.fr"
-            )
             try:
                 if platform is None:
                     continue
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
+
             except Exception as e:
                 logger.debug(f'OPENDATASOFT - {dataset["dataset_id"]} - {e}')
 
 
 if __name__ == "__main__":
-    process_data_eco()
+    # process_data_eco()
     process_data_gouv()

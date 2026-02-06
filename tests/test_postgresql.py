@@ -5,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import create_platform, upsert_dataset
+from application.handlers import create_platform, upsert_dataset, check_deleted_datasets
 from application.services.dataset import DatasetMonitoring
 from exceptions import DatasetUnreachableError
 from infrastructure.repositories.datasets.postgres import PostgresDatasetRepository
@@ -145,3 +145,17 @@ def test_postgresql_add_dataset_should_raise_an_error_on_fk_violation(app, platf
     # Act & Assert
     with pytest.raises(Exception):
         app.dataset.repository.add(dataset)
+
+
+def test_postgres_dataset_has_been_deleted_on_platform(platform_app, platform, db_transaction, ods_dataset):
+    # Arrange
+    platform_id = create_platform(platform_app, platform_1)
+    platform.id, platform.type = platform_id, "opendatasoft"
+    app.dataset.repository = PostgresDatasetRepository(client=db_transaction)
+    dataset_id = upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
+    # Act
+    crawler = []
+    check_deleted_datasets(app=app, platform=platform, datasets=crawler)
+    # Assert
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    assert result.is_deleted is True

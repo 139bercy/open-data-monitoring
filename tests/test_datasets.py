@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from application.handlers import upsert_dataset
+from application.handlers import upsert_dataset, check_deleted_datasets
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
 
@@ -169,3 +169,33 @@ def test_dataset_version_has_changed(app, platform, ods_dataset):
     upsert_dataset(app=app, platform=platform, dataset=new)
     assert len(app.dataset.repository.db) == 1
     assert len(app.dataset.repository.versions) == 2
+
+
+def test_dataset_has_been_deleted_on_platform(app, platform, ods_dataset):
+    # Arrange
+    platform.type = "opendatasoft"
+    dataset_id = upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
+    # Act
+    crawler = []
+    check_deleted_datasets(app=app, platform=platform, datasets=crawler)
+    # Assert
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    assert result.is_deleted is True
+
+
+def test_upsert_restores_deleted_dataset(app, platform, ods_dataset):
+    # Arrange
+    platform.type = "opendatasoft"
+    dataset_id = upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
+    
+    # Delete it
+    check_deleted_datasets(app=app, platform=platform, datasets=[])
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    assert result.is_deleted is True
+    
+    # Act: Upsert again
+    upsert_dataset(app=app, platform=platform, dataset=ods_dataset)
+    
+    # Assert
+    result = app.dataset.repository.get(dataset_id=dataset_id)
+    assert result.is_deleted is False

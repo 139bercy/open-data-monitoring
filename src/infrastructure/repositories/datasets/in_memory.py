@@ -39,9 +39,10 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
         if dataset is not None:
             dataset.versions = [item for item in self.versions if item["dataset_id"] == dataset_id]
-        if dataset is None:
-            raise ValueError(f"Dataset with id {dataset_id} not found")
-        return dataset
+            return dataset
+        # if dataset is None:
+        #  raise ValueError(f"Dataset with id {dataset_id} not found")
+        return
 
     def get_checksum_by_buid(self, dataset_buid) -> Optional[str]:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
@@ -75,3 +76,11 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         instance.last_sync_status = status
         self.add(instance)
         return
+
+    def get_buids(self, platform_id):
+        return [dataset.buid for dataset in self.db if dataset.platform_id == platform_id]
+
+    def update_dataset_state(self, dataset: Dataset) -> None:
+        instance = self.get(dataset_id=dataset.id)
+        instance.is_deleted = dataset.is_deleted
+        self.add(instance)

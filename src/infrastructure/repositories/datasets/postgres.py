@@ -1,7 +1,6 @@
 import uuid
 from typing import Optional
-
-from click import UUID
+from uuid import UUID
 from psycopg2._json import Json
 
 from domain.datasets.aggregate import Dataset
@@ -177,3 +176,11 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             )
         ]
         return result
+
+    def update_dataset_state(self, dataset: Dataset) -> None:
+        print(dataset.id, dataset.is_deleted)
+        self.client.execute(
+            """UPDATE datasets SET deleted = %s WHERE id = %s;""",
+            (dataset.is_deleted, str(dataset.id)),
+        )
+

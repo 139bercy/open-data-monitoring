@@ -27,6 +27,7 @@ class Dataset:
         raw: dict,
         publisher: Optional[str] = None,
         last_sync_status: str = None,
+        is_deleted: bool = False,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -45,6 +46,7 @@ class Dataset:
         self.versions: List[DatasetVersion] | None = []
         self.last_sync_status = last_sync_status
         self.quality = None
+        self.is_deleted = is_deleted
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -102,6 +104,7 @@ class Dataset:
             downloads_count=data.get("downloads_count"),
             api_calls_count=data.get("api_calls_count"),
             last_sync_status=data.get("last_sync_status"),
+            is_deleted=data.get("deleted", data.get("is_deleted", False)),
         )
 
     def __repr__(self):

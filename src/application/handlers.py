@@ -33,6 +33,7 @@ def sync_platform(app: App, platform_id: UUID) -> None:
 
 
 def find_platform_from_url(app: App, url: str) -> Optional[Platform]:
+    print(url)
     with app.uow:
         try:
             return app.platform.repository.get_by_domain(get_base_url(url))
@@ -60,21 +61,24 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     instance = app.dataset.add_dataset(platform=platform, dataset=dataset)
     if instance is None:
         return
+    # On force la réactivation si le dataset est trouvé par le crawler
+    instance.is_deleted = False
     with app.uow:
         instance.calculate_hash()
-        existing_checksum = app.dataset.repository.get_checksum_by_buid(instance.buid)
-        if existing_checksum == instance.checksum:
+        existing = app.dataset.repository.get_by_buid(instance.buid)
+        
+        if existing and existing.checksum == instance.checksum and existing.is_deleted == instance.is_deleted:
             logger.debug(
-                f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum, "
+                f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum and status, "
                 f"skipping."
             )
             return instance.id
-        existing_dataset = app.dataset.repository.get_by_buid(instance.buid)
-        if existing_dataset:
-            instance.id = existing_dataset.id
+        
+        if existing:
+            instance.id = existing.id
             app.dataset.repository.add(dataset=instance)
-            add_version(app=app, dataset_id=str(existing_dataset.id), instance=instance)
-            dataset_id = existing_dataset.id
+            add_version(app=app, dataset_id=str(existing.id), instance=instance)
+            dataset_id = existing.id
             logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
         else:
             logger.warning(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
@@ -115,3 +119,17 @@ def get_publishers_stats(app: App) -> list[dict[str, any]]:
     """
     with app.uow:
         return app.dataset.repository.get_publishers_stats()
+
+
+def check_deleted_datasets(app, platform, datasets):
+    with app.uow:
+        in_base = app.dataset.repository.get_buids(platform_id=platform.id)
+        # On supporte 'uid' (ODS) et 'id' (data.gouv)
+        in_crawler = [d.get("uid") or d.get("id") or d.get("dataset_id") for d in datasets]
+        deleted = set(in_base) - set(in_crawler)
+        for buid in deleted:
+            dataset = app.dataset.repository.get_by_buid(dataset_buid=buid)
+            if dataset:
+                dataset.is_deleted = True
+                app.dataset.repository.update_dataset_state(dataset)
+                logger.info(f"{platform.type.upper()} - Dataset '{dataset.slug}' deleted")

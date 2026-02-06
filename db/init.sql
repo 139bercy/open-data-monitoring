@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS datasets
     published        bool                  DEFAULT NULL,
     restricted       bool                  DEFAULT NULL,
     last_sync        timestamptz,
-    last_sync_status text CHECK ( last_sync_status IN ('pending', 'success', 'failed'))
+    last_sync_status text CHECK ( last_sync_status IN ('pending', 'success', 'failed')),
+    deleted          bool                  DEFAULT FALSE
 );
 
 COMMENT ON TABLE datasets IS 'Stockage central des métadonnées de datasets';
@@ -93,9 +94,9 @@ CREATE TABLE IF NOT EXISTS dataset_quality
     id              uuid PRIMARY KEY     DEFAULT gen_random_uuid(),
     timestamp       timestamptz NOT NULL DEFAULT NOW(),
     dataset_id      uuid        NOT NULL,
-    downloads_count int         NOT NULL DEFAULT 0,
-    api_calls_count int         NOT NULL DEFAULT 0,
-    has_description bool        NOT NULL DEFAULT FALSE
+    downloads_count int         DEFAULT 0,
+    api_calls_count int         DEFAULT 0,
+    has_description bool        DEFAULT FALSE
 );
 
 COMMENT ON TABLE dataset_quality IS 'Stockage des données de qualité des jeux de données';
