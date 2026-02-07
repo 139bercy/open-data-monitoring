@@ -2,101 +2,126 @@
 
 Cette application permet d'agréger, de surveiller et d'historiser les données provenant de plusieurs plateformes Open Data.
 
-Objectifs :
-- Agrégation : centraliser les métadonnées de datasets provenant de différentes sources (notamment data.gouv.fr et les plateformes Huwise).
-- Historisation : suivre les modifications apportées aux datasets au fil du temps.
-- Restitution : fournir une interface web de visualisation des données, destinée aux métiers et correspondants Open Data.
+**Objectifs :**
 
-## Install
+- **Agrégation** : centraliser les métadonnées de datasets provenant de différentes sources – notamment data.gouv.fr et les plateformes Huwise (ex-Opendatasoft).
+- **Historisation** : suivre les modifications apportées aux datasets avec une granularité jour, accéder et comparer les différentes versions.
+- **Restitution** : fournir une interface web de visualisation des données, destinée aux métiers et correspondants Open Data.
 
-### Install dependencies
+---
 
-Run `make install` or :
+## 🛠 Prérequis
 
-```bash
-$ pip install -r requirements.txt
-$ pip install -r . 
-```
+- **Python** dans sa version 3.14+
+- **Node.js** pour les dépendances du frontend.
+- **Docker** pour les bases de données PostgreSQL.
+- **Make** qui rassemble un certain nombre de commandes utiles.
 
-### Deploy database
-
-Database is deployed with docker. Install it before on your system.
-
-Run `make docker-up` or :
+## 🚀 Installation
 
 ```bash
-$ docker compose up --build -d
+git clone <repository-url>
+cd open-data-monitoring
+python -m venv venv
+source venv/bin/activate  # Sur macOS/Linux
+```
+```bash
+make install
 ```
 
-You can also run `make docker-down` to stop the container or :
+## ⚙️ Configuration
+
+Copiez les variables d'environnement dans un fichier .env. 
 
 ```bash
-$ docker compose down --remove-orphans -v
+cp .env.sample .env
 ```
 
-### Load data
+Éditez le fichier `.env` pour y ajouter vos clés d'API (ex: `DATA_EXAMPLE_API_KEY`) et paramètres de connexion. 
+Vous enregistrerez les références dans la base à la création d'une nouvelle plateforme. 
 
-Before running the tasks, you need to create a platform for the domain you want to monitor :
+Les variables principales incluent :
+- `DB_PASSWORD`, `DB_USER`, `DB_NAME` : pour l'accès PostgreSQL.
+- `ODS_DOMAIN` : domaine Opendatasoft à surveiller.
+- Clés d'API diverses pour les plateformes sources.
 
-#### Create platform
+Le projet fonctionne en production avec une instance Huwise et une organisation data.gouv.fr. 
 
-`<MY_API_KEY>` should be located in `.env` file.
+## 🗄 Base de données
 
-```text
-<MY_API_KEY>=<API_KEY>
-```
+Les commandes principales de gestion de la base de données sont rassemblées dans le Makefile. 
 
-```bash 
-$ app platform create -n "data.example.com" -t opendatasoft -u "https://data.example.com" -k DATA_EXAMPLE_API_KEY -s 
-"data-example" -o "data.example.com"                          
-```
+- **Démarrer** : `make docker-up`
+- **Arrêter** : `make docker-down`
+- **Initialiser (si dump présent)** : `make load` (recherche un fichier `dump.sql` à la racine)
+- **Sauvegarder** : `make dump`
 
-#### Add dataset
+Sinon : 
 
 ```bash
-$ app dataset add https://data.example.com/explore/dataset/hello-world/
+make help
 ```
 
-This are examples values, you need to replace them with your own.
+## ⌨️ Utilisation de la CLI
 
-Run :
+L'application expose une interface en ligne de commande appelable par `app`.
+
+### Gestion des plateformes et datasets
+
+Avant de monitorer des datasets, vous devez configurer une plateforme source :
 
 ```bash
-$ python utils/tasks.py
+# Lister les plateformes existantes
+app platform all
+
+# Créer une plateforme (opendatasoft, datagouvfr, test)
+app platform create --name "Data Gouv" --type datagouvfr --url "https://www.data.gouv.fr" --organization-id "123456789"
+
+# Ajouter un dataset à surveiller via son URL
+app dataset add https://www.data.gouv.fr/fr/datasets/un-super-dataset/
 ```
 
-Alternatively, you can run :
+### 🤖 Qualité Assistée par IA
 
+Le module `quality` permet d'évaluer la qualité des métadonnées en s'appuyant sur des LLM (Large Language Models). 
+Il compare les métadonnées actuelles avec des référentiels (DCAT, Charte Open Data) et suggère des améliorations.
+
+Les référentiels sont stockés dans le dossier `src/quality/data/`.
+
+Les adapteurs pour les différentes plateformes sont stockés dans le dossier `src/quality/adapters/`.
+Seuls Ollama, Open AI et Gemini sont supportés pour le moment. 
+
+#### Évaluer un dataset
 ```bash
-$ make load
+# Évaluation rapide avec OpenAI (modèle par défaut gpt-4o-mini)
+app quality evaluate <dataset_id>
+
+# Utilisation d'un modèle local via Ollama
+app quality evaluate <dataset_id> --provider ollama --model llama3.1
+
+# Générer un rapport au format Markdown
+app quality evaluate <dataset_id> --report
 ```
 
-This will load a file named "dump.sql" in the root of the project if it exists.
+#### Options disponibles :
+- `--dcat` : Chemin vers un référentiel DCAT personnalisé (Markdown).
+- `--charter` : Chemin vers une charte Open Data spécifique (Markdown).
+- `--output` : Format de sortie (`json` pour plus de détails, `text` pour un résumé).
+- `--report` : Exporte les conclusions dans un fichier `report.md` à la racine du projet.
 
-### Env
-
-Add platforms `API_KEYS` in `.env` file :
-
-```
-$ cp .env.sample .env
-```
-
-## Usage
-
-### CLI
-
-```
-$ app --help
+### Aide générale
+```bash
+app --help
 ```
 
-### API
+## 🌐 Services
 
-```
-$ python src/run_api.py
-```
+- **API** : `python src/run_api.py`
+- **Interface Frontend** : `./front/run_front.sh`
 
-### Front
+## 🧪 Développement
 
-```
-$ ./front/run_front.sh
-```
+- **Tests unitaires** : `make test`
+- **Couverture de code** : `make coverage`
+- **Nettoyage et formatage (Black/Isort)** : `make clean`
+- **Aide Makefile** : `make help`
