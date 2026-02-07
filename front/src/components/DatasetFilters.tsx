@@ -41,24 +41,49 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
       style={{ width: "100%" }}
     >
       <div
-        className="fr-grid-row fr-grid-row--gutters fr-grid-row--top"
-        style={{ display: "flex", alignItems: "center" }}
+        className="fr-grid-row fr-grid-row--gutters fr-grid-row--bottom"
+        style={{ display: "flex", alignItems: "flex-end" }}
       >
-        <div className="fr-col-12 fr-col-md-4">
+        <div className="fr-col-12 fr-col-md-3">
           <Input
             label="Rechercher par slug"
-            // hintText="Recherche contenant (ILIKE) sur le slug"
             nativeInputProps={{
               type: "search",
               value: query.q ?? "",
               onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
                 onChange({ q: e.currentTarget.value, page: 1 }),
-              placeholder: "ex: prix-des-controles-techniques",
+              placeholder: "ex: prix-des-controles...",
             }}
             style={{ transition: "box-shadow .2s ease" }}
           />
         </div>
-        <div className="fr-col-12 fr-col-md-4">
+        <div className="fr-col-12 fr-col-md-3">
+          <Select
+            label="Statut"
+            nativeSelectProps={{
+              value:
+                query.isDeleted === true
+                  ? "true"
+                  : query.isDeleted === false
+                    ? "false"
+                    : "",
+              onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                const val = e.currentTarget.value;
+                onChange({
+                  isDeleted:
+                    val === "true" ? true : val === "false" ? false : undefined,
+                  page: 1,
+                });
+              },
+              style: { width: "100%", transition: "box-shadow .2s ease" },
+            }}
+          >
+            <option value="">Tous les jeux</option>
+            <option value="false">Actifs</option>
+            <option value="true">Supprimés</option>
+          </Select>
+        </div>
+        <div className="fr-col-12 fr-col-md-3">
           <Select
             label="Plateforme"
             nativeSelectProps={{
@@ -81,7 +106,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
             ))}
           </Select>
         </div>
-        <div className="fr-col-12 fr-col-md-4">
+        <div className="fr-col-12 fr-col-md-3">
           <Select
             label="Producteur"
             nativeSelectProps={{
@@ -107,7 +132,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
 
         <div className="fr-col-12 fr-col-md-3">
           <Input
-            label="Créé après le"
+            label="Créé après"
             nativeInputProps={{
               type: "date",
               value: query.createdFrom ?? "",
@@ -121,7 +146,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
         </div>
         <div className="fr-col-12 fr-col-md-3">
           <Input
-            label="Créé avant le"
+            label="Créé avant"
             nativeInputProps={{
               type: "date",
               value: query.createdTo ?? "",
@@ -135,7 +160,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
         </div>
         <div className="fr-col-12 fr-col-md-3">
           <Input
-            label="Modifié après le"
+            label="Modifié après"
             nativeInputProps={{
               type: "date",
               value: query.modifiedFrom ?? "",
@@ -149,7 +174,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
         </div>
         <div className="fr-col-12 fr-col-md-3">
           <Input
-            label="Modifié avant le"
+            label="Modifié avant"
             nativeInputProps={{
               type: "date",
               value: query.modifiedTo ?? "",
@@ -162,10 +187,14 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
           />
         </div>
 
-        <div className="fr-col-12">
+        <div
+          className="fr-col-12 fr-mt-2w"
+          style={{ display: "flex", justifyContent: "flex-end" }}
+        >
           <Button
-            priority="secondary"
+            priority="tertiary"
             onClick={() => onReset?.()}
+            iconId="ri-refresh-line"
           >
             Réinitialiser
           </Button>

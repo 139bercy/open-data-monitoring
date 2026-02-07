@@ -70,6 +70,7 @@ export type DatasetListQuery = {
     modifiedFrom?: string;
     modifiedTo?: string;
     q?: string; // search on slug only
+    isDeleted?: boolean;
     sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count';
     order?: 'asc' | 'desc';
     page?: number;

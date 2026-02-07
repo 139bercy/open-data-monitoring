@@ -100,6 +100,7 @@ export function DatasetListPage(): JSX.Element {
     query.modifiedFrom,
     query.modifiedTo,
     query.q,
+    query.isDeleted,
   ]);
 
   const handleOpenDetails = async (datasetId: string) => {

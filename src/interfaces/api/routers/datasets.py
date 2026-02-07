@@ -96,6 +96,7 @@ async def list_datasets(
     page: int = 1,
     page_size: int = 25,
     include_counts: bool = True,
+    is_deleted: bool | None = None,
 ):
     """
     Liste paginée de datasets. Implémentation minimale pour le front UC1.
@@ -129,6 +130,9 @@ async def list_datasets(
         if modified_to:
             where_clauses.append("modified <= %s")
             params.append(modified_to)
+        if is_deleted is not None:
+            where_clauses.append("deleted = %s")
+            params.append(is_deleted)
 
         where_sql = " AND ".join(where_clauses)
 
@@ -198,7 +202,8 @@ async def list_datasets(
                    d.page,
                    COALESCE(
                        (lv.snapshot ->> 'title'),
-                       (lv.snapshot -> 'metas' ->> 'title')
+                       (lv.snapshot -> 'metas' ->> 'title'),
+                       d.slug
                    ) AS title,
                    lv.api_calls_count AS api_calls_count,
                    lv.downloads_count AS downloads_count,
@@ -325,6 +330,7 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             "id": d["id"],
             "platform_id": d["platform_id"],
             "publisher": d.get("publisher"),
+            "title": current_snapshot.get("title") if current_snapshot else d["slug"],
             "buid": d["buid"],
             "slug": d["slug"],
             "page": d.get("page"),
