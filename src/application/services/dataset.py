@@ -1,5 +1,5 @@
 from dataclasses import asdict
-from typing import cast, Optional
+from typing import Optional, cast
 from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
@@ -22,13 +22,9 @@ class DatasetMonitoring:
         """
         if platform is None:
             return None
-        
+
         try:
-            return DatasetFactory.create_from_adapter(
-                adapter=adapter,
-                platform=platform,
-                raw_data=dataset
-            )
+            return DatasetFactory.create_from_adapter(adapter=adapter, platform=platform, raw_data=dataset)
         except Exception as e:
             logger.error(
                 f"{platform.type.upper()} - Dataset {dataset.get('dataset_id')} - {dataset.get('slug')} has encountered an error: {e}"

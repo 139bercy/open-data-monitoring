@@ -1,21 +1,17 @@
-import os
 import csv
+import json
+import os
 from datetime import datetime
 from pprint import pprint
 from uuid import UUID
 
 import click
-import json
 import requests
 
-from application.handlers import (
-    create_platform,
-    fetch_dataset,
-    find_dataset_id_from_url,
-    find_platform_from_url,
-    sync_platform,
-    upsert_dataset,
-)
+from application.handlers import (create_platform, fetch_dataset,
+                                  find_dataset_id_from_url,
+                                  find_platform_from_url, sync_platform,
+                                  upsert_dataset)
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from interfaces.cli_quality import cli_quality
 from logger import logger

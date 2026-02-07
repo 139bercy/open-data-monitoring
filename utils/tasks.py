@@ -12,7 +12,8 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from application.handlers import find_platform_from_url, upsert_dataset, check_deleted_datasets
+from application.handlers import (check_deleted_datasets,
+                                  find_platform_from_url, upsert_dataset)
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from logger import logger
 from settings import BASE_DIR, ENV_PATH, app

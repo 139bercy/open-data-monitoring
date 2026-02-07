@@ -1,4 +1,5 @@
 """CLI commands for metadata quality evaluation."""
+
 from typing import Optional
 from uuid import UUID
 
@@ -43,7 +44,9 @@ def cli_quality():
     is_flag=True,
     help="Export to md file",
 )
-def cli_evaluate_quality(dataset_id: str, dcat: str, charter: str, provider: str, model: Optional[str], output: str, report: bool):
+def cli_evaluate_quality(
+    dataset_id: str, dcat: str, charter: str, provider: str, model: Optional[str], output: str, report: bool
+):
     """Evaluate metadata quality for a dataset."""
     console.print(f"\n[bold]Evaluating dataset {dataset_id}...[/bold]\n")
     try:
@@ -56,7 +59,9 @@ def cli_evaluate_quality(dataset_id: str, dcat: str, charter: str, provider: str
         service = QualityAssessmentService(evaluator=evaluator, uow=app.uow)
 
         # Run evaluation
-        evaluation = service.evaluate_dataset(dataset_id=dataset_id, dcat_path=dcat, charter_path=charter, output=output)
+        evaluation = service.evaluate_dataset(
+            dataset_id=dataset_id, dcat_path=dcat, charter_path=charter, output=output
+        )
 
         # Display results
         report = _display_evaluation(evaluation, output)
@@ -84,8 +89,8 @@ def _display_evaluation(evaluation, output: str):
     if output == "text":
         console.print("\n[bold]Audit Qualité Métadonnées[/bold]\n")
         console.print(evaluation.raw_text)
-        return 
-    
+        return
+
     # For JSON format, display structured results
     # Overall score
     score_color = "green" if evaluation.overall_score >= 70 else "yellow" if evaluation.overall_score >= 50 else "red"

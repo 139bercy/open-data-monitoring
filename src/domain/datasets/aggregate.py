@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import hashlib
 import json
 from dataclasses import asdict
@@ -69,7 +70,7 @@ class Dataset:
             "restricted": self.restricted,
             "publisher": self.publisher,
         }
-        
+
         state_str = json.dumps(state, sort_keys=True)
         self.checksum = hashlib.sha256(state_str.encode()).hexdigest()
         return self.checksum
@@ -91,7 +92,9 @@ class Dataset:
         )
         self.versions.append(version)
 
-    def add_quality(self, downloads_count, api_calls_count, has_description, is_slug_valid=True, evaluation_results=None):
+    def add_quality(
+        self, downloads_count, api_calls_count, has_description, is_slug_valid=True, evaluation_results=None
+    ):
         self.quality = DatasetQuality(
             downloads_count=downloads_count,
             api_calls_count=api_calls_count,

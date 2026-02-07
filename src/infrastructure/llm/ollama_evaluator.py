@@ -1,4 +1,5 @@
 """Ollama-based implementation of LLM metadata evaluator."""
+
 import json
 import os
 from datetime import datetime
@@ -8,7 +9,8 @@ import requests
 from pydantic import ValidationError
 
 from domain.datasets.aggregate import Dataset
-from domain.quality.evaluation import CriterionScore, MetadataEvaluation, Suggestion
+from domain.quality.evaluation import (CriterionScore, MetadataEvaluation,
+                                       Suggestion)
 from domain.quality.ports import LLMEvaluator
 from infrastructure.llm.models import EvaluationResponse
 from infrastructure.llm.prompts import build_system_prompt, build_user_prompt

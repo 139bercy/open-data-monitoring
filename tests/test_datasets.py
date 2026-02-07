@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from application.handlers import upsert_dataset, check_deleted_datasets
+from application.handlers import check_deleted_datasets, upsert_dataset
 from domain.platform.aggregate import Platform
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
@@ -176,15 +176,15 @@ def test_dataset_has_been_deleted_on_platform(app, ods_platform, ods_dataset):
 def test_upsert_restores_deleted_dataset(app, ods_platform, ods_dataset):
     # Arrange
     dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
-    
+
     # Delete it
     check_deleted_datasets(app=app, platform=ods_platform, datasets=[])
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is True
-    
+
     # Act: Upsert again
     upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
-    
+
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is False
@@ -194,11 +194,14 @@ def test_upsert_restores_and_updates_deleted_dataset(app, ods_platform, ods_data
     # Arrange
     dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
     check_deleted_datasets(app=app, platform=ods_platform, datasets=[])
-    
+
     # Act: Upsert with CHANGES (inspired by data-eco.json structure)
-    new_data = {**ods_dataset, "metas": {**ods_dataset["metas"], "default": {**ods_dataset["metas"]["default"], "title": "Updated Title"}}}
+    new_data = {
+        **ods_dataset,
+        "metas": {**ods_dataset["metas"], "default": {**ods_dataset["metas"]["default"], "title": "Updated Title"}},
+    }
     upsert_dataset(app=app, platform=ods_platform, dataset=new_data)
-    
+
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is False
@@ -209,7 +212,7 @@ def test_check_deletions_isolation_between_platforms(app, ods_platform, ods_data
     # Arrange: Create dataset for Platform A
     ods_platform.id = UUID("11111111-1111-1111-1111-111111111111")
     dataset_a_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
-    
+
     # Create Platform B
     platform_b = Platform(
         id=UUID("22222222-2222-2222-2222-222222222222"),
@@ -222,10 +225,10 @@ def test_check_deletions_isolation_between_platforms(app, ods_platform, ods_data
     )
     dataset_b_data = {**ods_dataset, "uid": "dataset-b", "dataset_id": "dataset-b"}
     dataset_b_id = upsert_dataset(app=app, platform=platform_b, dataset=dataset_b_data)
-    
+
     # Act: Sync deletions for Platform A only (passing its dataset)
     check_deleted_datasets(app=app, platform=ods_platform, datasets=[ods_dataset])
-    
+
     # Assert: Platform B dataset should be UNTOUCHED (still active)
     # even if not present in the crawler results of Platform A
     dataset_b = app.dataset.repository.get(dataset_id=dataset_b_id)
@@ -235,15 +238,15 @@ def test_check_deletions_isolation_between_platforms(app, ods_platform, ods_data
 def test_check_deletions_supports_datagouv_id_format(app, datagouv_platform, datagouv_dataset):
     # Arrange
     dataset_id = upsert_dataset(app=app, platform=datagouv_platform, dataset=datagouv_dataset)
-    
+
     # Act: Sync using "id" key in crawler result
     crawler_results = [{"id": datagouv_dataset["id"]}]
     check_deleted_datasets(app=app, platform=datagouv_platform, datasets=crawler_results)
-    
+
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is False
-    
+
     # Verify deletion works with "id" key too
     check_deleted_datasets(app=app, platform=datagouv_platform, datasets=[])
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -254,10 +257,10 @@ def test_upsert_supports_null_quality_counts(app, ods_platform, ods_dataset):
     # Arrange
     incomplete_dataset = {**ods_dataset, "api_call_count": None, "download_count": None}
     dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=incomplete_dataset)
-    
+
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
-    
+
     # Assert
     assert result.quality.api_calls_count is None
 
@@ -266,10 +269,10 @@ def test_ods_underscore_quality_check(app, ods_platform, ods_dataset):
     # Arrange: Dataset ID with underscores
     dataset_with_underscore = {**ods_dataset, "dataset_id": "my_dataset_with_underscores"}
     dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_with_underscore)
-    
+
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
-    
+
     # Assert
     assert result.quality.is_slug_valid is False
 
@@ -278,9 +281,9 @@ def test_ods_clean_slug_quality_check(app, ods_platform, ods_dataset):
     # Arrange: Dataset ID without underscores
     dataset_clean = {**ods_dataset, "dataset_id": "my-clean-dataset"}
     dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_clean)
-    
+
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
-    
+
     # Assert
     assert result.quality.is_slug_valid is True

@@ -8,8 +8,6 @@ from tests.fixtures.fixtures import platform_1
 
 
 @pytest.mark.usefixtures("setup_test_database")
-
-
 def test_unit_of_work_commit(db_transaction, platform):
     # Arrange
     uow = PostgresUnitOfWork(client=db_transaction)

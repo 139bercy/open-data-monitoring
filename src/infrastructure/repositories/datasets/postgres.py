@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional
 from uuid import UUID
+
 from psycopg2._json import Json
 
 from domain.datasets.aggregate import Dataset
@@ -192,4 +193,3 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             """UPDATE datasets SET deleted = %s WHERE id = %s;""",
             (dataset.is_deleted, str(dataset.id)),
         )
-

@@ -14,7 +14,7 @@ import os
 
 if not logger.hasHandlers():
     logger.addHandler(console_handler)
-    
+
     if os.getenv("OPEN_DATA_MONITORING_ENV") != "TEST":
         file_handler = RotatingFileHandler("app.log", maxBytes=1_000_000, backupCount=5)
         file_handler.setLevel(logging.WARN)

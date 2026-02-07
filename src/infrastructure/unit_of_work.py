@@ -1,11 +1,15 @@
-from domain.unit_of_work import UnitOfWork
 from domain.datasets.ports import AbstractDatasetRepository
 from domain.platform.ports import PlatformRepository
+from domain.unit_of_work import UnitOfWork
 from infrastructure.database.postgres import PostgresClient
-from infrastructure.repositories.datasets.in_memory import InMemoryDatasetRepository
-from infrastructure.repositories.datasets.postgres import PostgresDatasetRepository
-from infrastructure.repositories.platforms.in_memory import InMemoryPlatformRepository
-from infrastructure.repositories.platforms.postgres import PostgresPlatformRepository
+from infrastructure.repositories.datasets.in_memory import \
+    InMemoryDatasetRepository
+from infrastructure.repositories.datasets.postgres import \
+    PostgresDatasetRepository
+from infrastructure.repositories.platforms.in_memory import \
+    InMemoryPlatformRepository
+from infrastructure.repositories.platforms.postgres import \
+    PostgresPlatformRepository
 
 
 class PostgresUnitOfWork(UnitOfWork):

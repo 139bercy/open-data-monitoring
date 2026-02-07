@@ -1,7 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import asdict
-from uuid import uuid4
 from typing import Optional, cast
+from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
@@ -16,7 +17,7 @@ class DatasetFactory:
         Creates a Dataset aggregate from raw data using a specific adapter.
         """
         dto: DatasetDTO = cast(DatasetDTO, adapter.map(**raw_data))
-        
+
         dataset = Dataset(
             id=uuid4(),
             buid=dto.buid,
@@ -32,8 +33,8 @@ class DatasetFactory:
             api_calls_count=dto.api_calls_count,
             raw=raw_data,
         )
-        
+
         if dto.quality:
             dataset.add_quality(**asdict(dto.quality))
-            
+
         return dataset

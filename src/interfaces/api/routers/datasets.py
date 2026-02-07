@@ -7,11 +7,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 
-from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
+from application.handlers import (fetch_dataset, find_dataset_id_from_url,
+                                  find_platform_from_url, upsert_dataset)
 from application.services.quality_assessment import QualityAssessmentService
 from exceptions import DatasetHasNotChanged, DatasetUnreachableError
 from infrastructure.llm.openai_evaluator import OpenAIEvaluator
-from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse
+from interfaces.api.schemas.datasets import (DatasetAPI, DatasetCreateResponse,
+                                             DatasetResponse)
 from logger import logger
 from settings import app as domain_app
 
@@ -240,7 +242,7 @@ async def list_datasets(
                     "has_description": r.get("has_description"),
                     "is_slug_valid": r.get("is_slug_valid"),
                     "evaluation_results": r.get("evaluation_results"),
-                }
+                },
             }
             for r in rows
         ]
@@ -441,19 +443,17 @@ async def evaluate_dataset(dataset_id: UUID):
         # Initialize service (OpenAI by default for now)
         evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
         service = QualityAssessmentService(evaluator=evaluator, uow=domain_app.uow)
-        
+
         # Paths to reference docs (should be configurable or standard)
         dcat_path = "docs/quality/dcat_reference.md"
         charter_path = "docs/quality/charter_opendata.md"
-        
+
         evaluation = service.evaluate_dataset(
-            dataset_id=str(dataset_id),
-            dcat_path=dcat_path,
-            charter_path=charter_path,
-            output="json"
+            dataset_id=str(dataset_id), dcat_path=dcat_path, charter_path=charter_path, output="json"
         )
-        
+
         from dataclasses import asdict
+
         return asdict(evaluation)
     except Exception as e:
         logger.error(f"Evaluation failed for {dataset_id}: {e}")

@@ -1,4 +1,5 @@
 import os
+
 os.environ["OPEN_DATA_MONITORING_ENV"] = "TEST"
 
 import json
@@ -7,11 +8,11 @@ import uuid
 import psycopg2
 import pytest
 
+from application.handlers import create_platform
 from domain.platform.aggregate import Platform
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
 from settings import App
-from application.handlers import create_platform
 from tests.fixtures.fixtures import platform_1
 
 TEST_DB = "odm_test"

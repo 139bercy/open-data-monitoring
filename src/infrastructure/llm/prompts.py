@@ -116,14 +116,8 @@ Fournis une évaluation complète au format JSON."""
 def build_system_prompt(dcat_reference: str, charter: str, output: str) -> str:
     """Build the system prompt (ignoring references to fit context)."""
     if output == "json":
-        return SYSTEM_PROMPT_TEMPLATE_JSON.format(
-            dcat_reference=dcat_reference,
-            charter=charter
-        )
-    return SYSTEM_PROMPT_TEMPLATE_TEXT.format(
-        dcat_reference=dcat_reference,
-        charter=charter
-    )
+        return SYSTEM_PROMPT_TEMPLATE_JSON.format(dcat_reference=dcat_reference, charter=charter)
+    return SYSTEM_PROMPT_TEMPLATE_TEXT.format(dcat_reference=dcat_reference, charter=charter)
 
 
 def build_user_prompt(dataset: dict, output: str) -> str:

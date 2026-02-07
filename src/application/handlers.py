@@ -1,5 +1,5 @@
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
@@ -58,7 +58,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             app.dataset.repository.update_dataset_sync_status(
                 platform_id=platform.id, dataset_id=dataset_id, status="failed"
             )
-            
+
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     instance = app.dataset.add_dataset(platform=platform, dataset=dataset, adapter=adapter)
@@ -69,14 +69,14 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     with app.uow:
         instance.calculate_hash()
         existing = app.dataset.repository.get_by_buid(instance.buid)
-        
+
         if existing and existing.checksum == instance.checksum and existing.is_deleted == instance.is_deleted:
             logger.debug(
                 f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum and status, "
                 f"skipping."
             )
             return instance.id
-        
+
         if existing:
             instance.id = existing.id
             app.dataset.repository.add(dataset=instance)

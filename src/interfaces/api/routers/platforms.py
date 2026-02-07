@@ -4,7 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException
 
 from application.handlers import create_platform
-from interfaces.api.schemas.platforms import PlatformCreateDTO, PlatformCreateResponse, PlatformDTO, PlatformsResponse
+from interfaces.api.schemas.platforms import (PlatformCreateDTO,
+                                              PlatformCreateResponse,
+                                              PlatformDTO, PlatformsResponse)
 from settings import app as domain_app
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])

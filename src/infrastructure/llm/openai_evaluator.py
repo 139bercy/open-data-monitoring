@@ -1,4 +1,5 @@
 """OpenAI-based implementation of LLM metadata evaluator."""
+
 import json
 import os
 from datetime import datetime
@@ -8,7 +9,8 @@ from openai import OpenAI
 from pydantic import ValidationError
 
 from domain.datasets.aggregate import Dataset
-from domain.quality.evaluation import CriterionScore, MetadataEvaluation, Suggestion
+from domain.quality.evaluation import (CriterionScore, MetadataEvaluation,
+                                       Suggestion)
 from domain.quality.ports import LLMEvaluator
 from infrastructure.llm.models import EvaluationResponse
 from infrastructure.llm.prompts import build_system_prompt, build_user_prompt
@@ -61,11 +63,11 @@ class OpenAIEvaluator(LLMEvaluator):
                 "temperature": 0.1,
                 "max_tokens": 2048,
             }
-            
+
             # Only enable JSON mode for json output
             if output == "json":
                 api_params["response_format"] = {"type": "json_object"}
-            
+
             response = self.client.chat.completions.create(**api_params)
 
             # Parse response
@@ -81,7 +83,7 @@ class OpenAIEvaluator(LLMEvaluator):
                     overall_score=0.0,  # Not applicable for text format
                     criteria_scores={},  # Not applicable for text format
                     suggestions=[],  # Not applicable for text format
-                    raw_text=response_text  # Store raw text evaluation
+                    raw_text=response_text,  # Store raw text evaluation
                 )
 
             # For JSON output, validate with Pydantic
