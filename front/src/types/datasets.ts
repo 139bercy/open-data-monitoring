@@ -36,6 +36,7 @@ export type DatasetDetail = {
     id: string;
     platformId: string;
     publisher: string | null;
+    title: string | null;
     buid: string;
     slug: string;
     page: string;

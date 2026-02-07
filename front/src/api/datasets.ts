@@ -109,6 +109,7 @@ export async function getDatasetDetail(id: string, includeSnapshots = false): Pr
         id: data.id,
         platformId: data.platform_id,
         publisher: data.publisher ?? null,
+        title: data.title ?? null,
         buid: data.buid,
         slug: data.slug,
         page: data.page,
