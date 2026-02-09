@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
 from application.services.quality_assessment import QualityAssessmentService
-from exceptions import DatasetHasNotChangedError, DatasetUnreachableError
+from domain.datasets.exceptions import DatasetUnreachableError
 from infrastructure.llm.openai_evaluator import OpenAIEvaluator
 from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse
 from logger import logger
@@ -26,8 +26,6 @@ async def add_dataset(url: str):
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
     try:
         upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
-    except DatasetHasNotChangedError as e:
-        logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except DatasetUnreachableError:
         pass
 

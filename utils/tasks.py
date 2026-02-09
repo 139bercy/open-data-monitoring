@@ -13,7 +13,7 @@ import requests
 from dotenv import load_dotenv
 
 from application.handlers import check_deleted_datasets, find_platform_from_url, upsert_dataset
-from exceptions import DatasetHasNotChangedError, DatasetUnreachableError
+from domain.datasets.exceptions import DatasetUnreachableError
 from logger import logger
 from settings import BASE_DIR, ENV_PATH, app
 
@@ -134,8 +134,6 @@ def process_data_gouv():
             platform = find_platform_from_url(app=app, url=dataset["page"])
             try:
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
-            except DatasetHasNotChangedError as e:
-                logger.error(f" - {dataset['dataset_id']} - {e}")
             except DatasetUnreachableError:
                 pass
 

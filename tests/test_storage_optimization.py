@@ -180,14 +180,12 @@ def test_migration_logic(pg_app, pg_datagouv_platform, datagouv_dataset):
 
     # Act: Run mini-migration logic on the SAME connection to avoid deadlocks
     # Fetch legacy versions
-    versions = client.fetchall(
-        """
+    versions = client.fetchall("""
         SELECT id, dataset_id, snapshot, downloads_count, api_calls_count,
                views_count, reuses_count, followers_count, popularity_score
         FROM dataset_versions
         WHERE snapshot IS NOT NULL
-    """
-    )
+    """)
     for v in versions:
         snapshot = v["snapshot"]
         stripped, _ = strip_volatile_fields(snapshot)

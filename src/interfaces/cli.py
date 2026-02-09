@@ -16,7 +16,7 @@ from application.handlers import (
     sync_platform,
     upsert_dataset,
 )
-from exceptions import DatasetHasNotChangedError, DatasetUnreachableError
+from domain.datasets.exceptions import DatasetUnreachableError
 from interfaces.cli_quality import cli_quality
 from logger import logger
 from settings import app
@@ -99,8 +99,6 @@ def cli_add_dataset(url, output):
         if output:
             pprint(dataset)
         upsert_dataset(app=app, platform=platform, dataset=dataset)
-    except DatasetHasNotChangedError as e:
-        logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except DatasetUnreachableError:
         pass
 
@@ -153,14 +151,12 @@ def cli_get_datasets():
 @cli_get_datasets.command("tests")
 def cli_get_test_dataset():
     """Retrieve datasets"""
-    datasets = app.dataset.repository.client.fetchall(
-        """
+    datasets = app.dataset.repository.client.fetchall("""
     SELECT d.*
     FROM datasets d JOIN platforms p ON p.id = d.platform_id
     WHERE d.slug ILIKE '%test%' AND p.type = 'opendatasoft'
     ORDER BY timestamp DESC
-    """
-    )
+    """)
     filename = f"{datetime.today().strftime('%Y-%m-%d')}-datasets-flagged-as-tests.csv"
     with open(filename, "w") as output:
         writer = csv.DictWriter(output, fieldnames=datasets[0].keys())

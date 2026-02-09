@@ -86,8 +86,7 @@ class PostgresPlatformRepository(PlatformRepository):
         )
 
     def all(self):
-        return self.client.fetchall(
-            """
+        return self.client.fetchall("""
         SELECT
     p.*,
     json_agg(
@@ -103,5 +102,4 @@ FROM platforms p
 LEFT JOIN platform_sync_histories h ON p.id = h.platform_id
 GROUP BY p.id, p.created_at
 ORDER BY p.created_at DESC;
-        """
-        )
+        """)

@@ -4,8 +4,8 @@ from uuid import UUID
 from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.datasets.aggregate import Dataset
+from domain.datasets.exceptions import DatasetUnreachableError
 from domain.platform.aggregate import Platform
-from exceptions import DatasetUnreachableError
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
 from settings import App
@@ -127,38 +127,36 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     instance = app.dataset.add_dataset(platform=platform, dataset=dataset, adapter=adapter)
-    if instance is None:
+    if instance is None:  # +1 → CC = 2
         return
 
-    instance.is_deleted = False
+    # 3. Prepare for persistence (calculate hash, ensure active)
+    instance.prepare_for_persistence()
 
     with app.uow:
-        instance.calculate_hash()
         existing = app.dataset.repository.get_by_buid(instance.buid)
 
-        # 3. Determine versioning decision
-        metrics_changed = _has_metrics_changed(existing, instance) if existing else False
+        # 4. Determine versioning decision
+        metrics_changed = _has_metrics_changed(existing, instance) if existing else False  # +1 (ternary) → CC = 3
         is_cooldown = _is_cooldown_active(existing)
         should_version = _should_create_version(existing, instance, metrics_changed, is_cooldown)
 
         logger.debug(
-            f"Version check for {instance.slug}: metrics_changed={metrics_changed}, "
-            f"is_cooldown={is_cooldown}, should_version={should_version}"
+            f"[{platform.type.upper()}] {instance.slug} - Hash changed: {existing.checksum != instance.checksum if existing else 'N/A'}, "
+            f"Metrics changed: {metrics_changed}, Cooldown: {is_cooldown}, Should version: {should_version}"
         )
 
-        if not should_version:
-            logger.debug(
-                f"{platform.type.upper()} - Dataset '{instance.slug}' has not changed (Cooldown or No change)."
-            )
+        if not should_version:  # +1 → CC = 4
             return instance.id
 
-        # 4. Create version
+        # 5. Create version
         dataset_id = _create_or_update_dataset_version(app, platform, instance, existing)
 
-        # 5. Update sync status
+        # 6. Update sync status
         app.dataset.repository.update_dataset_sync_status(
             platform_id=platform.id, dataset_id=dataset_id, status="success"
         )
+
         return dataset_id
 
 

@@ -9,6 +9,11 @@ from uuid import UUID
 from common import JsonSerializer
 from domain.common.value_objects import Slug, Url
 from domain.datasets.entities import DatasetVersion
+from domain.datasets.exceptions import (
+    DatasetAlreadyDeletedError,
+    DatasetNotDeletedError,
+    InvalidMetricValueError,
+)
 from domain.datasets.value_objects import DatasetQuality
 
 
@@ -128,6 +133,50 @@ class Dataset:
             is_slug_valid=is_slug_valid,
             evaluation_results=evaluation_results,
         )
+
+    def mark_as_deleted(self) -> None:
+        """Mark this dataset as deleted from the platform."""
+        if self.is_deleted:
+            raise DatasetAlreadyDeletedError(f"Dataset {self.id} is already marked as deleted")
+        self.is_deleted = True
+
+    def restore(self) -> None:
+        """Restore a previously deleted dataset."""
+        if not self.is_deleted:
+            raise DatasetNotDeletedError(f"Dataset {self.id} is not deleted")
+        self.is_deleted = False
+
+    def update_metrics(
+        self,
+        downloads: int | None = None,
+        api_calls: int | None = None,
+        views: int | None = None,
+        reuses: int | None = None,
+        followers: int | None = None,
+        popularity: float | None = None,
+    ) -> None:
+        """Update dataset metrics with validation."""
+        metrics = {
+            "downloads_count": downloads,
+            "api_calls_count": api_calls,
+            "views_count": views,
+            "reuses_count": reuses,
+            "followers_count": followers,
+            "popularity_score": popularity,
+        }
+
+        for attr_name, value in metrics.items():
+            if value is not None:
+                if value < 0:
+                    raise InvalidMetricValueError(attr_name, value)
+                setattr(self, attr_name, value)
+
+    def prepare_for_persistence(self) -> None:
+        """Prepare aggregate for persistence (calculate hash, ensure active)."""
+        self.calculate_hash()
+        # Force reactivation if dataset is found by crawler
+        if self.is_deleted:
+            self.restore()
 
     @classmethod
     def from_dict(cls, data):

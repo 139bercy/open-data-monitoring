@@ -3,9 +3,9 @@ import os
 import requests
 
 from application.dtos.dataset import DatasetDTO
+from domain.datasets.exceptions import DatasetUnreachableError
 from domain.datasets.value_objects import DatasetQuality
 from domain.platform.ports import DatasetAdapter
-from exceptions import DatasetUnreachableError
 
 
 class OpendatasoftDatasetAdapter(DatasetAdapter):

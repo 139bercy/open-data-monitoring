@@ -19,8 +19,20 @@ class Slug(ValueObject):
     def __post_init__(self):
         if not self.value or not isinstance(self.value, str):
             raise InvalidDomainValueError("Slug must be a non-empty string")
+        # Allow lowercase letters, numbers, hyphens, and underscores
+        # Note: Underscores are preserved for dataset slugs (platform identifiers)
         if not re.match(r"^[a-z0-9-_]+$", self.value):
             raise InvalidDomainValueError(f"Invalid slug format: {self.value}")
+
+    def normalize(self) -> "Slug":
+        """Return normalized version of slug (lowercase, underscores to hyphens).
+
+        WARNING: Do NOT use this for dataset slugs! Dataset slugs are unique identifiers
+        from the source platform and must be preserved exactly as-is (including underscores).
+        This method is intended for other use cases where slug normalization is needed.
+        """
+        normalized = self.value.lower().replace("_", "-")
+        return Slug(normalized)
 
     def __str__(self):
         return self.value
