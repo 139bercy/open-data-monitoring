@@ -2,6 +2,7 @@ import abc
 from uuid import UUID
 
 from domain.datasets.aggregate import Dataset
+from domain.datasets.value_objects import DatasetVersionParams
 
 
 class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
@@ -10,20 +11,12 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_version(
-        self,
-        dataset_id: UUID,
-        snapshot: dict,
-        checksum: str | None,
-        title: str,
-        downloads_count: int | None = None,
-        api_calls_count: int | None = None,
-        views_count: int | None = None,
-        reuses_count: int | None = None,
-        followers_count: int | None = None,
-        popularity_score: float | None = None,
-        diff: dict | None = None,
-    ) -> None:
+    def add_version(self, params: "DatasetVersionParams") -> None:
+        """Add a new version of a dataset.
+
+        Args:
+            params: DatasetVersionParams containing all version data
+        """
         raise NotImplementedError
 
     @abc.abstractmethod

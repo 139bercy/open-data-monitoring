@@ -5,6 +5,7 @@ from application.commands.platform import CreatePlatform, SyncPlatform
 from common import get_base_url
 from domain.datasets.aggregate import Dataset
 from domain.datasets.exceptions import DatasetUnreachableError
+from domain.datasets.value_objects import DatasetVersionParams
 from domain.platform.aggregate import Platform
 from infrastructure.factories.dataset import DatasetAdapterFactory
 from logger import logger
@@ -161,7 +162,8 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
 
 
 def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
-    app.dataset.repository.add_version(
+    """Helper to create a DatasetVersionParams and add a version."""
+    params = DatasetVersionParams(
         dataset_id=UUID(dataset_id),
         snapshot=instance.raw,
         checksum=instance.checksum,
@@ -173,6 +175,7 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
         followers_count=instance.followers_count,
         popularity_score=instance.popularity_score,
     )
+    app.dataset.repository.add_version(params)
 
 
 def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:

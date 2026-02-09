@@ -7,6 +7,7 @@ from datetime import datetime
 from uuid import UUID
 
 from common import JsonSerializer
+from domain.common.enums import SyncStatus
 from domain.common.value_objects import Slug, Url
 from domain.datasets.entities import DatasetVersion
 from domain.datasets.exceptions import (
@@ -34,7 +35,7 @@ class Dataset:
         api_calls_count: int,
         raw: dict,
         publisher: str | None = None,
-        last_sync_status: str = None,
+        last_sync_status: str | SyncStatus | None = None,
         is_deleted: bool = False,
         views_count: int | None = None,
         reuses_count: int | None = None,
@@ -63,7 +64,11 @@ class Dataset:
         self.raw = raw
         self.checksum = checksum
         self.versions: list[DatasetVersion] | None = []
-        self.last_sync_status = last_sync_status
+        self.last_sync_status = (
+            last_sync_status
+            if last_sync_status is None or isinstance(last_sync_status, SyncStatus)
+            else SyncStatus(last_sync_status)
+        )
         self.last_version_timestamp = last_version_timestamp
         self.quality = None
         self.is_deleted = is_deleted

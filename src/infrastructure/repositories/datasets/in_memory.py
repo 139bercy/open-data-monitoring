@@ -1,10 +1,10 @@
 from collections import Counter
 from datetime import datetime, timezone
-from uuid import UUID
 
 from common import calculate_snapshot_diff
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import AbstractDatasetRepository
+from domain.datasets.value_objects import DatasetVersionParams
 
 
 class InMemoryDatasetRepository(AbstractDatasetRepository):
@@ -19,23 +19,12 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
                 return
         self.db.append(dataset)
 
-    def add_version(
-        self,
-        dataset_id: UUID,
-        snapshot: dict,
-        checksum: str,
-        title: str,
-        downloads_count: int | None = None,
-        api_calls_count: int | None = None,
-        views_count: int | None = None,
-        reuses_count: int | None = None,
-        followers_count: int | None = None,
-        popularity_score: float | None = None,
-        diff: dict | None = None,
-        metadata_volatile: dict | None = None,
-    ) -> None:
+    def add_version(self, params: "DatasetVersionParams") -> None:
+        """Add a new version of a dataset using Parameter Object pattern."""
+        diff = params.diff  # Start with provided diff
+
         if not diff:
-            prev_version_dict = next((v for v in reversed(self.versions) if v["dataset_id"] == dataset_id), None)
+            prev_version_dict = next((v for v in reversed(self.versions) if v["dataset_id"] == params.dataset_id), None)
             if prev_version_dict:
                 # Construct comparable objects including metrics
                 prev_comparable = prev_version_dict["snapshot"].copy() if prev_version_dict["snapshot"] else {}
@@ -50,34 +39,34 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
                     }
                 )
 
-                curr_comparable = snapshot.copy()
+                curr_comparable = params.snapshot.copy()
                 curr_comparable.update(
                     {
-                        "downloads_count": downloads_count,
-                        "api_calls_count": api_calls_count,
-                        "views_count": views_count,
-                        "reuses_count": reuses_count or 0,
-                        "followers_count": followers_count,
-                        "popularity_score": popularity_score,
+                        "downloads_count": params.downloads_count,
+                        "api_calls_count": params.api_calls_count,
+                        "views_count": params.views_count,
+                        "reuses_count": params.reuses_count or 0,
+                        "followers_count": params.followers_count,
+                        "popularity_score": params.popularity_score,
                     }
                 )
                 diff = calculate_snapshot_diff(prev_comparable, curr_comparable)
 
         self.versions.append(
             {
-                "dataset_id": dataset_id,
+                "dataset_id": params.dataset_id,
                 "timestamp": datetime.now(timezone.utc),
-                "snapshot": snapshot,
-                "checksum": checksum,
-                "title": title,
-                "downloads_count": downloads_count,
-                "api_calls_count": api_calls_count,
-                "views_count": views_count,
-                "reuses_count": reuses_count,
-                "followers_count": followers_count,
-                "popularity_score": popularity_score,
+                "snapshot": params.snapshot,
+                "checksum": params.checksum,
+                "title": params.title,
+                "downloads_count": params.downloads_count,
+                "api_calls_count": params.api_calls_count,
+                "views_count": params.views_count,
+                "reuses_count": params.reuses_count,
+                "followers_count": params.followers_count,
+                "popularity_score": params.popularity_score,
                 "diff": diff,
-                "metadata_volatile": metadata_volatile,
+                "metadata_volatile": None,  # Not used in Parameter Object
             }
         )
 

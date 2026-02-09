@@ -1,13 +1,13 @@
 import hashlib
 import json
 import uuid
-from uuid import UUID
 
 from psycopg2.extras import Json
 
 from common import calculate_snapshot_diff
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import AbstractDatasetRepository
+from domain.datasets.value_objects import DatasetVersionParams
 from infrastructure.database.postgres import PostgresClient
 
 
@@ -185,25 +185,15 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ),
         )
 
-    def add_version(
-        self,
-        dataset_id: UUID,
-        snapshot: dict,
-        checksum: str,
-        title: str,
-        downloads_count: int | None = None,
-        api_calls_count: int | None = None,
-        views_count: int | None = None,
-        reuses_count: int | None = None,
-        followers_count: int | None = None,
-        popularity_score: float | None = None,
-        diff: dict | None = None,
-    ) -> None:
+    def add_version(self, params: "DatasetVersionParams") -> None:
+        """Add a new version of a dataset using Parameter Object pattern."""
         # 1. Deduplicate the static metadata (blob)
         # We strip volatile fields to have a stable hash for the heavy metadata
-        stripped, volatile = strip_volatile_fields(snapshot)
+        stripped, volatile = strip_volatile_fields(params.snapshot)
 
         # 2. Calculate diff against previous version if not provided
+        diff = params.diff  # Start with provided diff
+
         if not diff:
             prev_row = self.client.fetchone(
                 """
@@ -215,7 +205,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 WHERE dv.dataset_id = %s
                 ORDER BY dv.timestamp DESC LIMIT 1
                 """,
-                (str(dataset_id),),
+                (str(params.dataset_id),),
             )
             if prev_row:
                 # Reconstruct "comparable" dicts including metrics
@@ -234,12 +224,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 curr_comparable = stripped.copy()
                 curr_comparable.update(
                     {
-                        "downloads_count": downloads_count,
-                        "api_calls_count": api_calls_count,
-                        "views_count": views_count,
-                        "reuses_count": reuses_count,
-                        "followers_count": followers_count,
-                        "popularity_score": popularity_score,
+                        "downloads_count": params.downloads_count,
+                        "api_calls_count": params.api_calls_count,
+                        "views_count": params.views_count,
+                        "reuses_count": params.reuses_count,
+                        "followers_count": params.followers_count,
+                        "popularity_score": params.popularity_score,
                     }
                 )
 
@@ -256,7 +246,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             DO UPDATE SET id = dataset_blobs.id
             RETURNING id
             """,
-            (str(dataset_id), stable_hash, Json(stripped)),
+            (str(params.dataset_id), stable_hash, Json(stripped)),
         )
         blob_id = blob_row["id"]
 
@@ -270,16 +260,16 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
-                str(dataset_id),
+                str(params.dataset_id),
                 str(blob_id),
-                checksum,
-                title,
-                downloads_count,
-                api_calls_count,
-                views_count,
-                reuses_count,
-                followers_count,
-                popularity_score,
+                params.checksum,
+                params.title,
+                params.downloads_count,
+                params.api_calls_count,
+                params.views_count,
+                params.reuses_count,
+                params.followers_count,
+                params.popularity_score,
                 Json(diff) if diff else None,
                 Json(volatile) if volatile else None,
             ),
