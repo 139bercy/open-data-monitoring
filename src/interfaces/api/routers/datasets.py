@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, Query
 
 from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
 from application.services.quality_assessment import QualityAssessmentService
-from domain.datasets.exceptions import DatasetUnreachableError
 from infrastructure.llm.openai_evaluator import OpenAIEvaluator
 from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse
 from logger import logger
@@ -23,11 +22,10 @@ async def add_dataset(url: str):
     if dataset_id is None:
         logger.warning(f"Dataset not found for url: {url}")
         return
+
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-    try:
-        upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
-    except DatasetUnreachableError:
-        pass
+    upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
+    return {"status": "success", "dataset_id": dataset_id}
 
 
 @router.get("/tests", response_model=DatasetResponse)
@@ -38,35 +36,32 @@ async def get_tests():
     Équivalent de la commande CLI: `app dataset get tests`
     Mais retourne les données au format JSON au lieu de créer un fichier CSV.
     """
-    try:
-        query = """
-        SELECT d.*, d.deleted
-        FROM datasets d JOIN platforms p ON p.id = d.platform_id
-        WHERE d.slug ILIKE '%test%' AND p.type = 'opendatasoft'
-        ORDER BY timestamp DESC
-        """
-        datasets_raw = domain_app.dataset.repository.client.fetchall(query)
-        datasets_list = [
-            DatasetAPI(
-                id=dataset["id"],
-                timestamp=dataset["timestamp"],
-                buid=dataset["buid"],
-                slug=dataset["slug"],
-                page=dataset["page"],
-                publisher=dataset["publisher"],
-                published=dataset["published"],
-                restricted=dataset["restricted"],
-                last_sync=dataset["last_sync"],
-                last_sync_status=dataset["last_sync_status"],
-                created=dataset["created"],
-                modified=dataset["modified"],
-                deleted=dataset["deleted"],
-            )
-            for dataset in datasets_raw
-        ]
-        return DatasetResponse(datasets=datasets_list, total_datasets=len(datasets_list))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    query = """
+    SELECT d.*, d.deleted
+    FROM datasets d JOIN platforms p ON p.id = d.platform_id
+    WHERE d.slug ILIKE '%test%' AND p.type = 'opendatasoft'
+    ORDER BY timestamp DESC
+    """
+    datasets_raw = domain_app.dataset.repository.client.fetchall(query)
+    datasets_list = [
+        DatasetAPI(
+            id=dataset["id"],
+            timestamp=dataset["timestamp"],
+            buid=dataset["buid"],
+            slug=dataset["slug"],
+            page=dataset["page"],
+            publisher=dataset["publisher"],
+            published=dataset["published"],
+            restricted=dataset["restricted"],
+            last_sync=dataset["last_sync"],
+            last_sync_status=dataset["last_sync_status"],
+            created=dataset["created"],
+            modified=dataset["modified"],
+            deleted=dataset["deleted"],
+        )
+        for dataset in datasets_raw
+    ]
+    return DatasetResponse(datasets=datasets_list, total_datasets=len(datasets_list))
 
 
 def _build_where_clause(
@@ -383,37 +378,34 @@ async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int =
     """
     Liste paginée des versions (snapshots) d'un dataset.
     """
-    try:
-        page = max(1, page)
-        page_size = max(1, min(100, page_size))
-        offset = (page - 1) * page_size
+    page = max(1, page)
+    page_size = max(1, min(100, page_size))
+    offset = (page - 1) * page_size
 
-        cnt_rows = domain_app.dataset.repository.client.fetchall(
-            "SELECT COUNT(*) AS cnt FROM dataset_versions WHERE dataset_id = %s",
-            (str(dataset_id),),
-        )
-        total = int(cnt_rows[0]["cnt"]) if cnt_rows else 0
+    cnt_rows = domain_app.dataset.repository.client.fetchall(
+        "SELECT COUNT(*) AS cnt FROM dataset_versions WHERE dataset_id = %s",
+        (str(dataset_id),),
+    )
+    total = int(cnt_rows[0]["cnt"]) if cnt_rows else 0
 
-        rows = domain_app.dataset.repository.client.fetchall(
-            "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
-            "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s",
-            (str(dataset_id), page_size, offset),
-        )
-        items = [
-            {
-                "id": r["id"],
-                "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
-                "downloads_count": r.get("downloads_count"),
-                "api_calls_count": r.get("api_calls_count"),
-                "page": None,
-                "title": r.get("title"),
-                "data": r.get("snapshot") if include_data else None,
-            }
-            for r in rows
-        ]
-        return {"items": items, "total": total, "page": page, "page_size": page_size}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    rows = domain_app.dataset.repository.client.fetchall(
+        "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
+        "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s",
+        (str(dataset_id), page_size, offset),
+    )
+    items = [
+        {
+            "id": r["id"],
+            "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+            "downloads_count": r.get("downloads_count"),
+            "api_calls_count": r.get("api_calls_count"),
+            "page": None,
+            "title": r.get("title"),
+            "data": r.get("snapshot") if include_data else None,
+        }
+        for r in rows
+    ]
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/publisher/{publisher_name}")
@@ -424,44 +416,41 @@ async def get_by_publisher(publisher_name: str):
     Équivalent de la commande CLI: `app dataset get publisher "<publisher>"`
     Mais retourne les données au format JSON au lieu de créer un fichier CSV.
     """
-    try:
-        query = """
-        SELECT p.name, d.timestamp, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.last_sync, d.deleted
-        FROM datasets d
-        JOIN platforms p ON p.id = d.platform_id
-        WHERE d.publisher ILIKE %s
-        ORDER BY timestamp DESC
-        """
+    query = """
+    SELECT p.name, d.timestamp, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.last_sync, d.deleted
+    FROM datasets d
+    JOIN platforms p ON p.id = d.platform_id
+    WHERE d.publisher ILIKE %s
+    ORDER BY timestamp DESC
+    """
 
-        pattern = f"%{publisher_name}%"
+    pattern = f"%{publisher_name}%"
 
-        datasets_raw = domain_app.dataset.repository.client.fetchall(query, (pattern,))
+    datasets_raw = domain_app.dataset.repository.client.fetchall(query, (pattern,))
 
-        datasets_list = [
-            DatasetAPI(
-                name=dataset["name"],
-                timestamp=dataset["timestamp"],
-                buid=dataset["buid"],
-                slug=dataset["slug"],
-                page=dataset["page"],
-                publisher=dataset["publisher"],
-                published=dataset["published"],
-                restricted=dataset["restricted"],
-                last_sync_status=dataset.get("last_sync_status", "unknown"),
-                created=dataset["created"],
-                modified=dataset["modified"],
-                deleted=dataset["deleted"],
-            )
-            for dataset in datasets_raw
-        ]
-        return {
-            "items": datasets_list,
-            "total": len(datasets_list),
-            "page": 1,
-            "page_size": len(datasets_list),
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    datasets_list = [
+        DatasetAPI(
+            name=dataset["name"],
+            timestamp=dataset["timestamp"],
+            buid=dataset["buid"],
+            slug=dataset["slug"],
+            page=dataset["page"],
+            publisher=dataset["publisher"],
+            published=dataset["published"],
+            restricted=dataset["restricted"],
+            last_sync_status=dataset.get("last_sync_status", "unknown"),
+            created=dataset["created"],
+            modified=dataset["modified"],
+            deleted=dataset["deleted"],
+        )
+        for dataset in datasets_raw
+    ]
+    return {
+        "items": datasets_list,
+        "total": len(datasets_list),
+        "page": 1,
+        "page_size": len(datasets_list),
+    }
 
 
 @router.post("/{dataset_id}/evaluate")
@@ -469,22 +458,18 @@ async def evaluate_dataset(dataset_id: UUID):
     """
     Déclenche une évaluation de qualité par LLM pour un dataset.
     """
-    try:
-        # Initialize service (OpenAI by default for now)
-        evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
-        service = QualityAssessmentService(evaluator=evaluator, uow=domain_app.uow)
+    # Initialize service (OpenAI by default for now)
+    evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
+    service = QualityAssessmentService(evaluator=evaluator, uow=domain_app.uow)
 
-        # Paths to reference docs (should be configurable or standard)
-        dcat_path = "docs/quality/dcat_reference.md"
-        charter_path = "docs/quality/charter_opendata.md"
+    # Paths to reference docs (should be configurable or standard)
+    dcat_path = "docs/quality/dcat_reference.md"
+    charter_path = "docs/quality/charter_opendata.md"
 
-        evaluation = service.evaluate_dataset(
-            dataset_id=str(dataset_id), dcat_path=dcat_path, charter_path=charter_path, output="json"
-        )
+    evaluation = service.evaluate_dataset(
+        dataset_id=str(dataset_id), dcat_path=dcat_path, charter_path=charter_path, output="json"
+    )
 
-        from dataclasses import asdict
+    from dataclasses import asdict
 
-        return asdict(evaluation)
-    except Exception as e:
-        logger.error(f"Evaluation failed for {dataset_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    return asdict(evaluation)

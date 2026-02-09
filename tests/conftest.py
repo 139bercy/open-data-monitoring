@@ -61,7 +61,7 @@ def ods_platform(platform):
 
 @pytest.fixture
 def datagouv_platform(platform):
-    platform.type = "datagouvfr"
+    platform.type = "datagouv"
     return platform
 
 
@@ -145,5 +145,5 @@ def pg_ods_platform(pg_platform):
 
 @pytest.fixture
 def pg_datagouv_platform(pg_platform):
-    pg_platform.type = "datagouvfr"
+    pg_platform.type = "datagouv"
     return pg_platform

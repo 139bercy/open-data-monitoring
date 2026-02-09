@@ -8,6 +8,7 @@ via des endpoints HTTP. Suit les principes DDD en réutilisant les handlers exis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from interfaces.api.errors import register_error_handlers
 from interfaces.api.routers import common, datasets, platforms, publishers
 from settings import ENV
 
@@ -22,6 +23,9 @@ api_app = FastAPI(
         {"name": "datasets", "description": "Gestion des datasets"},
     ],
 )
+
+# Enregistrement des gestionnaires d'erreurs
+register_error_handlers(api_app)
 
 # Configuration CORS pour le développement
 if ENV in ["DEV", "TEST"]:

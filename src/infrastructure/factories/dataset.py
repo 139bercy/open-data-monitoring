@@ -8,7 +8,7 @@ class DatasetAdapterFactory(AbstractDatasetAdapterFactory):
     def create(self, platform_type: str) -> DatasetAdapter:
         if platform_type == "opendatasoft":
             return OpendatasoftDatasetAdapter()
-        elif platform_type == "datagouvfr":
+        elif platform_type == "datagouv":
             return DatagouvDatasetAdapter()
         elif platform_type == "test":
             return InMemoryDatasetAdapter()
