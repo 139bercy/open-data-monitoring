@@ -12,6 +12,91 @@ from domain.datasets.ports import AbstractDatasetRepository
 from infrastructure.database.postgres import PostgresClient
 
 
+def _pop_fields(source: dict, field_names: list[str]) -> dict:
+    """Extract and remove specified fields from source dict."""
+    extracted = {}
+    for key in field_names:
+        if key in source:
+            extracted[key] = source.pop(key)
+    return extracted
+
+
+def _strip_ods_volatile_fields(stripped: dict, volatile: dict) -> None:
+    """Strip ODS-specific volatile fields (root + metas.default)."""
+    # Root ODS fields
+    ods_root = _pop_fields(
+        stripped,
+        [
+            "updated_at",
+            "data_processed",
+            "metadata_processed",
+            "api_call_count",
+            "download_count",
+            "popularity_score",
+            "attachment_download_count",
+            "file_field_download_count",
+            "records_size",
+        ],
+    )
+    volatile.update(ods_root)
+
+    # ODS metas.default
+    if "metas" in stripped and "default" in stripped["metas"]:
+        default = stripped["metas"]["default"].copy()
+        metas_volatile = _pop_fields(default, ["data_processed", "metadata_processed"])
+
+        if metas_volatile:
+            volatile.setdefault("metas", {})["default"] = metas_volatile
+
+        stripped["metas"] = stripped["metas"].copy()
+        stripped["metas"]["default"] = default
+
+
+def _strip_datagouv_volatile_fields(stripped: dict, volatile: dict) -> None:
+    """Strip DataGouv-specific volatile fields (metrics)."""
+    if "metrics" not in stripped or not isinstance(stripped["metrics"], dict):
+        return
+
+    metrics = stripped["metrics"].copy()
+    metrics_volatile = _pop_fields(
+        metrics,
+        [
+            "views",
+            "reuses",
+            "followers",
+            "datasets",
+            "resources_downloads",
+            "reuses_by_months",
+            "followers_by_months",
+        ],
+    )
+
+    if metrics_volatile:
+        volatile["metrics"] = metrics_volatile
+    stripped["metrics"] = metrics
+
+
+def _strip_common_volatile_fields(stripped: dict, volatile: dict) -> None:
+    """Strip common volatile fields (timestamps, quality, internal)."""
+    # Global fields
+    global_volatile = _pop_fields(
+        stripped, ["last_modified", "last_update", "expected_update", "quality", "harvest", "resources"]
+    )
+    volatile.update(global_volatile)
+
+    # Internal flags
+    if "internal" in stripped:
+        internal = stripped["internal"].copy()
+        internal_volatile = _pop_fields(
+            internal,
+            ["last_modified_internal", "metadata_source_language", "catalog_site_contact", "last_update_internal"],
+        )
+
+        if internal_volatile:
+            volatile.setdefault("internal", {}).update(internal_volatile)
+        stripped["internal"] = internal
+
+
 def strip_volatile_fields(data: dict) -> tuple[dict, dict]:
     """
     Removes fields that change frequently and returns them separately.
@@ -23,78 +108,9 @@ def strip_volatile_fields(data: dict) -> tuple[dict, dict]:
     stripped = data.copy()
     volatile = {}
 
-    # ODS root fields
-    volatile_ods = [
-        "updated_at",
-        "data_processed",
-        "metadata_processed",
-        "api_call_count",
-        "download_count",
-        "popularity_score",
-        "attachment_download_count",
-        "file_field_download_count",
-        "records_size",
-    ]
-    for key in volatile_ods:
-        if key in stripped:
-            volatile[key] = stripped.pop(key)
-
-    # ODS metas.default fields
-    if "metas" in stripped and "default" in stripped["metas"]:
-        default = stripped["metas"]["default"].copy()
-        metas_default_volatile = {}
-        for key in ["data_processed", "metadata_processed"]:
-            if key in default:
-                metas_default_volatile[key] = default.pop(key)
-
-        if metas_default_volatile:
-            if "metas" not in volatile:
-                volatile["metas"] = {}
-            volatile["metas"]["default"] = metas_default_volatile
-
-        stripped["metas"] = stripped["metas"].copy()
-        stripped["metas"]["default"] = default
-
-    # DataGouv & common metrics
-    if "metrics" in stripped:
-        metrics_to_strip = [
-            "views",
-            "reuses",
-            "followers",
-            "datasets",
-            "resources_downloads",
-            "reuses_by_months",
-            "followers_by_months",
-        ]
-        if isinstance(stripped["metrics"], dict):
-            new_metrics = stripped["metrics"].copy()
-            metrics_volatile = {}
-            for k in metrics_to_strip:
-                if k in new_metrics:
-                    metrics_volatile[k] = new_metrics.pop(k)
-
-            if metrics_volatile:
-                volatile["metrics"] = metrics_volatile
-            stripped["metrics"] = new_metrics
-
-    # Global volatile timestamps/metadata
-    for k in ["last_modified", "last_update", "expected_update", "quality", "harvest", "resources"]:
-        if k in stripped:
-            volatile[k] = stripped.pop(k)
-
-    # Internal flags
-    if "internal" in stripped:
-        internal = stripped["internal"].copy()
-        internal_volatile = {}
-        for k in ["last_modified_internal", "metadata_source_language", "catalog_site_contact", "last_update_internal"]:
-            if k in internal:
-                internal_volatile[k] = internal.pop(k)
-
-        if internal_volatile:
-            if "internal" not in volatile:
-                volatile["internal"] = {}
-            volatile["internal"].update(internal_volatile)
-        stripped["internal"] = internal
+    _strip_ods_volatile_fields(stripped, volatile)
+    _strip_datagouv_volatile_fields(stripped, volatile)
+    _strip_common_volatile_fields(stripped, volatile)
 
     return stripped, volatile
 
