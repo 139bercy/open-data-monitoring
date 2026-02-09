@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from common import JsonSerializer
@@ -182,6 +182,63 @@ class Dataset:
         # Force reactivation if dataset is found by crawler
         if self.is_deleted:
             self.restore()
+
+    def merge_with_existing(self, other: Dataset) -> None:
+        """Merge this instance with existing dataset, preserving ID."""
+        self.id = other.id
+
+    def has_metrics_changed(self, other: Dataset) -> bool:
+        """Check if metrics have changed between versions."""
+        return (
+            self.downloads_count != other.downloads_count
+            or self.api_calls_count != other.api_calls_count
+            or (
+                self.views_count != other.views_count
+                if self.views_count is not None or other.views_count is not None
+                else False
+            )
+            or (
+                self.reuses_count != other.reuses_count
+                if self.reuses_count is not None or other.reuses_count is not None
+                else False
+            )
+            or (
+                self.followers_count != other.followers_count
+                if self.followers_count is not None or other.followers_count is not None
+                else False
+            )
+            or (
+                self.popularity_score != other.popularity_score
+                if self.popularity_score is not None or other.popularity_score is not None
+                else False
+            )
+        )
+
+    def is_cooldown_active(self, hours: int = 24) -> bool:
+        """Check if cooldown period is active for metric-only changes."""
+        if not self.last_version_timestamp:
+            return False
+
+        now = datetime.now(timezone.utc)
+        last_ts = self.last_version_timestamp
+        if last_ts.tzinfo is None:
+            last_ts = last_ts.replace(tzinfo=timezone.utc)
+
+        return (now - last_ts) < timedelta(hours=hours)
+
+    def should_version(self, new_instance: Dataset) -> bool:
+        """Determine if a new version should be created based on changes."""
+        # 1. Check for structural or state changes (always version)
+        if self.checksum != new_instance.checksum:
+            return True
+        if self.is_deleted != new_instance.is_deleted:
+            return True
+
+        # 2. Check for metric changes (only version if cooldown is NOT active)
+        if self.has_metrics_changed(new_instance):
+            return not self.is_cooldown_active()
+
+        return False
 
     @classmethod
     def from_dict(cls, data):

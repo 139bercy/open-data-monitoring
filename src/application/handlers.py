@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
@@ -61,44 +60,8 @@ def _handle_failed_sync_status(app: App, platform: Platform, dataset: dict) -> N
         )
 
 
-def _has_metrics_changed(existing: Dataset, new: Dataset) -> bool:
-    """Check if harmonized metrics have changed between versions."""
-    return (
-        existing.downloads_count != new.downloads_count
-        or existing.api_calls_count != new.api_calls_count
-        or existing.views_count != new.views_count
-        or existing.reuses_count != new.reuses_count
-        or existing.followers_count != new.followers_count
-        or existing.popularity_score != new.popularity_score
-    )
-
-
-def _is_cooldown_active(existing: Dataset | None) -> bool:
-    """Check if 24h cooldown period is active for metric-only changes."""
-    if not existing or not existing.last_version_timestamp:
-        return False
-
-    now = datetime.now(timezone.utc)
-    last_ts = existing.last_version_timestamp
-    if last_ts.tzinfo is None:
-        last_ts = last_ts.replace(tzinfo=timezone.utc)
-
-    return (now - last_ts) < timedelta(hours=24)
-
-
-def _should_create_version(
-    existing: Dataset | None, instance: Dataset, metrics_changed: bool, is_cooldown: bool
-) -> bool:
-    """Determine if a new version should be created."""
-    if not existing:
-        return True
-    if existing.checksum != instance.checksum:
-        return True
-    if existing.is_deleted != instance.is_deleted:
-        return True
-    if metrics_changed and not is_cooldown:
-        return True
-    return False
+# Helper methods _has_metrics_changed, _is_cooldown_active, and _should_create_version
+# have been moved to the Dataset aggregate as domain methods.
 
 
 def _create_or_update_dataset_version(
@@ -106,7 +69,7 @@ def _create_or_update_dataset_version(
 ) -> UUID:
     """Persist dataset and create new version."""
     if existing:
-        instance.id = existing.id
+        instance.merge_with_existing(existing)
         app.dataset.repository.add(dataset=instance)
         add_version(app=app, dataset_id=str(existing.id), instance=instance)
         logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
@@ -138,9 +101,9 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
         existing = app.dataset.repository.get_by_buid(instance.buid)
 
         # 4. Determine versioning decision
-        metrics_changed = _has_metrics_changed(existing, instance) if existing else False  # +1 (ternary) → CC = 3
-        is_cooldown = _is_cooldown_active(existing)
-        should_version = _should_create_version(existing, instance, metrics_changed, is_cooldown)
+        should_version = existing.should_version(instance) if existing else True
+        metrics_changed = existing.has_metrics_changed(instance) if existing else False
+        is_cooldown = existing.is_cooldown_active() if existing else False
 
         logger.debug(
             f"[{platform.type.upper()}] {instance.slug} - Hash changed: {existing.checksum != instance.checksum if existing else 'N/A'}, "
@@ -207,6 +170,6 @@ def check_deleted_datasets(app, platform, datasets):
         for buid in deleted:
             dataset = app.dataset.repository.get_by_buid(dataset_buid=buid)
             if dataset:
-                dataset.is_deleted = True
+                dataset.mark_as_deleted()
                 app.dataset.repository.update_dataset_state(dataset)
                 logger.info(f"{platform.type.upper()} - Dataset '{dataset.slug}' deleted")
