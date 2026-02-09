@@ -9,7 +9,7 @@ ALTER TABLE datasets ADD COLUMN IF NOT EXISTS deleted boolean DEFAULT FALSE;
 ALTER TABLE datasets ADD COLUMN IF NOT EXISTS title text;
 
 -- 2. Dataset Quality: Add slug validation and evaluation results
-ALTER TABLE dataset_quality 
+ALTER TABLE dataset_quality
     ALTER COLUMN downloads_count DROP NOT NULL,
     ALTER COLUMN downloads_count DROP DEFAULT,
     ALTER COLUMN api_calls_count DROP NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS dataset_blobs (
 COMMENT ON TABLE dataset_blobs IS 'Stockage dédoublonné des métadonnées par dataset';
 
 -- 4. Dataset Versions: Add metrics and blob reference
-ALTER TABLE dataset_versions 
+ALTER TABLE dataset_versions
     ADD COLUMN IF NOT EXISTS blob_id uuid REFERENCES dataset_blobs(id),
     ADD COLUMN IF NOT EXISTS views_count int,
     ADD COLUMN IF NOT EXISTS reuses_count int,

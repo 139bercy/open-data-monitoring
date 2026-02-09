@@ -7,6 +7,7 @@ class DatasetVersion:
     """
     Represents a version of a dataset.
     """
+
     dataset_id: str
     snapshot: dict
     checksum: str

@@ -22,7 +22,7 @@ ignore = ["D203", "W291"]
 max-line-length = 120
 exclude = [
     ".git",
-    "migrations",
+    "patchs",
     "__pycache__",
     "setup.py"
 ]
@@ -31,7 +31,7 @@ max-complexity = 10
 [tool.coverage.run]
 omit = [
     "*/**/__init__.py",
-    "migrations/*",
+    "patchs/*",
     "setup.py",
     "tmp.py"
 ]

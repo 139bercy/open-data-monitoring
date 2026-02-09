@@ -149,5 +149,3 @@ export async function evaluateDataset(id: string): Promise<any> {
     const data = await api.post<any>(`/datasets/${id}/evaluate`, {});
     return data;
 }
-
-

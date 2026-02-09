@@ -1,10 +1,11 @@
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
+from common import calculate_snapshot_diff
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import AbstractDatasetRepository
-from common import calculate_snapshot_diff
 
 
 class InMemoryDatasetRepository(AbstractDatasetRepository):
@@ -39,24 +40,28 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
             if prev_version_dict:
                 # Construct comparable objects including metrics
                 prev_comparable = prev_version_dict["snapshot"].copy() if prev_version_dict["snapshot"] else {}
-                prev_comparable.update({
-                    "downloads_count": prev_version_dict.get("downloads_count"),
-                    "api_calls_count": prev_version_dict.get("api_calls_count"),
-                    "views_count": prev_version_dict.get("views_count"),
-                    "reuses_count": prev_version_dict.get("reuses_count") or 0,
-                    "followers_count": prev_version_dict.get("followers_count"),
-                    "popularity_score": prev_version_dict.get("popularity_score"),
-                })
-                
+                prev_comparable.update(
+                    {
+                        "downloads_count": prev_version_dict.get("downloads_count"),
+                        "api_calls_count": prev_version_dict.get("api_calls_count"),
+                        "views_count": prev_version_dict.get("views_count"),
+                        "reuses_count": prev_version_dict.get("reuses_count") or 0,
+                        "followers_count": prev_version_dict.get("followers_count"),
+                        "popularity_score": prev_version_dict.get("popularity_score"),
+                    }
+                )
+
                 curr_comparable = snapshot.copy()
-                curr_comparable.update({
-                    "downloads_count": downloads_count,
-                    "api_calls_count": api_calls_count,
-                    "views_count": views_count,
-                    "reuses_count": reuses_count or 0,
-                    "followers_count": followers_count,
-                    "popularity_score": popularity_score,
-                })
+                curr_comparable.update(
+                    {
+                        "downloads_count": downloads_count,
+                        "api_calls_count": api_calls_count,
+                        "views_count": views_count,
+                        "reuses_count": reuses_count or 0,
+                        "followers_count": followers_count,
+                        "popularity_score": popularity_score,
+                    }
+                )
                 diff = calculate_snapshot_diff(prev_comparable, curr_comparable)
 
         self.versions.append(

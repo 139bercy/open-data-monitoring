@@ -62,12 +62,9 @@ def add_resource(filepath, dataset_uid):
             "encoding": "utf-8",
             "first_row_no": 1,
             "headers_first_row": True,
-            "separator": ","
+            "separator": ",",
         },
-        "datasource": {
-            "type": "uploaded_file",
-            "file": {"uid": filepath}
-        }
+        "datasource": {"type": "uploaded_file", "file": {"uid": filepath}},
     }
 
     response = requests.post(url, headers=HEADERS, json=metadata)

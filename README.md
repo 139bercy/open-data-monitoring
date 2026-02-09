@@ -31,32 +31,32 @@ make install
 
 ## ⚙️ Configuration
 
-Copiez les variables d'environnement dans un fichier .env. 
+Copiez les variables d'environnement dans un fichier .env.
 
 ```bash
 cp .env.sample .env
 ```
 
-Éditez le fichier `.env` pour y ajouter vos clés d'API (ex: `DATA_EXAMPLE_API_KEY`) et paramètres de connexion. 
-Vous enregistrerez les références dans la base à la création d'une nouvelle plateforme. 
+Éditez le fichier `.env` pour y ajouter vos clés d'API (ex: `DATA_EXAMPLE_API_KEY`) et paramètres de connexion.
+Vous enregistrerez les références dans la base à la création d'une nouvelle plateforme.
 
 Les variables principales incluent :
 - `DB_PASSWORD`, `DB_USER`, `DB_NAME` : pour l'accès PostgreSQL.
 - `ODS_DOMAIN` : domaine Opendatasoft à surveiller.
 - Clés d'API diverses pour les plateformes sources.
 
-Le projet fonctionne en production avec une instance Huwise et une organisation data.gouv.fr. 
+Le projet fonctionne en production avec une instance Huwise et une organisation data.gouv.fr.
 
 ## 🗄 Base de données
 
-Les commandes principales de gestion de la base de données sont rassemblées dans le Makefile. 
+Les commandes principales de gestion de la base de données sont rassemblées dans le Makefile.
 
 - **Démarrer** : `make docker-up`
 - **Arrêter** : `make docker-down`
 - **Initialiser (si dump présent)** : `make load` (recherche un fichier `dump.sql` à la racine)
 - **Sauvegarder** : `make dump`
 
-Sinon : 
+Sinon :
 
 ```bash
 make help
@@ -83,13 +83,13 @@ app dataset add https://www.data.gouv.fr/fr/datasets/un-super-dataset/
 
 ### 🤖 Qualité Assistée par IA
 
-Le module `quality` permet d'évaluer la qualité des métadonnées en s'appuyant sur des LLM (Large Language Models). 
+Le module `quality` permet d'évaluer la qualité des métadonnées en s'appuyant sur des LLM (Large Language Models).
 Il compare les métadonnées actuelles avec des référentiels (DCAT, Charte Open Data) et suggère des améliorations.
 
 Les référentiels sont stockés dans le dossier `src/quality/data/`.
 
 Les adapteurs pour les différentes plateformes sont stockés dans le dossier `src/quality/adapters/`.
-Seuls Ollama, Open AI et Gemini sont supportés pour le moment. 
+Seuls Ollama, Open AI et Gemini sont supportés pour le moment.
 
 #### Évaluer un dataset
 ```bash

@@ -174,7 +174,7 @@ def test_postgresql_upsert_restores_and_updates_deleted_dataset(pg_app, pg_ods_p
 
 def test_postgresql_check_deletions_isolation_between_platforms(pg_app, pg_ods_platform, ods_dataset):
     # Arrange: Create dataset for Platform A (pg_ods_platform)
-    dataset_a_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
 
     # Create Platform B
     platform_b_data = {

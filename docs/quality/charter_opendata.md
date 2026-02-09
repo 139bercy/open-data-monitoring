@@ -84,4 +84,4 @@ Nous pouvons ici faire valoir le bon sens et laisser le choix aux producteurs de
 - soit directement relié à une personne physique responsable de la production et la mise à jour des données,
 - permette un traitement des demandes des utilisateurs le plus rapide et le plus efficace possible.
 
-En cas de doute, il est recommandé de privilégier la BALF. 
+En cas de doute, il est recommandé de privilégier la BALF.

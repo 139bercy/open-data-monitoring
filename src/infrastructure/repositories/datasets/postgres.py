@@ -6,8 +6,7 @@ from uuid import UUID
 
 from psycopg2.extras import Json
 
-from logger import logger
-from common import JsonSerializer, calculate_snapshot_diff
+from common import calculate_snapshot_diff
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import AbstractDatasetRepository
 from infrastructure.database.postgres import PostgresClient
@@ -20,7 +19,7 @@ def strip_volatile_fields(data: dict) -> tuple[dict, dict]:
     """
     if not data:
         return data, {}
-        
+
     stripped = data.copy()
     volatile = {}
 
@@ -47,25 +46,33 @@ def strip_volatile_fields(data: dict) -> tuple[dict, dict]:
         for key in ["data_processed", "metadata_processed"]:
             if key in default:
                 metas_default_volatile[key] = default.pop(key)
-        
+
         if metas_default_volatile:
             if "metas" not in volatile:
                 volatile["metas"] = {}
             volatile["metas"]["default"] = metas_default_volatile
-            
+
         stripped["metas"] = stripped["metas"].copy()
         stripped["metas"]["default"] = default
 
     # DataGouv & common metrics
     if "metrics" in stripped:
-        metrics_to_strip = ["views", "reuses", "followers", "datasets", "resources_downloads", "reuses_by_months", "followers_by_months"]
+        metrics_to_strip = [
+            "views",
+            "reuses",
+            "followers",
+            "datasets",
+            "resources_downloads",
+            "reuses_by_months",
+            "followers_by_months",
+        ]
         if isinstance(stripped["metrics"], dict):
             new_metrics = stripped["metrics"].copy()
             metrics_volatile = {}
             for k in metrics_to_strip:
                 if k in new_metrics:
                     metrics_volatile[k] = new_metrics.pop(k)
-            
+
             if metrics_volatile:
                 volatile["metrics"] = metrics_volatile
             stripped["metrics"] = new_metrics
@@ -82,7 +89,7 @@ def strip_volatile_fields(data: dict) -> tuple[dict, dict]:
         for k in ["last_modified_internal", "metadata_source_language", "catalog_site_contact", "last_update_internal"]:
             if k in internal:
                 internal_volatile[k] = internal.pop(k)
-        
+
         if internal_volatile:
             if "internal" not in volatile:
                 volatile["internal"] = {}
@@ -96,7 +103,7 @@ def deep_merge(base: dict, volatile: dict) -> dict:
     """Deep merges volatile data back into base snapshot."""
     if not volatile:
         return base
-        
+
     result = base.copy()
     for key, value in volatile.items():
         if key in result and isinstance(result[key], dict) and isinstance(value, dict):
@@ -109,6 +116,7 @@ def deep_merge(base: dict, volatile: dict) -> dict:
 class PostgresDatasetRepository(AbstractDatasetRepository):
     def __init__(self, client: PostgresClient):
         self.client = client
+
     def add(self, dataset: Dataset) -> None:
         self.client.execute(
             """
@@ -179,17 +187,17 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         # 1. Deduplicate the static metadata (blob)
         # We strip volatile fields to have a stable hash for the heavy metadata
         stripped, volatile = strip_volatile_fields(snapshot)
-        
+
         # 2. Calculate diff against previous version if not provided
         if not diff:
             prev_row = self.client.fetchone(
                 """
-                SELECT dv.downloads_count, dv.api_calls_count, dv.views_count, 
+                SELECT dv.downloads_count, dv.api_calls_count, dv.views_count,
                        dv.reuses_count, dv.followers_count, dv.popularity_score,
                        db.data as blob_data
-                FROM dataset_versions dv 
-                JOIN dataset_blobs db ON dv.blob_id = db.id 
-                WHERE dv.dataset_id = %s 
+                FROM dataset_versions dv
+                JOIN dataset_blobs db ON dv.blob_id = db.id
+                WHERE dv.dataset_id = %s
                 ORDER BY dv.timestamp DESC LIMIT 1
                 """,
                 (str(dataset_id),),
@@ -197,25 +205,29 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             if prev_row:
                 # Reconstruct "comparable" dicts including metrics
                 prev_comparable = prev_row["blob_data"].copy()
-                prev_comparable.update({
-                    "downloads_count": prev_row["downloads_count"],
-                    "api_calls_count": prev_row["api_calls_count"],
-                    "views_count": prev_row["views_count"],
-                    "reuses_count": prev_row["reuses_count"],
-                    "followers_count": prev_row["followers_count"],
-                    "popularity_score": prev_row["popularity_score"],
-                })
-                
+                prev_comparable.update(
+                    {
+                        "downloads_count": prev_row["downloads_count"],
+                        "api_calls_count": prev_row["api_calls_count"],
+                        "views_count": prev_row["views_count"],
+                        "reuses_count": prev_row["reuses_count"],
+                        "followers_count": prev_row["followers_count"],
+                        "popularity_score": prev_row["popularity_score"],
+                    }
+                )
+
                 curr_comparable = stripped.copy()
-                curr_comparable.update({
-                    "downloads_count": downloads_count,
-                    "api_calls_count": api_calls_count,
-                    "views_count": views_count,
-                    "reuses_count": reuses_count,
-                    "followers_count": followers_count,
-                    "popularity_score": popularity_score,
-                })
-                
+                curr_comparable.update(
+                    {
+                        "downloads_count": downloads_count,
+                        "api_calls_count": api_calls_count,
+                        "views_count": views_count,
+                        "reuses_count": reuses_count,
+                        "followers_count": followers_count,
+                        "popularity_score": popularity_score,
+                    }
+                )
+
                 diff = calculate_snapshot_diff(prev_comparable, curr_comparable)
 
         data_str = json.dumps(stripped, sort_keys=True)
@@ -223,10 +235,10 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         blob_row = self.client.fetchone(
             """
-            INSERT INTO dataset_blobs (dataset_id, hash, data) 
-            VALUES (%s, %s, %s) 
-            ON CONFLICT (dataset_id, hash) 
-            DO UPDATE SET id = dataset_blobs.id 
+            INSERT INTO dataset_blobs (dataset_id, hash, data)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (dataset_id, hash)
+            DO UPDATE SET id = dataset_blobs.id
             RETURNING id
             """,
             (str(dataset_id), stable_hash, Json(stripped)),
@@ -237,7 +249,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         self.client.execute(
             """
             INSERT INTO dataset_versions (
-                dataset_id, blob_id, checksum, title, downloads_count, api_calls_count, 
+                dataset_id, blob_id, checksum, title, downloads_count, api_calls_count,
                 views_count, reuses_count, followers_count, popularity_score, diff,
                 metadata_volatile
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -261,12 +273,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
     def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
         row = self.client.fetchone(
             """
-            SELECT d.*, dv.downloads_count, dv.api_calls_count, dv.views_count, 
-                   dv.reuses_count, dv.followers_count, dv.popularity_score, 
+            SELECT d.*, dv.downloads_count, dv.api_calls_count, dv.views_count,
+                   dv.reuses_count, dv.followers_count, dv.popularity_score,
                    dv.timestamp as last_version_timestamp, dv.checksum
             FROM datasets d
             LEFT JOIN LATERAL (
-                SELECT downloads_count, api_calls_count, views_count, 
+                SELECT downloads_count, api_calls_count, views_count,
                        reuses_count, followers_count, popularity_score, timestamp, checksum
                 FROM dataset_versions
                 WHERE dataset_id = d.id
@@ -285,13 +297,13 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
     def get(self, dataset_id) -> Dataset:
         data = self.client.fetchone(
             """
-            SELECT d.*, 
+            SELECT d.*,
             COALESCE(jsonb_agg(jsonb_build_object(
                 'version_id', dv.id,
                 'dataset_id', dv.dataset_id,
                 'snapshot', COALESCE(dv.snapshot, db.data), -- Fallback for migrated data
-                'checksum', dv.checksum, 
-                'downloads_count', dv.downloads_count, 
+                'checksum', dv.checksum,
+                'downloads_count', dv.downloads_count,
                 'api_calls_count', dv.api_calls_count,
                 'views_count', dv.views_count,
                 'reuses_count', dv.reuses_count,
@@ -327,7 +339,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         versions = self.client.fetchall(
             """
             SELECT dv.dataset_id, dv.snapshot, db.data as blob_data, dv.metadata_volatile,
-                   dv.checksum, dv.downloads_count, dv.api_calls_count, dv.views_count, 
+                   dv.checksum, dv.downloads_count, dv.api_calls_count, dv.views_count,
                    dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
@@ -340,14 +352,14 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             legacy_snapshot = version_row.pop("snapshot")
             blob_data = version_row.pop("blob_data")
             volatile = version_row.pop("metadata_volatile")
-            
+
             if legacy_snapshot:
                 snapshot = legacy_snapshot
             elif blob_data:
                 snapshot = deep_merge(blob_data, volatile or {})
             else:
                 snapshot = {}
-            
+
             version_row["snapshot"] = snapshot
             version_row["metadata_volatile"] = volatile
             dataset.add_version(**version_row)
@@ -375,7 +387,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
     def get_id_by_slug(self, platform_id, slug):
         result = self.client.fetchone(
-            f"""SELECT id FROM datasets WHERE platform_id = %s AND slug = %s; """,
+            """SELECT id FROM datasets WHERE platform_id = %s AND slug = %s; """,
             (str(platform_id), str(slug)),
         )
         return result["id"]

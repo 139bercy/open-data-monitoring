@@ -64,5 +64,3 @@ app.listen(PORT, () => {
     // eslint-disable-next-line no-console
     console.log(`Proxy listening on http://localhost:${PORT} -> ${API_ORIGIN}${API_PATH_PREFIX ? ` (rewrite ^/api -> ${API_PATH_PREFIX})` : ""}`);
 });
-
-

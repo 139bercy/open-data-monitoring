@@ -103,9 +103,7 @@ def merge_datasets(*sources: dict) -> list:
 def merge_data_eco_datasets():
     datasets = {}
     for endpoint in API_ENDPOINTS:
-        data = fetch_and_save_data(
-            endpoint["url"], endpoint["params"], endpoint["filename"]
-        )
+        data = fetch_and_save_data(endpoint["url"], endpoint["params"], endpoint["filename"])
         datasets[endpoint["filename"]] = data
 
     automation = load_json_by_id("data-eco-automation.json", "dataset_id")
@@ -115,24 +113,22 @@ def merge_data_eco_datasets():
     merged_data = merge_datasets(automation, monitoring, catalog)
     logger.info(f"🔀 {len(merged_data)} datasets fusionnés")
 
-    with open(
-            os.path.join(OUTPUT_DIR, "data-eco.json"), "w", encoding="utf-8"
-    ) as f:
+    with open(os.path.join(OUTPUT_DIR, "data-eco.json"), "w", encoding="utf-8") as f:
         json.dump(merged_data, f, ensure_ascii=False, indent=2)
     logger.info("💾 Fichier final data-eco.json sauvegardé")
 
 
 def process_data_gouv():
     organization = os.environ["DATA_GOUV_ORGANIZATION"]
-    url = f"http://www.data.gouv.fr/api/1/datasets/"
+    url = "http://www.data.gouv.fr/api/1/datasets/"
     params = {"organization": organization, "page_size": 1000}
-    
+
     response = requests.get(url, params=params)
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "w") as file:
         data = response.json()["data"]
         text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
         file.write(text)
-    
+
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
         data = json.load(file)
         for dataset in data:
@@ -146,9 +142,7 @@ def process_data_gouv():
 
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
         data = json.load(file)
-        platform = find_platform_from_url(
-            app=app, url="https://www.data.gouv.fr/"
-        )
+        platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
         check_deleted_datasets(app=app, platform=platform, datasets=data)
 
 
@@ -156,9 +150,7 @@ def process_data_eco():
     merge_data_eco_datasets()
     with open(os.path.join(OUTPUT_DIR, "data-eco.json"), "r") as file:
         data = json.load(file)
-        platform = find_platform_from_url(
-            app=app, url="https://data.economie.gouv.fr"
-        )
+        platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
         check_deleted_datasets(app=app, platform=platform, datasets=data)
         for dataset in data:
             try:

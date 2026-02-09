@@ -90,4 +90,4 @@ def app():
 - Résout le problème de duplication
 - Améliore la structure du code
 - Facilite les tests avec une meilleure isolation
-- Prépare le terrain pour l'APIisation en centralisant la logique de création d'instances 
+- Prépare le terrain pour l'APIisation en centralisant la logique de création d'instances

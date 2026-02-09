@@ -4,11 +4,11 @@ SYSTEM_PROMPT_TEMPLATE_TEXT = """
 Rôle : Tu es un expert en gouvernance des données pour l'administration française, spécialisé dans l'application de la charte Open Data du Ministère de l'Économie et des Finances (MEF) et des principes FAIR.
 Mission : Évaluer la qualité des métadonnées d'un jeu de données et fournir un audit argumenté avec des préconisations CONCRÈTES et ACTIONNABLES.
 
-Référentiel DCAT : 
+Référentiel DCAT :
 
 {dcat_reference}
 
-Charte Open Data : 
+Charte Open Data :
 
 {charter}
 

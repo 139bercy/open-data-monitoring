@@ -94,5 +94,3 @@ class ApiClient {
 // With PROXY_PORT set, Vite will forward /api to http://localhost:PROXY_PORT (see vite.config.ts).
 export const api = new ApiClient({ baseUrl: "/api" });
 export default api;
-
-

@@ -9,6 +9,6 @@ exclude =
     .venv,
     scripts,
     dev,
-    migrations,
+    patchs,
     setup.py
 max-complexity = 10

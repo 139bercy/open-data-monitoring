@@ -66,7 +66,7 @@ async def get_tests():
                 published=dataset["published"],
                 restricted=dataset["restricted"],
                 last_sync=dataset["last_sync"],
-                last_sync_status=["last_sync_status"],
+                last_sync_status=dataset["last_sync_status"],
                 created=dataset["created"],
                 modified=dataset["modified"],
                 deleted=dataset["deleted"],
@@ -88,11 +88,11 @@ async def list_datasets(
     modified_from: str | None = None,
     modified_to: str | None = None,
     q: str | None = None,
-    sort_by: str = Query(
+    sort_by: str = Query(  # noqa: B008
         "modified",
         pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count)$",
     ),
-    order: str = Query("desc", pattern="^(asc|desc)$"),
+    order: str = Query("desc", pattern="^(asc|desc)$"),  # noqa: B008
     page: int = 1,
     page_size: int = 25,
     include_counts: bool = True,
@@ -207,9 +207,9 @@ async def list_datasets(
                    ) AS title,
                    lv.api_calls_count AS api_calls_count,
                    lv.downloads_count AS downloads_count,
-                   COALESCE(vc.versions_count, 0) AS versions_count, 
-                   d.last_sync, 
-                   d.last_sync_status, 
+                   COALESCE(vc.versions_count, 0) AS versions_count,
+                   d.last_sync,
+                   d.last_sync_status,
                    d.deleted,
                    dq.has_description as has_description,
                    dq.is_slug_valid as is_slug_valid,
@@ -423,7 +423,7 @@ async def get_by_publisher(publisher_name: str):
                 publisher=dataset["publisher"],
                 published=dataset["published"],
                 restricted=dataset["restricted"],
-                last_sync=dataset["last_sync"],
+                last_sync_status=dataset.get("last_sync_status", "unknown"),
                 created=dataset["created"],
                 modified=dataset["modified"],
                 deleted=dataset["deleted"],
@@ -431,10 +431,10 @@ async def get_by_publisher(publisher_name: str):
             for dataset in datasets_raw
         ]
         return {
-            "items": items,
-            "total": total,
-            "page": page,
-            "page_size": page_size,
+            "items": datasets_list,
+            "total": len(datasets_list),
+            "page": 1,
+            "page_size": len(datasets_list),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

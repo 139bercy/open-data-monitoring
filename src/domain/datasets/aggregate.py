@@ -139,7 +139,7 @@ class Dataset:
             ),
             buid=data["buid"],
             slug=data["slug"],
-            title=data.get("title", data.get("slug")), # Fallback to slug if title missing
+            title=data.get("title", data.get("slug")),  # Fallback to slug if title missing
             page=data["page"],
             created=(
                 data["created"] if isinstance(data["created"], datetime) else datetime.fromisoformat(data["created"])

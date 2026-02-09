@@ -31,7 +31,7 @@ class PostgresPlatformRepository(PlatformRepository):
 
     def get(self, platform_id: uuid.UUID) -> Optional[Platform]:
         query = """
-        SELECT 
+        SELECT
             p.*,
             json_agg(
                 json_build_object(
@@ -89,7 +89,7 @@ class PostgresPlatformRepository(PlatformRepository):
     def all(self):
         return self.client.fetchall(
             """
-        SELECT 
+        SELECT
     p.*,
     json_agg(
         json_build_object(

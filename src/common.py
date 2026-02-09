@@ -28,9 +28,9 @@ def calculate_snapshot_diff(old: dict, new: dict) -> dict:
     """
     if not old:
         return {"all": "new_snapshot"}
-        
+
     diff = {}
-    
+
     all_keys = set(old.keys()) | set(new.keys())
     for key in all_keys:
         if key not in old:
@@ -44,5 +44,5 @@ def calculate_snapshot_diff(old: dict, new: dict) -> dict:
                     diff[key] = inner
             else:
                 diff[key] = {"_t": "changed", "old": old[key], "new": new[key]}
-                
+
     return diff

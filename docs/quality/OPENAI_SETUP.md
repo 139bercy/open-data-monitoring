@@ -48,7 +48,7 @@ app quality evaluate <dataset-id> --provider ollama
 
 ## Advantages
 
-✅ **Fast**: 2-3 seconds per evaluation  
-✅ **Reliable**: Excellent JSON mode  
-✅ **Quality**: Better than local models  
+✅ **Fast**: 2-3 seconds per evaluation
+✅ **Reliable**: Excellent JSON mode
+✅ **Quality**: Better than local models
 ✅ **Cheap**: ~$0.001 per evaluation
