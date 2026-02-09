@@ -21,3 +21,13 @@ repos:
         args: [--fix]
       # Run the formatter (replaces isort)
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: venv/bin/pytest
+        language: script
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
