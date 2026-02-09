@@ -12,9 +12,8 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from application.handlers import (check_deleted_datasets,
-                                  find_platform_from_url, upsert_dataset)
-from exceptions import DatasetHasNotChanged, DatasetUnreachableError
+from application.handlers import check_deleted_datasets, find_platform_from_url, upsert_dataset
+from exceptions import DatasetHasNotChangedError, DatasetUnreachableError
 from logger import logger
 from settings import BASE_DIR, ENV_PATH, app
 
@@ -76,7 +75,7 @@ def load_json_by_id(filename: str, key: str = "dataset_id") -> dict:
     """Charge un fichier JSON et crée un dictionnaire indexé par une clé"""
     filepath = os.path.join(OUTPUT_DIR, filename)
     try:
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             data = json.load(f)
             return {item[key]: item for item in data}
     except FileNotFoundError:
@@ -129,18 +128,18 @@ def process_data_gouv():
         text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
         file.write(text)
 
-    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
+    with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         for dataset in data:
             platform = find_platform_from_url(app=app, url=dataset["page"])
             try:
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
-            except DatasetHasNotChanged as e:
-                logger.error(f' - {dataset["dataset_id"]} - {e}')
+            except DatasetHasNotChangedError as e:
+                logger.error(f" - {dataset['dataset_id']} - {e}")
             except DatasetUnreachableError:
                 pass
 
-    with open(os.path.join(OUTPUT_DIR, "data-gouv.json"), "r") as file:
+    with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
         check_deleted_datasets(app=app, platform=platform, datasets=data)
@@ -148,7 +147,7 @@ def process_data_gouv():
 
 def process_data_eco():
     merge_data_eco_datasets()
-    with open(os.path.join(OUTPUT_DIR, "data-eco.json"), "r") as file:
+    with open(os.path.join(OUTPUT_DIR, "data-eco.json")) as file:
         data = json.load(file)
         platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
         check_deleted_datasets(app=app, platform=platform, datasets=data)
@@ -159,7 +158,7 @@ def process_data_eco():
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
 
             except Exception as e:
-                logger.debug(f'OPENDATASOFT - {dataset["dataset_id"]} - {e}')
+                logger.debug(f"OPENDATASOFT - {dataset['dataset_id']} - {e}")
 
 
 if __name__ == "__main__":

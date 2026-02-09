@@ -4,7 +4,6 @@ import hashlib
 import json
 from dataclasses import asdict
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from common import JsonSerializer
@@ -29,15 +28,15 @@ class Dataset:
         downloads_count: int,
         api_calls_count: int,
         raw: dict,
-        publisher: Optional[str] = None,
+        publisher: str | None = None,
         last_sync_status: str = None,
         is_deleted: bool = False,
-        views_count: Optional[int] = None,
-        reuses_count: Optional[int] = None,
-        followers_count: Optional[int] = None,
-        popularity_score: Optional[float] = None,
-        last_version_timestamp: Optional[datetime] = None,
-        checksum: Optional[str] = None,
+        views_count: int | None = None,
+        reuses_count: int | None = None,
+        followers_count: int | None = None,
+        popularity_score: float | None = None,
+        last_version_timestamp: datetime | None = None,
+        checksum: str | None = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -58,7 +57,7 @@ class Dataset:
         self.popularity_score = popularity_score
         self.raw = raw
         self.checksum = checksum
-        self.versions: List[DatasetVersion] | None = []
+        self.versions: list[DatasetVersion] | None = []
         self.last_sync_status = last_sync_status
         self.last_version_timestamp = last_version_timestamp
         self.quality = None
@@ -94,14 +93,14 @@ class Dataset:
         dataset_id: str,
         snapshot: dict,
         checksum: str,
-        downloads_count: Optional[int] = None,
-        api_calls_count: Optional[int] = None,
-        views_count: Optional[int] = None,
-        reuses_count: Optional[int] = None,
-        followers_count: Optional[int] = None,
-        popularity_score: Optional[float] = None,
-        diff: Optional[dict] = None,
-        metadata_volatile: Optional[dict] = None,
+        downloads_count: int | None = None,
+        api_calls_count: int | None = None,
+        views_count: int | None = None,
+        reuses_count: int | None = None,
+        followers_count: int | None = None,
+        popularity_score: float | None = None,
+        diff: dict | None = None,
+        metadata_volatile: dict | None = None,
         **kwargs,
     ):
         version = DatasetVersion(

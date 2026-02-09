@@ -3,14 +3,12 @@
 import json
 import os
 from datetime import datetime
-from typing import Optional
 
 from openai import OpenAI
 from pydantic import ValidationError
 
 from domain.datasets.aggregate import Dataset
-from domain.quality.evaluation import (CriterionScore, MetadataEvaluation,
-                                       Suggestion)
+from domain.quality.evaluation import CriterionScore, MetadataEvaluation, Suggestion
 from domain.quality.ports import LLMEvaluator
 from infrastructure.llm.models import EvaluationResponse
 from infrastructure.llm.prompts import build_system_prompt, build_user_prompt
@@ -20,7 +18,7 @@ from logger import logger
 class OpenAIEvaluator(LLMEvaluator):
     """OpenAI-based metadata quality evaluator."""
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str | None = None, model_name: str = "gpt-4o-mini"):
         """
         Initialize OpenAI evaluator.
 
@@ -30,7 +28,7 @@ class OpenAIEvaluator(LLMEvaluator):
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY must be set. " "Get your key at https://platform.openai.com/api-keys")
+            raise ValueError("OPENAI_API_KEY must be set. Get your key at https://platform.openai.com/api-keys")
 
         self.client = OpenAI(api_key=self.api_key)
         self.model_name = model_name

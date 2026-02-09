@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional, Union
 from uuid import UUID
 
 
@@ -24,8 +23,8 @@ class Suggestion:
     """Improvement suggestion for a metadata field."""
 
     field: str
-    current_value: Optional[Union[str, list[str]]]
-    suggested_value: Union[str, list[str]]
+    current_value: str | list[str] | None
+    suggested_value: str | list[str]
     reason: str
     priority: str  # "high", "medium", "low"
 
@@ -40,7 +39,7 @@ class MetadataEvaluation:
     overall_score: float  # 0-100
     criteria_scores: dict[str, CriterionScore]
     suggestions: list[Suggestion]
-    raw_text: Optional[str] = None  # For text-format evaluations
+    raw_text: str | None = None  # For text-format evaluations
 
     def get_scores_by_category(self, category: str) -> list[CriterionScore]:
         """Get all criterion scores for a specific category."""

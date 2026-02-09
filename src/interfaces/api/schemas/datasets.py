@@ -3,26 +3,25 @@ Schemas Pydantic pour les endpoints datasets
 """
 
 import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 
 
 class DatasetAPI(BaseModel):
-    id: Optional[UUID]
-    name: Optional[str] = None
+    id: UUID | None
+    name: str | None = None
     timestamp: datetime.datetime
     buid: str
     slug: str
     page: str
-    publisher: Optional[str]
+    publisher: str | None
     created: datetime.datetime
     modified: datetime.datetime
     published: bool
     restricted: bool
     deleted: bool = False
-    last_sync: Optional[datetime.datetime]
+    last_sync: datetime.datetime | None
     last_sync_status: str
 
 
@@ -39,5 +38,5 @@ class DatasetCreateResponse(BaseModel):
 
 
 class DatasetResponse(BaseModel):
-    datasets: List[DatasetAPI]
+    datasets: list[DatasetAPI]
     total_datasets: int

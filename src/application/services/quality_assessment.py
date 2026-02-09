@@ -1,10 +1,5 @@
-"""Quality assessment service for metadata evaluation."""
-
-import os
 from pathlib import Path
 from uuid import UUID
-
-import requests
 
 from domain.quality.evaluation import MetadataEvaluation
 from domain.quality.ports import LLMEvaluator

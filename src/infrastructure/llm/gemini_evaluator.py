@@ -3,14 +3,12 @@
 import json
 import os
 from datetime import datetime
-from typing import Optional
 
 from google import genai
 from pydantic import ValidationError
 
 from domain.datasets.aggregate import Dataset
-from domain.quality.evaluation import (CriterionScore, MetadataEvaluation,
-                                       Suggestion)
+from domain.quality.evaluation import CriterionScore, MetadataEvaluation, Suggestion
 from domain.quality.ports import LLMEvaluator
 from infrastructure.llm.models import EvaluationResponse
 from infrastructure.llm.prompts import build_system_prompt, build_user_prompt
@@ -22,7 +20,7 @@ class GeminiEvaluator(LLMEvaluator):
 
     client = genai.Client()
 
-    def __init__(self, api_key: Optional[str] = None, model_name: str = "gemini-1.5-pro"):
+    def __init__(self, api_key: str | None = None, model_name: str = "gemini-1.5-pro"):
         """
         Initialize Gemini evaluator.
 
@@ -61,7 +59,8 @@ class GeminiEvaluator(LLMEvaluator):
             response = self.client.models.generate_content(
                 [system_prompt, user_prompt],
                 generation_config=genai.GenerationConfig(
-                    temperature=0.1, response_mime_type="application/json"  # Low temperature for consistent evaluation
+                    temperature=0.1,
+                    response_mime_type="application/json",  # Low temperature for consistent evaluation
                 ),
             )
 

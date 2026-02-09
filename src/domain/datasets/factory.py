@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Optional, cast
+from typing import cast
 from uuid import uuid4
 
 from application.dtos.dataset import DatasetDTO

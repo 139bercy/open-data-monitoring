@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
@@ -10,7 +9,7 @@ router = APIRouter(prefix="/publishers", tags=["publishers"])
 
 @router.get("/")
 @router.get("")
-async def get_publishers(platform_id: Optional[UUID] = None, q: Optional[str] = None, limit: int = 50):
+async def get_publishers(platform_id: UUID | None = None, q: str | None = None, limit: int = 50):
     """
     Retourne la liste des publishers distincts (chaînes), éventuellement filtrée par plateforme et par recherche.
     Forme de réponse adaptée au front: { "items": ["Publisher A", "Publisher B", ...] }

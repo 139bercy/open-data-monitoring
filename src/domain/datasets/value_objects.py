@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
 class DatasetQuality:
-    downloads_count: Optional[int]
-    api_calls_count: Optional[int]
+    downloads_count: int | None
+    api_calls_count: int | None
     has_description: bool
     is_slug_valid: bool
-    evaluation_results: Optional[dict] = None
+    evaluation_results: dict | None = None

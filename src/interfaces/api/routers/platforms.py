@@ -1,12 +1,9 @@
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
 from application.handlers import create_platform
-from interfaces.api.schemas.platforms import (PlatformCreateDTO,
-                                              PlatformCreateResponse,
-                                              PlatformDTO, PlatformsResponse)
+from interfaces.api.schemas.platforms import PlatformCreateDTO, PlatformCreateResponse, PlatformDTO, PlatformsResponse
 from settings import app as domain_app
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])
@@ -24,8 +21,8 @@ async def get_platforms():
     try:
         platforms_raw = domain_app.platform.get_all_platforms()
         platforms = _bind_to_platform_model(platforms_raw)
-        platforms_DTO = [PlatformDTO(**vars(p)) for p in platforms]
-        return PlatformsResponse(platforms=platforms_DTO, total_platforms=len(platforms))
+        platforms_dto = [PlatformDTO(**vars(p)) for p in platforms]
+        return PlatformsResponse(platforms=platforms_dto, total_platforms=len(platforms))
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -71,7 +68,7 @@ async def sync_platform_endpoint(id: UUID):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def _bind_to_platform_model(platforms_raw) -> List[PlatformDTO]:
+def _bind_to_platform_model(platforms_raw) -> list[PlatformDTO]:
     if not platforms_raw:
         return []
 

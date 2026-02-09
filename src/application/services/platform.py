@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
@@ -27,7 +26,7 @@ class PlatformMonitoring:
         organization_id: str,
         type: str,
         url: str,
-        key: Optional[str] = None,
+        key: str | None = None,
     ):
         platform = Platform(
             id=uuid.uuid4(),

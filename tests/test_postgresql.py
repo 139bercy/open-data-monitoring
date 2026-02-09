@@ -5,17 +5,8 @@ import pytest
 from freezegun import freeze_time
 
 from application.commands.platform import SyncPlatform
-from application.handlers import (check_deleted_datasets, create_platform,
-                                  upsert_dataset)
-from application.services.dataset import DatasetMonitoring
-from domain.platform.aggregate import Platform
-from exceptions import DatasetUnreachableError
+from application.handlers import check_deleted_datasets, create_platform, upsert_dataset
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
-from infrastructure.factories.dataset import DatasetAdapterFactory
-from infrastructure.repositories.datasets.postgres import \
-    PostgresDatasetRepository
-from infrastructure.unit_of_work import PostgresUnitOfWork
-from settings import App, app
 from tests.fixtures.fixtures import platform_1
 
 

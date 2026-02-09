@@ -1,7 +1,6 @@
 import hashlib
 import json
 import uuid
-from typing import Optional
 from uuid import UUID
 
 from psycopg2.extras import Json
@@ -192,13 +191,13 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         snapshot: dict,
         checksum: str,
         title: str,
-        downloads_count: Optional[int] = None,
-        api_calls_count: Optional[int] = None,
-        views_count: Optional[int] = None,
-        reuses_count: Optional[int] = None,
-        followers_count: Optional[int] = None,
-        popularity_score: Optional[float] = None,
-        diff: Optional[dict] = None,
+        downloads_count: int | None = None,
+        api_calls_count: int | None = None,
+        views_count: int | None = None,
+        reuses_count: int | None = None,
+        followers_count: int | None = None,
+        popularity_score: float | None = None,
+        diff: dict | None = None,
     ) -> None:
         # 1. Deduplicate the static metadata (blob)
         # We strip volatile fields to have a stable hash for the heavy metadata
@@ -286,7 +285,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ),
         )
 
-    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
+    def get_by_buid(self, dataset_buid: str) -> Dataset | None:
         row = self.client.fetchone(
             """
             SELECT d.*, dv.downloads_count, dv.api_calls_count, dv.views_count,

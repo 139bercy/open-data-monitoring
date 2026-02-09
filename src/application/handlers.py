@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
@@ -33,7 +32,7 @@ def sync_platform(app: App, platform_id: UUID) -> None:
         app.platform.sync_platform(platform_id=cmd.id)
 
 
-def find_platform_from_url(app: App, url: str) -> Optional[Platform]:
+def find_platform_from_url(app: App, url: str) -> Platform | None:
     print(url)
     with app.uow:
         try:
@@ -42,7 +41,7 @@ def find_platform_from_url(app: App, url: str) -> Optional[Platform]:
             return None
 
 
-def find_dataset_id_from_url(app: App, url: str) -> Optional[str]:
+def find_dataset_id_from_url(app: App, url: str) -> str | None:
     platform = find_platform_from_url(app=app, url=url)
     if platform is None:
         return None
@@ -73,7 +72,7 @@ def _has_metrics_changed(existing: Dataset, new: Dataset) -> bool:
     )
 
 
-def _is_cooldown_active(existing: Optional[Dataset]) -> bool:
+def _is_cooldown_active(existing: Dataset | None) -> bool:
     """Check if 24h cooldown period is active for metric-only changes."""
     if not existing or not existing.last_version_timestamp:
         return False
@@ -87,7 +86,7 @@ def _is_cooldown_active(existing: Optional[Dataset]) -> bool:
 
 
 def _should_create_version(
-    existing: Optional[Dataset], instance: Dataset, metrics_changed: bool, is_cooldown: bool
+    existing: Dataset | None, instance: Dataset, metrics_changed: bool, is_cooldown: bool
 ) -> bool:
     """Determine if a new version should be created."""
     if not existing:
@@ -102,7 +101,7 @@ def _should_create_version(
 
 
 def _create_or_update_dataset_version(
-    app: App, platform: Platform, instance: Dataset, existing: Optional[Dataset]
+    app: App, platform: Platform, instance: Dataset, existing: Dataset | None
 ) -> UUID:
     """Persist dataset and create new version."""
     if existing:
@@ -148,7 +147,9 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
         )
 
         if not should_version:
-            logger.debug(f"{platform.type.upper()} - Dataset '{instance.slug}' has not changed (Cooldown or No change).")
+            logger.debug(
+                f"{platform.type.upper()} - Dataset '{instance.slug}' has not changed (Cooldown or No change)."
+            )
             return instance.id
 
         # 4. Create version
@@ -176,7 +177,7 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
     )
 
 
-def fetch_dataset(platform: Platform, dataset_id: str) -> Optional[dict]:
+def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     try:
@@ -208,4 +209,3 @@ def check_deleted_datasets(app, platform, datasets):
                 dataset.is_deleted = True
                 app.dataset.repository.update_dataset_state(dataset)
                 logger.info(f"{platform.type.upper()} - Dataset '{dataset.slug}' deleted")
-

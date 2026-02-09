@@ -149,7 +149,7 @@ def migrate(db_name=None, db_user=None, db_pass=None, db_host=None, db_port=None
         )
         count += 1
         if count % 1000 == 0:
-            print(f"Migrated {count}/{total_count} ({count/total_count:.1%})...")
+            print(f"Migrated {count}/{total_count} ({count / total_count:.1%})...")
             writer_client.commit()
 
     writer_client.commit()

@@ -2,8 +2,6 @@
 Schemas Pydantic pour les endpoints publishers
 """
 
-from typing import List
-
 from pydantic import BaseModel
 
 
@@ -20,5 +18,5 @@ class PublisherStats(BaseModel):
 class PublishersResponse(BaseModel):
     """Réponse pour l'endpoint get-publishers"""
 
-    publishers: List[PublisherStats]
+    publishers: list[PublisherStats]
     total_publishers: int

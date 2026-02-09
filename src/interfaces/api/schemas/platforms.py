@@ -3,7 +3,6 @@ Schemas Pydantic pour les endpoints platforms
 """
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -23,12 +22,12 @@ class PlatformDTO(BaseModel):
     type: str
     url: str
     organization_id: str
-    key: Optional[str]
+    key: str | None
     datasets_count: int
-    last_sync: Optional[datetime]
-    created_at: Optional[datetime]
-    last_sync_status: Optional[str] = None
-    syncs: Optional[List[PlatformSync]] = None
+    last_sync: datetime | None
+    created_at: datetime | None
+    last_sync_status: str | None = None
+    syncs: list[PlatformSync] | None = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -53,7 +52,7 @@ class PlatformCreateResponse(BaseModel):
 
 
 class PlatformsResponse(BaseModel):
-    platforms: List[PlatformDTO]
+    platforms: list[PlatformDTO]
     total_platforms: int
 
     class Config:

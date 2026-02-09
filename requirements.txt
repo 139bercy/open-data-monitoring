@@ -1,8 +1,7 @@
 black==25.1.0
 click==8.1.8
 fastapi==0.128.0
-flake8==7.2.0
-isort==6.0.0
+ruff==0.15.0
 freezegun==1.5.2
 mutmut==3.3.0
 pre-commit==4.5.1

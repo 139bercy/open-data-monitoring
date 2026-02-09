@@ -1,6 +1,5 @@
 import re
 from dataclasses import dataclass
-from typing import Any
 
 
 @dataclass(frozen=True)
@@ -9,7 +8,7 @@ class ValueObject:
         return self.__dict__.values()
 
 
-class InvalidDomainValue(Exception):
+class InvalidDomainValueError(Exception):
     pass
 
 
@@ -19,9 +18,9 @@ class Slug(ValueObject):
 
     def __post_init__(self):
         if not self.value or not isinstance(self.value, str):
-            raise InvalidDomainValue("Slug must be a non-empty string")
+            raise InvalidDomainValueError("Slug must be a non-empty string")
         if not re.match(r"^[a-z0-9-_]+$", self.value):
-            raise InvalidDomainValue(f"Invalid slug format: {self.value}")
+            raise InvalidDomainValueError(f"Invalid slug format: {self.value}")
 
     def __str__(self):
         return self.value
@@ -33,7 +32,7 @@ class Url(ValueObject):
 
     def __post_init__(self):
         if not self.value or not isinstance(self.value, str):
-            raise InvalidDomainValue("URL must be a non-empty string")
+            raise InvalidDomainValueError("URL must be a non-empty string")
 
         # Simple regex for URL validation
         regex = re.compile(
@@ -47,7 +46,7 @@ class Url(ValueObject):
         )
 
         if not re.match(regex, self.value):
-            raise InvalidDomainValue(f"Invalid URL format: {self.value}")
+            raise InvalidDomainValueError(f"Invalid URL format: {self.value}")
 
     def __str__(self):
         return self.value

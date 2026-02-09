@@ -2,7 +2,7 @@ class WrongPlatformTypeError(Exception):
     pass
 
 
-class DatasetHasNotChanged(Exception):
+class DatasetHasNotChangedError(Exception):
     pass
 
 

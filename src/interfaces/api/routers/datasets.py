@@ -1,19 +1,12 @@
-"""
-Router pour les endpoints datasets (STUB)
-TODO: Implémenter les endpoints dataset
-"""
-
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 
-from application.handlers import (fetch_dataset, find_dataset_id_from_url,
-                                  find_platform_from_url, upsert_dataset)
+from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
 from application.services.quality_assessment import QualityAssessmentService
-from exceptions import DatasetHasNotChanged, DatasetUnreachableError
+from exceptions import DatasetHasNotChangedError, DatasetUnreachableError
 from infrastructure.llm.openai_evaluator import OpenAIEvaluator
-from interfaces.api.schemas.datasets import (DatasetAPI, DatasetCreateResponse,
-                                             DatasetResponse)
+from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse
 from logger import logger
 from settings import app as domain_app
 
@@ -33,7 +26,7 @@ async def add_dataset(url: str):
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
     try:
         upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
-    except DatasetHasNotChanged as e:
+    except DatasetHasNotChangedError as e:
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except DatasetUnreachableError:
         pass
@@ -78,6 +71,91 @@ async def get_tests():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def _build_where_clause(
+    platform_id: str | None,
+    publisher: str | None,
+    q: str | None,
+    created_from: str | None,
+    created_to: str | None,
+    modified_from: str | None,
+    modified_to: str | None,
+    is_deleted: bool | None,
+) -> tuple[str, list]:
+    """Build WHERE clause and params for dataset filtering."""
+    where_clauses = ["TRUE"]
+    params: list = []
+
+    if platform_id:
+        where_clauses.append("platform_id = %s")
+        params.append(platform_id)
+    if publisher:
+        where_clauses.append("publisher = %s")
+        params.append(publisher)
+    if q:
+        where_clauses.append("slug ILIKE %s")
+        params.append(f"%{q}%")
+    if created_from:
+        where_clauses.append("created >= %s")
+        params.append(created_from)
+    if created_to:
+        where_clauses.append("created <= %s")
+        params.append(created_to)
+    if modified_from:
+        where_clauses.append("modified >= %s")
+        params.append(modified_from)
+    if modified_to:
+        where_clauses.append("modified <= %s")
+        params.append(modified_to)
+    if is_deleted is not None:
+        where_clauses.append("deleted = %s")
+        params.append(is_deleted)
+
+    return " AND ".join(where_clauses), params
+
+
+def _build_order_clause(sort_by: str, order: str) -> tuple[str, str]:
+    """Build ORDER BY clause with NULL-safe sorting."""
+    # Validate sort column
+    sort_column = (
+        sort_by
+        if sort_by
+        in (
+            "created",
+            "modified",
+            "publisher",
+            "title",
+            "api_calls_count",
+            "downloads_count",
+        )
+        else "modified"
+    )
+
+    # Build NULL-safe order expression
+    if sort_column == "title":
+        order_sql = "COALESCE(title, '')"
+    elif sort_column == "api_calls_count":
+        order_sql = "COALESCE(lv.api_calls_count, 0)"
+    elif sort_column == "downloads_count":
+        order_sql = "COALESCE(lv.downloads_count, 0)"
+    elif sort_column == "versions_count":
+        order_sql = "COALESCE(vc.versions_count, 0)"
+    elif sort_column == "publisher":
+        order_sql = "COALESCE(publisher, '')"
+    else:
+        order_sql = sort_column
+
+    sort_dir = "DESC" if order.lower() != "asc" else "ASC"
+    return order_sql, sort_dir
+
+
+def _normalize_pagination(page: int, page_size: int) -> tuple[int, int, int]:
+    """Normalize and calculate pagination parameters."""
+    page = max(1, page)
+    page_size = max(1, min(100, page_size))
+    offset = (page - 1) * page_size
+    return page, page_size, offset
+
+
 @router.get("/")
 @router.get("")
 async def list_datasets(
@@ -106,73 +184,21 @@ async def list_datasets(
     - include_counts ignoré pour l'instant (à implémenter avec dataset_versions)
     """
     try:
-        where_clauses = ["TRUE"]
-        params: list = []
+        # Build filters
+        where_sql, params = _build_where_clause(
+            platform_id, publisher, q, created_from, created_to, modified_from, modified_to, is_deleted
+        )
 
-        if platform_id:
-            where_clauses.append("platform_id = %s")
-            params.append(platform_id)
-        if publisher:
-            where_clauses.append("publisher = %s")
-            params.append(publisher)
-        if q:
-            where_clauses.append("slug ILIKE %s")
-            params.append(f"%{q}%")
-        if created_from:
-            where_clauses.append("created >= %s")
-            params.append(created_from)
-        if created_to:
-            where_clauses.append("created <= %s")
-            params.append(created_to)
-        if modified_from:
-            where_clauses.append("modified >= %s")
-            params.append(modified_from)
-        if modified_to:
-            where_clauses.append("modified <= %s")
-            params.append(modified_to)
-        if is_deleted is not None:
-            where_clauses.append("deleted = %s")
-            params.append(is_deleted)
-
-        where_sql = " AND ".join(where_clauses)
-
-        # Count
+        # Count total
         count_query = f"SELECT COUNT(*) AS cnt FROM datasets WHERE {where_sql}"
         total_rows = domain_app.dataset.repository.client.fetchall(count_query, tuple(params))
         total = int(total_rows[0]["cnt"]) if total_rows else 0
 
-        # Sorting (NULL-safe): treat NULL as 0 for counts, and as '' for text
-        sort_column = (
-            sort_by
-            if sort_by
-            in (
-                "created",
-                "modified",
-                "publisher",
-                "title",
-                "api_calls_count",
-                "downloads_count",
-            )
-            else "modified"
-        )
-        sort_dir = "DESC" if order.lower() != "asc" else "ASC"
-        if sort_column == "title":
-            order_sql = "COALESCE(title, '')"
-        elif sort_column == "api_calls_count":
-            order_sql = "COALESCE(lv.api_calls_count, 0)"
-        elif sort_column == "downloads_count":
-            order_sql = "COALESCE(lv.downloads_count, 0)"
-        elif sort_column == "versions_count":
-            order_sql = "COALESCE(vc.versions_count, 0)"
-        elif sort_column == "publisher":
-            order_sql = "COALESCE(publisher, '')"
-        else:
-            order_sql = sort_column
+        # Build sorting
+        order_sql, sort_dir = _build_order_clause(sort_by, order)
 
-        # Pagination
-        page = max(1, page)
-        page_size = max(1, min(100, page_size))
-        offset = (page - 1) * page_size
+        # Normalize pagination
+        page, page_size, offset = _normalize_pagination(page, page_size)
 
         # Latest snapshot per dataset to derive a title and counts (works for datagouv and opendatasoft shapes)
         list_query = f"""

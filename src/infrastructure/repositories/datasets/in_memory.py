@@ -1,6 +1,5 @@
 from collections import Counter
 from datetime import datetime, timezone
-from typing import Optional
 from uuid import UUID
 
 from common import calculate_snapshot_diff
@@ -26,14 +25,14 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         snapshot: dict,
         checksum: str,
         title: str,
-        downloads_count: Optional[int] = None,
-        api_calls_count: Optional[int] = None,
-        views_count: Optional[int] = None,
-        reuses_count: Optional[int] = None,
-        followers_count: Optional[int] = None,
-        popularity_score: Optional[float] = None,
-        diff: Optional[dict] = None,
-        metadata_volatile: Optional[dict] = None,
+        downloads_count: int | None = None,
+        api_calls_count: int | None = None,
+        views_count: int | None = None,
+        reuses_count: int | None = None,
+        followers_count: int | None = None,
+        popularity_score: float | None = None,
+        diff: dict | None = None,
+        metadata_volatile: dict | None = None,
     ) -> None:
         if not diff:
             prev_version_dict = next((v for v in reversed(self.versions) if v["dataset_id"] == dataset_id), None)
@@ -92,7 +91,7 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
             return dataset
         return
 
-    def get_checksum_by_buid(self, dataset_buid) -> Optional[str]:
+    def get_checksum_by_buid(self, dataset_buid) -> str | None:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
         if dataset is not None:
             versions = [item for item in self.versions if item["dataset_id"] == dataset.id]
@@ -101,7 +100,7 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
             return dataset.checksum
         return
 
-    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
+    def get_by_buid(self, dataset_buid: str) -> Dataset | None:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
         if dataset is not None:
             versions = [item for item in self.versions if item["dataset_id"] == dataset.id]

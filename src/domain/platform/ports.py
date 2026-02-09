@@ -29,12 +29,15 @@ class PlatformAdapter(Protocol):
 
 class DatasetAdapter(abc.ABC):  # pragma: no cover
     @staticmethod
+    @abc.abstractmethod
     def find_dataset_id(url):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def fetch(self, url, key, dataset_id):
         raise NotImplementedError
 
+    @abc.abstractmethod
     def map(self, *args, **kwargs) -> dict:  # pragma: no cover
         raise NotImplementedError
 

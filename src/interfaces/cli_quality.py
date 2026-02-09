@@ -1,8 +1,5 @@
 """CLI commands for metadata quality evaluation."""
 
-from typing import Optional
-from uuid import UUID
-
 import click
 from rich.console import Console
 from rich.table import Table
@@ -45,7 +42,7 @@ def cli_quality():
     help="Export to md file",
 )
 def cli_evaluate_quality(
-    dataset_id: str, dcat: str, charter: str, provider: str, model: Optional[str], output: str, report: bool
+    dataset_id: str, dcat: str, charter: str, provider: str, model: str | None, output: str, report: bool
 ):
     """Evaluate metadata quality for a dataset."""
     console.print(f"\n[bold]Evaluating dataset {dataset_id}...[/bold]\n")
@@ -80,7 +77,7 @@ def cli_evaluate_quality(
 @click.argument("dataset_id")
 def cli_quality_report(dataset_id: str):
     """Display quality report for a dataset (placeholder for future persistence)."""
-    console.print(f"[yellow]Report command not yet implemented. " f"Use 'evaluate' to run a new evaluation.[/yellow]")
+    console.print(f"[yellow]Report command not yet implemented. Use 'evaluate' to run a new evaluation.[/yellow]")
 
 
 def _display_evaluation(evaluation, output: str):
@@ -111,7 +108,7 @@ def _display_evaluation(evaluation, output: str):
 
         for score in scores:
             score_str = f"{score.score:.0f}/100"
-            weight_str = f"{score.weight*100:.0f}%"
+            weight_str = f"{score.weight * 100:.0f}%"
             issues_str = "\n".join(score.issues) if score.issues else "✓"
             table.add_row(score.criterion, score_str, weight_str, issues_str)
 

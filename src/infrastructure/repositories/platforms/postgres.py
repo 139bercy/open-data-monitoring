@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
@@ -29,7 +28,7 @@ class PostgresPlatformRepository(PlatformRepository):
             ),
         )
 
-    def get(self, platform_id: uuid.UUID) -> Optional[Platform]:
+    def get(self, platform_id: uuid.UUID) -> Platform | None:
         query = """
         SELECT
             p.*,

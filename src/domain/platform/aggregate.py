@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
 from uuid import UUID
 
 from domain.common.value_objects import Slug, Url
@@ -15,7 +14,7 @@ class Platform:
         type: str,
         url: str | Url,
         organization_id: str,
-        key: Optional[str],
+        key: str | None,
         datasets_count=0,
         last_sync=None,
         created_at=None,

@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from pydantic import BaseModel, Field
 
 
@@ -16,8 +14,8 @@ class SuggestionResponse(BaseModel):
     """LLM response for a metadata improvement suggestion."""
 
     field: str
-    current_value: Optional[Union[str, list[str]]] = None
-    suggested_value: Union[str, list[str]]
+    current_value: str | list[str] | None = None
+    suggested_value: str | list[str]
     reason: str
     priority: str = Field(..., pattern="^(high|medium|low)$")
 

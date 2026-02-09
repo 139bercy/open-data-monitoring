@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 from uuid import UUID
 
 from domain.datasets.aggregate import Dataset
@@ -15,15 +14,15 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         self,
         dataset_id: UUID,
         snapshot: dict,
-        checksum: Optional[str],
+        checksum: str | None,
         title: str,
-        downloads_count: Optional[int] = None,
-        api_calls_count: Optional[int] = None,
-        views_count: Optional[int] = None,
-        reuses_count: Optional[int] = None,
-        followers_count: Optional[int] = None,
-        popularity_score: Optional[float] = None,
-        diff: Optional[dict] = None,
+        downloads_count: int | None = None,
+        api_calls_count: int | None = None,
+        views_count: int | None = None,
+        reuses_count: int | None = None,
+        followers_count: int | None = None,
+        popularity_score: float | None = None,
+        diff: dict | None = None,
     ) -> None:
         raise NotImplementedError
 
@@ -32,11 +31,11 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_checksum_by_buid(self, dataset_buid) -> Optional[str]:
+    def get_checksum_by_buid(self, dataset_buid) -> str | None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
+    def get_by_buid(self, dataset_buid: str) -> Dataset | None:
         raise NotImplementedError
 
     @abc.abstractmethod

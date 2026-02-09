@@ -6,7 +6,6 @@ import os
 
 import uvicorn
 
-from interfaces.api.main import api_app
 from settings import ENV
 
 if __name__ == "__main__":

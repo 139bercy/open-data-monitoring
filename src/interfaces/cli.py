@@ -8,11 +8,15 @@ from uuid import UUID
 import click
 import requests
 
-from application.handlers import (create_platform, fetch_dataset,
-                                  find_dataset_id_from_url,
-                                  find_platform_from_url, sync_platform,
-                                  upsert_dataset)
-from exceptions import DatasetHasNotChanged, DatasetUnreachableError
+from application.handlers import (
+    create_platform,
+    fetch_dataset,
+    find_dataset_id_from_url,
+    find_platform_from_url,
+    sync_platform,
+    upsert_dataset,
+)
+from exceptions import DatasetHasNotChangedError, DatasetUnreachableError
 from interfaces.cli_quality import cli_quality
 from logger import logger
 from settings import app
@@ -95,7 +99,7 @@ def cli_add_dataset(url, output):
         if output:
             pprint(dataset)
         upsert_dataset(app=app, platform=platform, dataset=dataset)
-    except DatasetHasNotChanged as e:
+    except DatasetHasNotChangedError as e:
         logger.info(f"{platform.type.upper()} - {dataset_id} - {e}")
     except DatasetUnreachableError:
         pass

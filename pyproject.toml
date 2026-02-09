@@ -1,7 +1,56 @@
+[tool.ruff]
+# Ruff configuration (replaces flake8 + isort + pyupgrade)
+line-length = 120
+target-version = "py310"  # Changed from py39 to enable modern syntax (X | Y)
+
+[tool.ruff.lint]
+# Enable rules: F (pyflakes), E/W (pycodestyle), I (isort), N (pep8-naming),
+# UP (pyupgrade), B (flake8-bugbear), C90 (mccabe complexity)
+select = ["F", "E", "W", "I", "N", "UP", "B", "C90"]
+
+# Ignore specific rules
+ignore = [
+    "E402",  # Module level import not at top of file (needed for conftest.py)
+    "F403",  # Star imports (for tmp.py)
+    "F405",  # Undefined from star imports
+    "E501",  # Line too long (handled by formatter)
+    "B904",  # raise without from (too strict for this codebase)
+]
+
+# Exclude directories
+exclude = [
+    ".git",
+    "__pycache__",
+    "patchs",
+    "setup.py",
+    "tmp.py",
+    ".venv",
+    "scripts",
+    "dev",
+]
+
+# McCabe complexity threshold
+mccabe.max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# Allow unused imports in __init__.py
+"__init__.py" = ["F401"]
+# Allow complexity and unused imports in tests
+"tests/**" = ["F841", "B017"]
+# Allow specific issues in CLI tools
+"src/interfaces/cli*.py" = ["F541"]
+
+[tool.ruff.format]
+# Use Black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
 [tool.black]
 line-length = 120
 target-version = ['py311']
-include = '\.pyi?$'
+include = '\\.pyi?$'
+
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -10,23 +59,13 @@ build-backend = "setuptools.build_meta"
 source = [
     "src/",
 ]
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--showlocals --capture=fd --tb=short --maxfail=1 -v"
 testpaths = ["tests"]
 pythonpath = "src"
 norecursedirs = ["venv", "dev"]
-
-[tool.flake8]
-ignore = ["D203", "W291"]
-max-line-length = 120
-exclude = [
-    ".git",
-    "patchs",
-    "__pycache__",
-    "setup.py"
-]
-max-complexity = 10
 
 [tool.coverage.run]
 omit = [
@@ -35,6 +74,7 @@ omit = [
     "setup.py",
     "tmp.py"
 ]
+
 [tool.mutmut]
 paths_to_mutate = ["src/"]
 tests_dir = ["tests/"]

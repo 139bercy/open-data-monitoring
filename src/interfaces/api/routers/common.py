@@ -5,8 +5,7 @@ Router pour les endpoints common
 from fastapi import APIRouter, HTTPException
 
 from application.handlers import get_publishers_stats
-from interfaces.api.schemas.publishers import (PublishersResponse,
-                                               PublisherStats)
+from interfaces.api.schemas.publishers import PublishersResponse, PublisherStats
 from settings import app as domain_app
 
 router = APIRouter(prefix="/common", tags=["common"])

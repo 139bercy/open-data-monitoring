@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from domain.common.value_objects import InvalidDomainValue, Slug, Url
+from domain.common.value_objects import InvalidDomainValueError, Slug, Url
 from domain.datasets.aggregate import Dataset
 
 
@@ -13,11 +13,11 @@ def test_slug_validation():
     assert str(Slug("slug123")) == "slug123"
 
     # Invalid slugs
-    with pytest.raises(InvalidDomainValue):
+    with pytest.raises(InvalidDomainValueError):
         Slug("Invalid Slug")
-    with pytest.raises(InvalidDomainValue):
+    with pytest.raises(InvalidDomainValueError):
         Slug("slug!")
-    with pytest.raises(InvalidDomainValue):
+    with pytest.raises(InvalidDomainValueError):
         Slug("")
 
 
@@ -27,11 +27,11 @@ def test_url_validation():
     assert str(Url("http://localhost:8080/path")) == "http://localhost:8080/path"
 
     # Invalid URLs
-    with pytest.raises(InvalidDomainValue):
+    with pytest.raises(InvalidDomainValueError):
         Url("not-a-url")
-    with pytest.raises(InvalidDomainValue):
+    with pytest.raises(InvalidDomainValueError):
         Url("ftp://invalid")
-    with pytest.raises(InvalidDomainValue):
+    with pytest.raises(InvalidDomainValueError):
         Url("")
 
 

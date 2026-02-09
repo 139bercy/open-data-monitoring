@@ -1,8 +1,3 @@
-from dataclasses import asdict
-from typing import Optional, cast
-from uuid import uuid4
-
-from application.dtos.dataset import DatasetDTO
 from domain.datasets.aggregate import Dataset
 from domain.datasets.factory import DatasetFactory
 from domain.datasets.ports import AbstractDatasetRepository
@@ -15,7 +10,7 @@ class DatasetMonitoring:
     def __init__(self, repository: AbstractDatasetRepository):
         self.repository = repository
 
-    def add_dataset(self, platform: Optional[Platform], dataset: dict, adapter: DatasetAdapter) -> Optional[Dataset]:
+    def add_dataset(self, platform: Platform | None, dataset: dict, adapter: DatasetAdapter) -> Dataset | None:
         """
         Creates a Dataset aggregate. The adapter is now passed from the orchestration layer
         to avoid having the service depend on an infrastructure factory.
