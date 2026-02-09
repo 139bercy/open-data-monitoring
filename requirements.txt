@@ -5,6 +5,7 @@ flake8==7.2.0
 isort==6.0.0
 freezegun==1.5.2
 mutmut==3.3.0
+pre-commit==4.5.1
 psycopg2-binary==2.9.11
 pydantic==2.12.5
 pytest==8.3.5
