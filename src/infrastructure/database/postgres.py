@@ -32,6 +32,16 @@ class PostgresClient:
             rows = cur.fetchall()
             return [dict(row) for row in rows]
 
+    def stream_fetchall(self, query, params=None, name="streaming_cursor"):
+        """Execute a query using a server-side cursor to stream results (memory-efficient)"""
+        # A named cursor in psycopg2 triggers a server-side cursor
+        cur = self.connection.cursor(name=name, cursor_factory=psycopg2.extras.DictCursor)
+        cur.itersize = 2000  # Fetch 2000 rows at a time
+        cur.execute(query, params)
+        for row in cur:
+            yield dict(row)
+        cur.close()
+
     def commit(self):
         self.connection.commit()
 

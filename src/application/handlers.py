@@ -1,3 +1,4 @@
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from uuid import UUID
 
@@ -70,11 +71,46 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
         instance.calculate_hash()
         existing = app.dataset.repository.get_by_buid(instance.buid)
 
-        if existing and existing.checksum == instance.checksum and existing.is_deleted == instance.is_deleted:
-            logger.debug(
-                f"{platform.type.upper()} - Dataset '{instance.slug}' already exists with identical checksum and status, "
-                f"skipping."
+        # A new version is created if metadata changed (checksum) OR harmonized metrics changed
+        # EXCEPT if only metrics changed AND last version was < 24h ago (Noise reduction)
+        metrics_changed = False
+        is_cooldown_active = False
+        
+        if existing:
+            metrics_changed = (
+                existing.downloads_count != instance.downloads_count
+                or existing.api_calls_count != instance.api_calls_count
+                or existing.views_count != instance.views_count
+                or existing.reuses_count != instance.reuses_count
+                or existing.followers_count != instance.followers_count
+                or existing.popularity_score != instance.popularity_score
             )
+            
+            if existing.last_version_timestamp:
+                now = datetime.now(timezone.utc)
+                last_ts = existing.last_version_timestamp
+                # Ensure existing timestamp is tz-aware for comparison
+                if last_ts.tzinfo is None:
+                    last_ts = last_ts.replace(tzinfo=timezone.utc)
+                
+                delta = now - last_ts
+                if delta < timedelta(hours=24):
+                    is_cooldown_active = True
+
+        should_version = False
+        if not existing:
+            should_version = True
+        elif existing.checksum != instance.checksum:
+            should_version = True
+        elif existing.is_deleted != instance.is_deleted:
+            should_version = True
+        elif metrics_changed and not is_cooldown_active:
+            should_version = True
+        
+        logger.debug(f"Version check for {instance.slug}: metrics_changed={metrics_changed}, is_cooldown={is_cooldown_active}, should_version={should_version}")
+
+        if not should_version:
+            logger.debug(f"{platform.type.upper()} - Dataset '{instance.slug}' has not changed (Cooldown or No change).")
             return instance.id
 
         if existing:
@@ -99,8 +135,13 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
         dataset_id=UUID(dataset_id),
         snapshot=instance.raw,
         checksum=instance.checksum,
+        title=instance.title,
         downloads_count=instance.downloads_count,
         api_calls_count=instance.api_calls_count,
+        views_count=instance.views_count,
+        reuses_count=instance.reuses_count,
+        followers_count=instance.followers_count,
+        popularity_score=instance.popularity_score,
     )
 
 

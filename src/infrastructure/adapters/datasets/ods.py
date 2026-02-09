@@ -61,9 +61,14 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             has_description=(True if metadata.get("default", {}).get("description", None) else False),
             is_slug_valid="_" not in dataset_id,
         )
+        title = metadata.get("default", {}).get("title", dataset_id)
+        if isinstance(title, dict):
+            title = title.get("value", dataset_id)
+
         dataset = DatasetDTO(
             buid=uid,
             slug=dataset_id,
+            title=title,
             page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
             publisher=metadata.get("default", {}).get("publisher", {}).get("value", None),
             created=created_at,
@@ -72,6 +77,8 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             restricted=is_restricted,
             downloads_count=kwargs.get("download_count", None),
             api_calls_count=kwargs.get("api_call_count", None),
+            reuses_count=kwargs.get("reuse_count", None),
+            popularity_score=kwargs.get("popularity_score", None),
             quality=quality,
         )
         return dataset

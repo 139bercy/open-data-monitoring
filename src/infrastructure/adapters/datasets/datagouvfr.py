@@ -46,6 +46,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
         dataset = DatasetDTO(
             buid=id,
             slug=slug,
+            title=kwargs.get("title", slug),
             page=page,
             publisher=publisher,
             created=created_at,
@@ -54,6 +55,9 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             restricted=False if archived is None else True,
             downloads_count=metrics.get("resources_downloads", None),
             api_calls_count=None,
+            views_count=metrics.get("views", None),
+            reuses_count=metrics.get("reuses", None),
+            followers_count=metrics.get("followers", None),
             quality=quality,
         )
         return dataset

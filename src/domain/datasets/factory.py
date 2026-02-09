@@ -23,6 +23,7 @@ class DatasetFactory:
             buid=dto.buid,
             platform_id=platform.id,
             slug=dto.slug,
+            title=dto.title,
             page=dto.page,
             publisher=dto.publisher,
             created=dto.created,
@@ -31,6 +32,10 @@ class DatasetFactory:
             restricted=dto.restricted,
             downloads_count=dto.downloads_count,
             api_calls_count=dto.api_calls_count,
+            views_count=dto.views_count,
+            reuses_count=dto.reuses_count,
+            followers_count=dto.followers_count,
+            popularity_score=dto.popularity_score,
             raw=raw_data,
         )
 

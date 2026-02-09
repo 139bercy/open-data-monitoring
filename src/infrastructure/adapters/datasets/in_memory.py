@@ -27,6 +27,7 @@ class InMemoryDatasetAdapter(DatasetAdapter):
         dataset = DatasetDTO(
             buid=id,
             slug=slug,
+            title=kwargs.get("title", slug),
             page=page,
             publisher="",
             created=created_at,

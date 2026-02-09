@@ -84,6 +84,7 @@ def setup_test_database():
             migration_conn.cursor() as cur,
         ):
             cur.execute(open("db/init.sql").read())
+            cur.execute(open("db/migrations/20260209_consolidated_dev_to_prod.sql").read())
             migration_conn.commit()
     finally:
         postgres.close()

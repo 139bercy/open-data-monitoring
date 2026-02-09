@@ -16,8 +16,14 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         dataset_id: UUID,
         snapshot: dict,
         checksum: Optional[str],
-        downloads_count: int,
-        api_calls_count: int,
+        title: str,
+        downloads_count: Optional[int] = None,
+        api_calls_count: Optional[int] = None,
+        views_count: Optional[int] = None,
+        reuses_count: Optional[int] = None,
+        followers_count: Optional[int] = None,
+        popularity_score: Optional[float] = None,
+        diff: Optional[dict] = None,
     ) -> None:
         raise NotImplementedError
 

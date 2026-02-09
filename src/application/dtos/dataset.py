@@ -10,15 +10,20 @@ from domain.datasets.value_objects import DatasetQuality
 class DatasetDTO:
     buid: str
     slug: str
+    title: str
     page: str
     publisher: str
     created: datetime
     modified: datetime
     published: bool
     restricted: bool
-    downloads_count: Optional[int]
-    api_calls_count: Optional[int]
     quality: DatasetQuality
+    downloads_count: Optional[int] = None
+    api_calls_count: Optional[int] = None
+    views_count: Optional[int] = None
+    reuses_count: Optional[int] = None
+    followers_count: Optional[int] = None
+    popularity_score: Optional[float] = None
 
 
 @dataclass
@@ -28,3 +33,7 @@ class DatasetRawDTO:
     checksum: str
     downloads_count: Optional[int]
     api_calls_count: Optional[int]
+    views_count: Optional[int] = None
+    reuses_count: Optional[int] = None
+    followers_count: Optional[int] = None
+    popularity_score: Optional[float] = None

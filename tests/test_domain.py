@@ -45,6 +45,7 @@ def test_dataset_stable_hashing():
         platform_id=platform_id,
         buid="buid1",
         slug="my-dataset",
+        title="My Dataset",
         page="https://data.com/d1",
         created=now,
         modified=now,

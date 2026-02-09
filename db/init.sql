@@ -63,16 +63,35 @@ CREATE INDEX IF NOT EXISTS idx_datasets_slug ON datasets (slug);
 CREATE INDEX IF NOT EXISTS idx_datasets_publisher ON datasets (publisher);
 CREATE INDEX IF NOT EXISTS idx_datasets_modified ON datasets (modified);
 CREATE INDEX IF NOT EXISTS idx_datasets_created ON datasets (created);
+CREATE TABLE IF NOT EXISTS dataset_blobs (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    dataset_id uuid NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    hash varchar(64) NOT NULL,
+    data jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT NOW(),
+    UNIQUE (dataset_id, hash)
+);
+COMMENT ON TABLE dataset_blobs IS 'Stockage dédoublonné des métadonnées par dataset';
 CREATE TABLE IF NOT EXISTS dataset_versions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     timestamp timestamptz NOT NULL DEFAULT NOW(),
     dataset_id uuid NOT NULL,
-    snapshot jsonb NOT NULL,
+    blob_id uuid REFERENCES dataset_blobs(id),
+    snapshot jsonb,
+    -- Temporairement gardé pour la migration
     checksum varchar(64) NOT NULL,
     downloads_count int,
-    api_calls_count int
+    api_calls_count int,
+    views_count int,
+    reuses_count int,
+    followers_count int,
+    popularity_score float,
+    diff jsonb
 );
+CREATE INDEX IF NOT EXISTS idx_dataset_versions_blob_id ON dataset_versions (blob_id);
 COMMENT ON TABLE dataset_versions IS 'Historique des versions des métadonnées';
+COMMENT ON COLUMN dataset_versions.blob_id IS 'Référence vers le contenu lourd dédoublonné';
+COMMENT ON COLUMN dataset_versions.snapshot IS 'Ancien champ, sera supprimé après migration';
 COMMENT ON COLUMN dataset_versions.checksum IS 'Hash SHA-256 du snapshot pour détecter les changements';
 CREATE TABLE IF NOT EXISTS dataset_quality (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,8 +1,10 @@
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
 from domain.datasets.aggregate import Dataset
 from domain.datasets.ports import AbstractDatasetRepository
+from common import calculate_snapshot_diff
 
 
 class InMemoryDatasetRepository(AbstractDatasetRepository):
@@ -22,16 +24,56 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         dataset_id: UUID,
         snapshot: dict,
         checksum: str,
-        downloads_count: int,
-        api_calls_count: int,
+        title: str,
+        downloads_count: Optional[int] = None,
+        api_calls_count: Optional[int] = None,
+        views_count: Optional[int] = None,
+        reuses_count: Optional[int] = None,
+        followers_count: Optional[int] = None,
+        popularity_score: Optional[float] = None,
+        diff: Optional[dict] = None,
+        metadata_volatile: Optional[dict] = None,
     ) -> None:
+        if not diff:
+            prev_version_dict = next((v for v in reversed(self.versions) if v["dataset_id"] == dataset_id), None)
+            if prev_version_dict:
+                # Construct comparable objects including metrics
+                prev_comparable = prev_version_dict["snapshot"].copy() if prev_version_dict["snapshot"] else {}
+                prev_comparable.update({
+                    "downloads_count": prev_version_dict.get("downloads_count"),
+                    "api_calls_count": prev_version_dict.get("api_calls_count"),
+                    "views_count": prev_version_dict.get("views_count"),
+                    "reuses_count": prev_version_dict.get("reuses_count") or 0,
+                    "followers_count": prev_version_dict.get("followers_count"),
+                    "popularity_score": prev_version_dict.get("popularity_score"),
+                })
+                
+                curr_comparable = snapshot.copy()
+                curr_comparable.update({
+                    "downloads_count": downloads_count,
+                    "api_calls_count": api_calls_count,
+                    "views_count": views_count,
+                    "reuses_count": reuses_count or 0,
+                    "followers_count": followers_count,
+                    "popularity_score": popularity_score,
+                })
+                diff = calculate_snapshot_diff(prev_comparable, curr_comparable)
+
         self.versions.append(
             {
                 "dataset_id": dataset_id,
+                "timestamp": datetime.now(timezone.utc),
                 "snapshot": snapshot,
                 "checksum": checksum,
+                "title": title,
                 "downloads_count": downloads_count,
                 "api_calls_count": api_calls_count,
+                "views_count": views_count,
+                "reuses_count": reuses_count,
+                "followers_count": followers_count,
+                "popularity_score": popularity_score,
+                "diff": diff,
+                "metadata_volatile": metadata_volatile,
             }
         )
 
@@ -39,20 +81,28 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         dataset = next((item for item in self.db if item.id == dataset_id), None)
         if dataset is not None:
             dataset.versions = [item for item in self.versions if item["dataset_id"] == dataset_id]
+            if dataset.versions:
+                dataset.last_version_timestamp = dataset.versions[-1].get("timestamp")
+                dataset.checksum = dataset.versions[-1].get("checksum")
             return dataset
-        # if dataset is None:
-        #  raise ValueError(f"Dataset with id {dataset_id} not found")
         return
 
     def get_checksum_by_buid(self, dataset_buid) -> Optional[str]:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
         if dataset is not None:
+            versions = [item for item in self.versions if item["dataset_id"] == dataset.id]
+            if versions:
+                return versions[-1].get("checksum")
             return dataset.checksum
         return
 
     def get_by_buid(self, dataset_buid: str) -> Optional[Dataset]:
         dataset = next((item for item in self.db if item.buid == dataset_buid), None)
         if dataset is not None:
+            versions = [item for item in self.versions if item["dataset_id"] == dataset.id]
+            if versions:
+                dataset.last_version_timestamp = versions[-1].get("timestamp")
+                dataset.checksum = versions[-1].get("checksum")
             return dataset
         return
 
