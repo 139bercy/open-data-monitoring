@@ -187,11 +187,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
     def add_version(self, params: "DatasetVersionParams") -> None:
         """Add a new version of a dataset using Parameter Object pattern."""
-        # 1. Deduplicate the static metadata (blob)
-        # We strip volatile fields to have a stable hash for the heavy metadata
         stripped, volatile = strip_volatile_fields(params.snapshot)
 
-        # 2. Calculate diff against previous version if not provided
         diff = params.diff  # Start with provided diff
 
         if not diff:
@@ -250,7 +247,6 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         )
         blob_id = blob_row["id"]
 
-        # 2. Add the version referencing the blob
         self.client.execute(
             """
             INSERT INTO dataset_versions (

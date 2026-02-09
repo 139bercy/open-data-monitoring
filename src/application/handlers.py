@@ -83,24 +83,20 @@ def _create_or_update_dataset_version(
 
 def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     """Upsert a dataset and create a new version if needed."""
-    # 1. Handle failed sync status
     with app.uow:
         _handle_failed_sync_status(app, platform, dataset)
 
-    # 2. Create domain instance
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     instance = app.dataset.add_dataset(platform=platform, dataset=dataset, adapter=adapter)
-    if instance is None:  # +1 → CC = 2
+    if instance is None:
         return
 
-    # 3. Prepare for persistence (calculate hash, ensure active)
     instance.prepare_for_persistence()
 
     with app.uow:
         existing = app.dataset.repository.get_by_buid(instance.buid)
 
-        # 4. Determine versioning decision
         should_version = existing.should_version(instance) if existing else True
         metrics_changed = existing.has_metrics_changed(instance) if existing else False
         is_cooldown = existing.is_cooldown_active() if existing else False
@@ -110,13 +106,11 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             f"Metrics changed: {metrics_changed}, Cooldown: {is_cooldown}, Should version: {should_version}"
         )
 
-        if not should_version:  # +1 → CC = 4
+        if not should_version:
             return instance.id
 
-        # 5. Create version
         dataset_id = _create_or_update_dataset_version(app, platform, instance, existing)
 
-        # 6. Update sync status
         app.dataset.repository.update_dataset_sync_status(
             platform_id=platform.id, dataset_id=dataset_id, status="success"
         )

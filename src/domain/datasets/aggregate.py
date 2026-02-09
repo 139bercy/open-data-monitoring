@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from common import JsonSerializer
+from domain.common.constants import DEFAULT_VERSIONING_COOLDOWN_HOURS
 from domain.common.enums import SyncStatus
 from domain.common.value_objects import Slug, Url
 from domain.datasets.entities import DatasetVersion
@@ -179,7 +180,6 @@ class Dataset:
     def prepare_for_persistence(self) -> None:
         """Prepare aggregate for persistence (calculate hash, ensure active)."""
         self.calculate_hash()
-        # Force reactivation if dataset is found by crawler
         if self.is_deleted:
             self.restore()
 
@@ -214,7 +214,7 @@ class Dataset:
             )
         )
 
-    def is_cooldown_active(self, hours: int = 24) -> bool:
+    def is_cooldown_active(self, hours: int = DEFAULT_VERSIONING_COOLDOWN_HOURS) -> bool:
         """Check if cooldown period is active for metric-only changes."""
         if not self.last_version_timestamp:
             return False
