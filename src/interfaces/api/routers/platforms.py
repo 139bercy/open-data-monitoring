@@ -20,9 +20,8 @@ async def get_platforms():
     """
     try:
         platforms_raw = domain_app.platform.get_all_platforms()
-        platforms = _bind_to_platform_model(platforms_raw)
-        platforms_dto = [PlatformDTO(**vars(p)) for p in platforms]
-        return PlatformsResponse(platforms=platforms_dto, total_platforms=len(platforms))
+        platforms_dto = _bind_to_platform_model(platforms_raw)
+        return PlatformsResponse(platforms=platforms_dto, total_platforms=len(platforms_dto))
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -38,7 +37,7 @@ async def create_platform_endpoint(platform: PlatformCreateDTO):
     """
     try:
         platform_id = create_platform(app=domain_app, data=platform.model_dump())
-        if type(platform_id) is not UUID:
+        if not isinstance(platform_id, UUID):
             raise HTTPException(status_code=500, detail="Failed to create platform")
 
         platform_raw = domain_app.platform.get(platform_id)
@@ -46,13 +45,13 @@ async def create_platform_endpoint(platform: PlatformCreateDTO):
         return PlatformCreateResponse(
             id=platform_raw.id,
             name=platform_raw.name,
-            slug=platform_raw.slug,
-            type=platform_raw.type,
-            url=platform_raw.url,
+            slug=str(platform_raw.slug),
+            type=str(platform_raw.type),
+            url=str(platform_raw.url),
             key=platform_raw.key,
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e) + " - " + str(platform))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/sync/{id}")
@@ -74,18 +73,18 @@ def _bind_to_platform_model(platforms_raw) -> list[PlatformDTO]:
 
     return [
         PlatformDTO(
-            id=(UUID(platform["id"]) if isinstance(platform["id"], str) else platform["id"]),
-            name=platform["name"],
-            slug=platform["slug"],
-            type=platform["type"],
-            url=platform["url"],
-            organization_id=platform["organization_id"],
-            key=platform.get("key"),
-            datasets_count=platform.get("datasets_count"),
-            last_sync=platform.get("last_sync"),
-            created_at=platform.get("created_at"),
-            last_sync_status=platform.get("last_sync_status"),
-            syncs=platform.get("syncs"),
+            id=p.id,
+            name=p.name,
+            slug=str(p.slug),
+            type=str(p.type),
+            url=str(p.url),
+            organization_id=p.organization_id,
+            key=p.key,
+            datasets_count=p.datasets_count,
+            last_sync=p.last_sync,
+            created_at=p.created_at,
+            last_sync_status=str(p.last_sync_status) if p.last_sync_status else None,
+            syncs=p.syncs,
         )
-        for platform in platforms_raw
+        for p in platforms_raw
     ]

@@ -29,8 +29,7 @@ class PlatformDTO(BaseModel):
     last_sync_status: str | None = None
     syncs: list[PlatformSync] | None = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}
 
 
 class PlatformCreateDTO(BaseModel):
@@ -49,11 +48,11 @@ class PlatformCreateResponse(BaseModel):
     type: str
     url: str
     key: str
+    model_config = {"arbitrary_types_allowed": True}
 
 
 class PlatformsResponse(BaseModel):
     platforms: list[PlatformDTO]
     total_platforms: int
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}

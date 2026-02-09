@@ -11,8 +11,7 @@ class PublisherStats(BaseModel):
     publisher: str
     dataset_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = {"arbitrary_types_allowed": True}
 
 
 class PublishersResponse(BaseModel):
