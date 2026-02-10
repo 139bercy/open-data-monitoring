@@ -22,7 +22,7 @@ SyncStatus = str  # 'pending' | 'success' | 'failed'
 
 # Validated types
 PositiveInt = Annotated[int, Field(ge=0)]
-Score = Annotated[float, Field(ge=0.0, le=100.0)]
+Score = Annotated[float, Field(ge=0.0)]  # No upper bound - ODS can generate scores > 100
 
 # ============================================================================
 # List View

@@ -155,8 +155,17 @@ def test_dataset_version_has_not_changed(app, ods_platform, ods_dataset):
 def test_dataset_version_has_changed(app, ods_platform, ods_dataset):
     # Arrange
     upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
-    # Act & Assert
-    new = {**ods_dataset, "updated_at": "2024-01-01T12:00:00+00:00"}
+    # Act & Assert - Change title to trigger checksum change
+    new = {
+        **ods_dataset,
+        "metadata": {
+            **ods_dataset["metadata"],
+            "default": {
+                **ods_dataset["metadata"]["default"],
+                "title": "New Title That Changes Checksum",
+            },
+        },
+    }
     upsert_dataset(app=app, platform=ods_platform, dataset=new)
     assert len(app.dataset.repository.db) == 1
     assert len(app.dataset.repository.versions) == 2

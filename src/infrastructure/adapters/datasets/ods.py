@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import requests
 
@@ -44,6 +45,30 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             raise DatasetUnreachableError()
 
     @staticmethod
+    def _parse_modified_date(modified_str, fallback):
+        """Parse modified date which can be either 'YYYY-MM-DD' or an ISO timestamp."""
+        if not modified_str:
+            return fallback
+
+        # If it's already a datetime object, return it
+        if isinstance(modified_str, datetime):
+            return modified_str
+
+        # If it's a string, try to parse it
+        if isinstance(modified_str, str):
+            # Try date-only format first (from metadata.default.modified)
+            try:
+                return datetime.strptime(modified_str, "%Y-%m-%d")
+            except ValueError:
+                # Fallback to ISO format
+                try:
+                    return datetime.fromisoformat(modified_str.replace("Z", "+00:00"))
+                except ValueError:
+                    return fallback
+
+        return fallback
+
+    @staticmethod
     def map(
         uid,
         dataset_id,
@@ -65,6 +90,14 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         if isinstance(title, dict):
             title = title.get("value", dataset_id)
 
+        # Get modified date from metadata.default.modified (YYYY-MM-DD format) or fall back to updated_at
+        modified_raw = (
+            metadata.get("default", {}).get("modified", {}).get("value")
+            if isinstance(metadata.get("default", {}).get("modified"), dict)
+            else kwargs.get("modified")
+        )
+        modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, updated_at)
+
         dataset = DatasetDTO(
             buid=uid,
             slug=dataset_id,
@@ -72,7 +105,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             page=f"https://data.economie.gouv.fr/explore/dataset/{dataset_id}/information/",
             publisher=metadata.get("default", {}).get("publisher", {}).get("value", None),
             created=created_at,
-            modified=updated_at,
+            modified=modified,
             published=is_published,
             restricted=is_restricted,
             downloads_count=kwargs.get("download_count", None),

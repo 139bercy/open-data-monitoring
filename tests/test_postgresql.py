@@ -85,8 +85,17 @@ def test_postgresql_dataset_has_changed(pg_app, pg_ods_platform, ods_dataset):
         platform=pg_ods_platform,
         dataset=ods_dataset,
     )
-    # Act
-    new = {**ods_dataset, "updated_at": "2024-01-01T12:00:00+00:00"}
+    # Act - Change title to trigger checksum change
+    new = {
+        **ods_dataset,
+        "metadata": {
+            **ods_dataset["metadata"],
+            "default": {
+                **ods_dataset["metadata"]["default"],
+                "title": "New Title That Changes Checksum",
+            },
+        },
+    }
     upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=new)
     # Assert
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
@@ -153,7 +162,10 @@ def test_postgresql_upsert_restores_and_updates_deleted_dataset(pg_app, pg_ods_p
     # Act: Upsert with CHANGES
     new_data = {
         **ods_dataset,
-        "metas": {**ods_dataset["metas"], "default": {**ods_dataset["metas"]["default"], "title": "Updated SQL Title"}},
+        "metadata": {
+            **ods_dataset["metadata"],
+            "default": {**ods_dataset["metadata"]["default"], "title": "Updated SQL Title"},
+        },
     }
     upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=new_data)
 
