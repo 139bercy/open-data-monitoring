@@ -1,70 +1,136 @@
 """
-Schemas Pydantic pour les endpoints datasets
+Dataset API Schemas
+Self-documenting schemas using type annotations and minimal descriptions.
 """
 
 import datetime
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+# ============================================================================
+# Domain Types
+# ============================================================================
+
+DatasetId = UUID
+BusinessUID = str  # Unique ID from source platform (e.g., "ods:eau-2023")
+DatasetSlug = str  # URL-friendly identifier
+SourceURL = str
+Publisher = str | None
+SyncStatus = str  # 'pending' | 'success' | 'failed'
+
+# Validated types
+PositiveInt = Annotated[int, Field(ge=0)]
+Score = Annotated[float, Field(ge=0.0, le=100.0)]
+
+# ============================================================================
+# List View
+# ============================================================================
+
 
 class DatasetAPI(BaseModel):
-    id: UUID | None = Field(None, description="Identifiant unique du dataset")
-    title: str | None = Field(None, description="Titre du dataset")
-    timestamp: datetime.datetime | None = Field(None, description="Date du dernier snapshot")
-    buid: str = Field(description="Identifiant métier unique (Business ID)", examples=["ods:eau-2023"])
-    slug: str = Field(description="Slug unique", examples=["consommation-eau"])
-    page: str = Field(description="URL de la page source", examples=["https://data.com/dataset/eau"])
-    publisher: str | None = Field(None, description="Nom du producteur de données", examples=["Ville de Paris"])
-    created: datetime.datetime = Field(description="Date de création initiale")
-    modified: datetime.datetime = Field(description="Date de dernière modification sur la plateforme")
-    published: bool = Field(description="Indique si le dataset est public")
-    restricted: bool = Field(description="Indique si l'accès est restreint")
-    deleted: bool = Field(False, description="Indique si le dataset est marqué comme supprimé")
-    downloads_count: int | None = Field(None, description="Nombre de téléchargements")
-    api_calls_count: int | None = Field(None, description="Nombre d'appels API")
-    views_count: int | None = Field(None, description="Nombre de vues")
-    reuses_count: int | None = Field(None, description="Nombre de réutilisations")
-    followers_count: int | None = Field(None, description="Nombre d'abonnés")
-    popularity_score: float | None = Field(None, description="Score de popularité")
-    versions_count: int = Field(0, description="Nombre de versions disponibles")
-    last_sync: datetime.datetime | None = Field(None, description="Dernière date de synchronisation")
-    last_sync_status: str = Field(description="Statut de la dernière sync (success, failed)")
+    """Dataset summary for list/table display."""
+
+    # Identity
+    id: DatasetId | None = None
+    buid: BusinessUID
+    slug: DatasetSlug
+    title: str | None = None
+
+    # Source
+    page: SourceURL
+    publisher: Publisher = None
+
+    # Timestamps
+    timestamp: datetime.datetime | None = None  # Last snapshot
+    created: datetime.datetime
+    modified: datetime.datetime
+
+    # Flags
+    published: bool
+    restricted: bool
+    deleted: bool = False  # Soft delete flag
+
+    # Metrics (populated when include_counts=true)
+    downloads_count: PositiveInt | None = None
+    api_calls_count: PositiveInt | None = None
+    views_count: PositiveInt | None = None
+    reuses_count: PositiveInt | None = None
+    followers_count: PositiveInt | None = None
+    popularity_score: Score | None = None
+    versions_count: PositiveInt = 0
+
+    # Sync status
+    last_sync: datetime.datetime | None = None
+    last_sync_status: SyncStatus
+
+
+# ============================================================================
+# Dataset Creation
+# ============================================================================
 
 
 class DatasetCreateResponse(BaseModel):
-    id: UUID = Field(description="Nouvel identifiant généré")
-    name: str = Field(description="Nom du dataset créé")
-    timestamp: str = Field(description="Timestamp de création")
-    buid: str = Field(description="BUID généré")
-    slug: str = Field(description="Slug généré")
-    organization_id: str = Field(description="ID de l'organisation parente")
-    type: str = Field(description="Type de plateforme")
-    url: str = Field(description="URL source")
-    key: str = Field(description="Clé API utilisée")
+    """Response after creating a new dataset via API."""
+
+    id: DatasetId
+    name: str
+    timestamp: str
+    buid: BusinessUID
+    slug: DatasetSlug
+    organization_id: str
+    type: str  # Platform type
+    url: SourceURL
+    key: str  # API key used
+
+
+# ============================================================================
+# Version History
+# ============================================================================
 
 
 class SnapshotVersionAPI(BaseModel):
+    """
+    Immutable snapshot of dataset state at a point in time.
+    Diffs are pre-calculated by backend for performance.
+    """
+
     id: UUID
     timestamp: datetime.datetime
-    downloads_count: int | None = None
-    api_calls_count: int | None = None
-    views_count: int | None = None
-    reuses_count: int | None = None
-    followers_count: int | None = None
-    popularity_score: float | None = None
     title: str | None = None
+
+    # Metrics at this point in time
+    downloads_count: PositiveInt | None = None
+    api_calls_count: PositiveInt | None = None
+    views_count: PositiveInt | None = None
+    reuses_count: PositiveInt | None = None
+    followers_count: PositiveInt | None = None
+    popularity_score: Score | None = None
+
+    # Backend-calculated diff from previous version
     diff: dict | None = None
+
+    # Full snapshot data (only when include_data=true)
     data: dict | None = None
 
 
+# ============================================================================
+# API Responses
+# ============================================================================
+
+
 class DatasetResponse(BaseModel):
+    """Paginated list of datasets."""
+
     datasets: list[DatasetAPI]
     total_datasets: int
 
 
 class DatasetVersionsResponse(BaseModel):
+    """Paginated list of dataset versions."""
+
     items: list[SnapshotVersionAPI]
     total: int
-    page: int
+    page: int  # 1-indexed
     page_size: int

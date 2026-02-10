@@ -1,21 +1,34 @@
 """
-Schemas Pydantic pour les endpoints publishers
+Publisher API Schemas
+Self-documenting schemas using type annotations.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+
+# ============================================================================
+# Domain Types
+# ============================================================================
+
+PublisherName = str
+
+# ============================================================================
+# Publisher Schemas
+# ============================================================================
 
 
 class PublisherStats(BaseModel):
-    """Statistiques d'un publisher"""
+    """Aggregated stats for a specific publisher."""
 
-    publisher: str = Field(description="Nom du publisher", examples=["Mairie de Bordeaux"])
-    dataset_count: int = Field(description="Nombre total de datasets pour ce publisher")
+    publisher: PublisherName
+    dataset_count: int
 
     model_config = {"arbitrary_types_allowed": True}
 
 
 class PublishersResponse(BaseModel):
-    """Réponse pour l'endpoint get-publishers"""
+    """Response returned when listing all publishers."""
 
-    publishers: list[PublisherStats] = Field(description="Liste des statistiques par publisher")
-    total_publishers: int = Field(description="Nombre total de publishers trouvés")
+    publishers: list[PublisherStats]
+    total_publishers: int
+
+    model_config = {"arbitrary_types_allowed": True}
