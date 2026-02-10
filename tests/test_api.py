@@ -125,3 +125,42 @@ def test_api_list_datasets_tests(mock_app):
     data = response.json()
     assert data["total_datasets"] == 1
     assert data["datasets"][0]["slug"] == "dataset-test"
+
+
+@patch("interfaces.api.routers.datasets.domain_app")
+def test_api_list_datasets(mock_app):
+    # Arrange
+    mock_item = {
+        "id": uuid4(),
+        "platform_id": uuid4(),
+        "buid": "test-buid",
+        "slug": "test-slug",
+        "publisher": "Test Publisher",
+        "title": "Test Title",
+        "timestamp": None,
+        "created": "2024-01-01T12:00:00",
+        "modified": "2024-01-01T12:00:00",
+        "restricted": False,
+        "published": True,
+        "downloads_count": 10,
+        "api_calls_count": 5,
+        "versions_count": 1,
+        "page": "https://test.com",
+        "last_sync": None,
+        "last_sync_status": "success",
+        "deleted": False,
+        "quality": {"has_description": True, "is_slug_valid": True, "evaluation_results": None},
+    }
+
+    mock_app.dataset.repository.search.return_value = ([mock_item], 1)
+
+    # Act
+    response = client.get("/api/v1/datasets/?q=test&sort_by=modified&order=desc&page=1&page_size=25")
+
+    # Assert
+    assert response.status_code == 200, f"Error: {response.status_code} - {response.json()}"
+    data = response.json()
+    assert data["total_datasets"] == 1
+    assert len(data["datasets"]) == 1
+    assert data["datasets"][0]["title"] == "Test Title"
+    mock_app.dataset.repository.search.assert_called_once()

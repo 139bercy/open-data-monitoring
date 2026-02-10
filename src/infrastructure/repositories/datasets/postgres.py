@@ -424,3 +424,353 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             """UPDATE datasets SET deleted = %s WHERE id = %s;""",
             (dataset.is_deleted, str(dataset.id)),
         )
+
+    def search(
+        self,
+        platform_id: str | None = None,
+        publisher: str | None = None,
+        q: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+        modified_from: str | None = None,
+        modified_to: str | None = None,
+        is_deleted: bool | None = None,
+        sort_by: str = "modified",
+        order: str = "desc",
+        page: int = 1,
+        page_size: int = 25,
+    ) -> tuple[list[dict], int]:
+        """Search datasets with filters, sorting and pagination."""
+        where_sql, params = self._build_where_clause(
+            platform_id, publisher, q, created_from, created_to, modified_from, modified_to, is_deleted
+        )
+
+        # Count total
+        count_query = f"SELECT COUNT(*) AS cnt FROM datasets WHERE {where_sql}"
+        total_rows = self.client.fetchall(count_query, tuple(params))
+        total = int(total_rows[0]["cnt"]) if total_rows else 0
+
+        # Build sorting
+        order_sql, sort_dir = self._build_order_clause(sort_by, order)
+
+        # Pagination
+        page = max(1, page)
+        page_size = max(1, min(100, page_size))
+        offset = (page - 1) * page_size
+
+        # Main query
+        list_query = f"""
+            WITH latest_versions AS (
+                SELECT DISTINCT ON (dataset_id) dataset_id, title, blob_id, downloads_count, api_calls_count, views_count, reuses_count, followers_count, popularity_score, timestamp
+                FROM dataset_versions
+                ORDER BY dataset_id, timestamp DESC
+            ),
+            version_counts AS (
+                SELECT dataset_id, COUNT(*) AS versions_count
+                FROM dataset_versions
+                GROUP BY dataset_id
+            ),
+            latest_quality AS (
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results
+                FROM dataset_quality
+                ORDER BY dataset_id, timestamp DESC
+            )
+            SELECT d.id,
+                   d.platform_id,
+                   d.publisher,
+                   d.created,
+                   d.modified,
+                   d.restricted,
+                   d.published,
+                   d.slug,
+                   d.page,
+                   COALESCE(
+                       lv.title,
+                       (db.data ->> 'title'),
+                       (db.data -> 'metas' -> 'default' ->> 'title'),
+                       d.slug
+                   ) AS title,
+                   lv.timestamp AS timestamp,
+                   lv.api_calls_count AS api_calls_count,
+                   lv.downloads_count AS downloads_count,
+                   lv.views_count AS views_count,
+                   lv.reuses_count AS reuses_count,
+                   lv.followers_count AS followers_count,
+                   lv.popularity_score AS popularity_score,
+                   COALESCE(vc.versions_count, 0) AS versions_count,
+                   d.last_sync,
+                   d.last_sync_status,
+                   d.deleted,
+                   dq.has_description as has_description,
+                   dq.is_slug_valid as is_slug_valid,
+                   dq.evaluation_results as evaluation_results
+
+            FROM datasets d
+            LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
+            LEFT JOIN dataset_blobs db ON lv.blob_id = db.id
+            LEFT JOIN version_counts vc ON vc.dataset_id = d.id
+            LEFT JOIN latest_quality dq ON d.id = dq.dataset_id
+
+            WHERE {where_sql}
+            ORDER BY {order_sql} {sort_dir}
+            LIMIT %s OFFSET %s
+        """
+        list_params = params + [page_size, offset]
+        rows = self.client.fetchall(list_query, tuple(list_params))
+
+        items = [
+            {
+                "id": r["id"],
+                "platform_id": r["platform_id"],
+                "publisher": r.get("publisher"),
+                "title": r.get("title"),
+                "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                "created": r["created"].isoformat() if r.get("created") else None,
+                "modified": r["modified"].isoformat() if r.get("modified") else None,
+                "restricted": r.get("restricted"),
+                "published": r.get("published"),
+                "downloads_count": r.get("downloads_count"),
+                "api_calls_count": r.get("api_calls_count"),
+                "views_count": r.get("views_count"),
+                "reuses_count": r.get("reuses_count"),
+                "followers_count": r.get("followers_count"),
+                "popularity_score": r.get("popularity_score"),
+                "versions_count": r.get("versions_count"),
+                "page": r.get("page"),
+                "last_sync": r.get("last_sync"),
+                "last_sync_status": r.get("last_sync_status"),
+                "deleted": r.get("deleted"),
+                "quality": {
+                    "has_description": r.get("has_description"),
+                    "is_slug_valid": r.get("is_slug_valid"),
+                    "evaluation_results": r.get("evaluation_results"),
+                },
+            }
+            for r in rows
+        ]
+
+        return items, total
+
+    def _build_where_clause(
+        self,
+        platform_id: str | None,
+        publisher: str | None,
+        q: str | None,
+        created_from: str | None,
+        created_to: str | None,
+        modified_from: str | None,
+        modified_to: str | None,
+        is_deleted: bool | None,
+    ) -> tuple[str, list]:
+        """Build WHERE clause and params for dataset filtering."""
+        where_clauses = ["TRUE"]
+        params: list = []
+
+        if platform_id:
+            where_clauses.append("platform_id = %s")
+            params.append(platform_id)
+        if publisher:
+            where_clauses.append("publisher = %s")
+            params.append(publisher)
+        if q:
+            where_clauses.append("slug ILIKE %s")
+            params.append(f"%{q}%")
+        if created_from:
+            where_clauses.append("created >= %s")
+            params.append(created_from)
+        if created_to:
+            where_clauses.append("created <= %s")
+            params.append(created_to)
+        if modified_from:
+            where_clauses.append("modified >= %s")
+            params.append(modified_from)
+        if modified_to:
+            where_clauses.append("modified <= %s")
+            params.append(modified_to)
+        if is_deleted is not None:
+            where_clauses.append("deleted = %s")
+            params.append(is_deleted)
+
+        return " AND ".join(where_clauses), params
+
+    def _build_order_clause(self, sort_by: str, order: str) -> tuple[str, str]:
+        """Build ORDER BY clause with NULL-safe sorting."""
+        sort_column = (
+            sort_by
+            if sort_by
+            in (
+                "created",
+                "modified",
+                "publisher",
+                "title",
+                "api_calls_count",
+                "downloads_count",
+                "versions_count",
+                "popularity_score",
+                "views_count",
+                "reuses_count",
+                "followers_count",
+            )
+            else "modified"
+        )
+
+        if sort_column == "title":
+            order_sql = "COALESCE(title, '')"
+        elif sort_column == "api_calls_count":
+            order_sql = "COALESCE(lv.api_calls_count, 0)"
+        elif sort_column == "downloads_count":
+            order_sql = "COALESCE(lv.downloads_count, 0)"
+        elif sort_column == "versions_count":
+            order_sql = "COALESCE(vc.versions_count, 0)"
+        elif sort_column == "popularity_score":
+            order_sql = "COALESCE(lv.popularity_score, 0)"
+        elif sort_column == "views_count":
+            order_sql = "COALESCE(lv.views_count, 0)"
+        elif sort_column == "reuses_count":
+            order_sql = "COALESCE(lv.reuses_count, 0)"
+        elif sort_column == "followers_count":
+            order_sql = "COALESCE(lv.followers_count, 0)"
+        elif sort_column == "publisher":
+            order_sql = "COALESCE(publisher, '')"
+        else:
+            order_sql = sort_column
+
+        sort_dir = "DESC" if order.lower() != "asc" else "ASC"
+        return order_sql, sort_dir
+
+    def get_detail(self, dataset_id: uuid.UUID, include_snapshots: bool = False) -> dict | None:
+        """Get full dataset details including current snapshot and optionally history."""
+        # Base dataset
+        ds_query = """
+            SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.deleted, d.last_sync, d.last_sync_status,
+                   dq.has_description, dq.is_slug_valid, dq.evaluation_results
+            FROM datasets d
+            LEFT JOIN (
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results
+                FROM dataset_quality
+                ORDER BY dataset_id, timestamp DESC
+            ) dq ON d.id = dq.dataset_id
+            WHERE d.id = %s
+        """
+        rows = self.client.fetchall(ds_query, (str(dataset_id),))
+        if not rows:
+            return None
+        d = rows[0]
+
+        # Current snapshot
+        cur_query = """
+            SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data, dv.title,
+                   COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
+            FROM dataset_versions dv
+            LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
+            WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT 1
+        """
+        cur_rows = self.client.fetchall(cur_query, (str(dataset_id),))
+        current_snapshot = None
+        if cur_rows:
+            r = cur_rows[0]
+            snapshot_data = deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {})
+            current_snapshot = {
+                "id": r["id"],
+                "timestamp": r["timestamp"],
+                "downloads_count": r.get("downloads_count"),
+                "api_calls_count": r.get("api_calls_count"),
+                "views_count": r.get("views_count"),
+                "reuses_count": r.get("reuses_count"),
+                "followers_count": r.get("followers_count"),
+                "popularity_score": r.get("popularity_score"),
+                "title": r.get("derived_title"),
+                "data": snapshot_data,
+            }
+
+        # Optional snapshots list
+        snapshots = None
+        if include_snapshots:
+            list_rows = self.client.fetchall(
+                """
+                SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data,
+                       COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
+                FROM dataset_versions dv
+                LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
+                WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT 50
+                """,
+                (str(dataset_id),),
+            )
+            snapshots = [
+                {
+                    "id": r["id"],
+                    "timestamp": r["timestamp"],
+                    "downloads_count": r.get("downloads_count"),
+                    "api_calls_count": r.get("api_calls_count"),
+                    "views_count": r.get("views_count"),
+                    "reuses_count": r.get("reuses_count"),
+                    "followers_count": r.get("followers_count"),
+                    "popularity_score": r.get("popularity_score"),
+                    "title": r.get("derived_title"),
+                    "data": deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {}),
+                }
+                for r in list_rows
+            ]
+
+        return {
+            "id": d["id"],
+            "platform_id": d["platform_id"],
+            "publisher": d.get("publisher"),
+            "title": current_snapshot.get("title") if current_snapshot else d["slug"],
+            "buid": d["buid"],
+            "slug": d["slug"],
+            "page": d.get("page"),
+            "created": d["created"],
+            "modified": d["modified"],
+            "published": d.get("published"),
+            "restricted": d.get("restricted"),
+            "deleted": d.get("deleted"),
+            "last_sync": d.get("last_sync"),
+            "last_sync_status": d.get("last_sync_status"),
+            "quality": {
+                "has_description": d.get("has_description"),
+                "is_slug_valid": d.get("is_slug_valid"),
+                "evaluation_results": d.get("evaluation_results"),
+            },
+            "current_snapshot": current_snapshot,
+            "snapshots": snapshots,
+        }
+
+    def get_versions(self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
+        """Get paginated version history for a dataset."""
+        offset = (max(1, page) - 1) * page_size
+
+        cnt_rows = self.client.fetchall(
+            "SELECT COUNT(*) AS cnt FROM dataset_versions WHERE dataset_id = %s",
+            (str(dataset_id),),
+        )
+        total = int(cnt_rows[0]["cnt"]) if cnt_rows else 0
+
+        rows = self.client.fetchall(
+            """
+            SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, db.data as blob_data,
+                   COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
+            FROM dataset_versions dv
+            LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
+            WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT %s OFFSET %s
+            """,
+            (str(dataset_id), page_size, offset),
+        )
+        items = [
+            {
+                "id": r["id"],
+                "timestamp": r["timestamp"],
+                "downloads_count": r.get("downloads_count"),
+                "api_calls_count": r.get("api_calls_count"),
+                "views_count": r.get("views_count"),
+                "reuses_count": r.get("reuses_count"),
+                "followers_count": r.get("followers_count"),
+                "popularity_score": r.get("popularity_score"),
+                "title": r.get("derived_title"),
+                "diff": r.get("diff"),
+                "data": deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {}),
+            }
+            for r in rows
+        ]
+
+        return items, total

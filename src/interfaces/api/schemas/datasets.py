@@ -120,11 +120,24 @@ class SnapshotVersionAPI(BaseModel):
 # ============================================================================
 
 
+# ============================================================================
+# API Responses
+# ============================================================================
+
+
 class DatasetResponse(BaseModel):
     """Paginated list of datasets."""
 
     datasets: list[DatasetAPI]
     total_datasets: int
+
+
+class DatasetDetailAPI(DatasetAPI):
+    """Comprehensive dataset view with detailed quality and snapshots."""
+
+    quality: dict | None = None
+    current_snapshot: SnapshotVersionAPI | None = None
+    snapshots: list[SnapshotVersionAPI] | None = None
 
 
 class DatasetVersionsResponse(BaseModel):

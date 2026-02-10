@@ -46,3 +46,32 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
     @abc.abstractmethod
     def update_dataset_state(self, dataset: Dataset) -> None:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def search(
+        self,
+        platform_id: str | None = None,
+        publisher: str | None = None,
+        q: str | None = None,
+        created_from: str | None = None,
+        created_to: str | None = None,
+        modified_from: str | None = None,
+        modified_to: str | None = None,
+        is_deleted: bool | None = None,
+        sort_by: str = "modified",
+        order: str = "desc",
+        page: int = 1,
+        page_size: int = 25,
+    ) -> tuple[list[dict], int]:
+        """Search datasets with filters, sorting and pagination."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_detail(self, dataset_id: UUID, include_snapshots: bool = False) -> dict | None:
+        """Get full dataset details including current snapshot and optionally history."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_versions(self, dataset_id: UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
+        """Get paginated version history for a dataset."""
+        raise NotImplementedError
