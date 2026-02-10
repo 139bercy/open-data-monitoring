@@ -46,7 +46,7 @@ class OpenAIEvaluator(LLMEvaluator):
         Returns:
             MetadataEvaluation with scores and suggestions
         """
-        logger.info(f"Evaluating metadata for dataset {dataset['dataset_id']} with OpenAI")
+        logger.info(f"Evaluating metadata with OpenAI model {self.model_name}")
 
         # Build prompts
         system_prompt = build_system_prompt(dcat_reference, charter, output)
@@ -75,8 +75,8 @@ class OpenAIEvaluator(LLMEvaluator):
             # For text output, return raw text wrapped in a simple evaluation object
             if output == "text":
                 return MetadataEvaluation(
-                    dataset_id=dataset["dataset_id"],
-                    dataset_slug=dataset["dataset_id"],
+                    dataset_id=None,  # Will be set by service
+                    dataset_slug=None,  # Will be set by service
                     evaluated_at=datetime.now(),
                     overall_score=0.0,  # Not applicable for text format
                     criteria_scores={},  # Not applicable for text format
@@ -119,8 +119,8 @@ class OpenAIEvaluator(LLMEvaluator):
         ]
 
         return MetadataEvaluation(
-            dataset_id=dataset["dataset_id"],
-            dataset_slug=dataset["dataset_id"],
+            dataset_id=None,  # Will be set by service
+            dataset_slug=None,  # Will be set by service
             evaluated_at=datetime.now(),
             overall_score=response.overall_score,
             criteria_scores=criteria_scores,

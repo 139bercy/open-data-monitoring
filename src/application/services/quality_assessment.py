@@ -36,6 +36,9 @@ class QualityAssessmentService:
             dataset_uuid = UUID(dataset_id) if isinstance(dataset_id, str) and "-" in dataset_id else dataset_id
             dataset_obj = self.uow.datasets.get(dataset_uuid)
 
+            if dataset_obj is None:
+                raise ValueError(f"Dataset not found: {dataset_id}")
+
             # Determine the raw dataset for the LLM
             # If the dataset has versions, use the latest snapshot
             if dataset_obj.versions:

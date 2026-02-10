@@ -319,15 +319,22 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             FROM datasets d
             LEFT JOIN dataset_versions dv ON dv.dataset_id = d.id
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
-            JOIN dataset_quality dq ON d.id = dq.dataset_id
+            LEFT JOIN dataset_quality dq ON d.id = dq.dataset_id
             WHERE d.id = %s
             GROUP BY d.id LIMIT 1;
             """,
             (str(dataset_id),),
         )
+
+        if data is None:
+            return None
+
         data["id"] = uuid.UUID(data["id"])
         dataset = Dataset.from_dict(data)
-        dataset.add_quality(**data["quality"])
+
+        # Add quality if present (may be None for datasets without quality records)
+        if data.get("quality"):
+            dataset.add_quality(**data["quality"])
         versions = self.client.fetchall(
             """
             SELECT dv.dataset_id, db.data as blob_data, dv.metadata_volatile, dv.snapshot,

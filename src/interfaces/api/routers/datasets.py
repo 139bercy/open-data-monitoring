@@ -510,9 +510,12 @@ async def evaluate_dataset(dataset_id: UUID):
     dcat_path = "docs/quality/dcat_reference.md"
     charter_path = "docs/quality/charter_opendata.md"
 
-    evaluation = service.evaluate_dataset(
-        dataset_id=str(dataset_id), dcat_path=dcat_path, charter_path=charter_path, output="json"
-    )
+    try:
+        evaluation = service.evaluate_dataset(
+            dataset_id=str(dataset_id), dcat_path=dcat_path, charter_path=charter_path, output="json"
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
     from dataclasses import asdict
 
