@@ -228,13 +228,11 @@ class Dataset:
 
     def should_version(self, new_instance: Dataset) -> bool:
         """Determine if a new version should be created based on changes."""
-        # 1. Check for structural or state changes (always version)
         if self.checksum != new_instance.checksum:
             return True
         if self.is_deleted != new_instance.is_deleted:
             return True
 
-        # 2. Check for metric changes (only version if cooldown is NOT active)
         if self.has_metrics_changed(new_instance):
             return not self.is_cooldown_active()
 
@@ -273,10 +271,19 @@ class Dataset:
             is_deleted=data.get("deleted", data.get("is_deleted", False)),
         )
 
-    def __repr__(self):
+    def to_dict(self) -> dict:
+        """Convert aggregate state to a serializable dictionary."""
+        data = {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
+        data["slug"] = str(self.slug)
+        data["page"] = str(self.page)
+        data["last_sync_status"] = self.last_sync_status.value if self.last_sync_status else None
+        data["quality"] = asdict(self.quality) if self.quality else None
+        data["versions"] = [asdict(v) for v in self.versions] if self.versions else []
+        return data
+
+    def __repr__(self) -> str:
         return f"<Dataset: {self.slug}>"
 
-    def __str__(self):
-        versions, quality = [asdict(version) for version in self.versions], asdict(self.quality)
-        self.versions, self.quality = versions, quality
-        return json.dumps(self.__dict__, indent=2, cls=JsonSerializer)
+    def __str__(self) -> str:
+        """Non-destructive string representation."""
+        return json.dumps(self.to_dict(), indent=2, cls=JsonSerializer)

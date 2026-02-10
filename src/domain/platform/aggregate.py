@@ -25,8 +25,12 @@ class Platform:
         self.name = name
         self.slug = slug if isinstance(slug, Slug) else Slug(slug)
         self.organization_id = organization_id
-        # Accept PlatformType enum or any string (for flexibility in tests)
-        self.type = type if isinstance(type, (PlatformType, str)) else str(type)
+        # Try to use PlatformType enum, fallback to string for unknown types (common in tests)
+        try:
+            self.type = PlatformType(type) if isinstance(type, str) else type
+        except ValueError:
+            self.type = type
+
         self.url = url if isinstance(url, Url) else Url(url)
         self.key = key
         self.datasets_count = datasets_count

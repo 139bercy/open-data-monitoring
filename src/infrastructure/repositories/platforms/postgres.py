@@ -32,8 +32,8 @@ class PostgresPlatformRepository(PlatformRepository):
         query = """
         SELECT
             p.*,
-            json_agg(
-                json_build_object(
+            jsonb_agg(
+                jsonb_build_object(
                     'platform_id', h.platform_id,
                     'timestamp', h.timestamp,
                     'status', h.status,
@@ -55,15 +55,16 @@ class PostgresPlatformRepository(PlatformRepository):
                 platform.add_sync(sync)
         return platform
 
-    def get_by_domain(self, domain) -> Platform:
+    def get_by_domain(self, domain: str) -> Platform | None:
+        """Identify a platform by its domain string."""
         query = "SELECT * FROM platforms WHERE position(%s in url) > 0;"
         row = self.client.fetchone(query=query, params=(domain,))
 
         if row is None:
-            raise ValueError(f"Platform not found for domain: {domain}")
+            return None
 
         row["id"] = uuid.UUID(row["id"])
-        return Platform(**{k: v for k, v in row.items()})
+        return Platform(**row)
 
     def save_sync(self, platform_id, payload):
         self.client.execute(
@@ -89,8 +90,8 @@ class PostgresPlatformRepository(PlatformRepository):
         return self.client.fetchall("""
         SELECT
     p.*,
-    json_agg(
-        json_build_object(
+    jsonb_agg(
+        jsonb_build_object(
             'id', h.id,
             'platform_id', h.platform_id,
             'timestamp', h.timestamp,
