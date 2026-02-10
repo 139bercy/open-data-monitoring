@@ -12,26 +12,22 @@ class InMemoryPlatformRepository(PlatformRepository):
     def save(self, data):
         self.db.append(data)
 
-    def get(self, platform_id: UUID) -> Platform:
-        syncs = [item for item in self.syncs if item["platform_id"] == platform_id]
+    def get(self, platform_id: UUID) -> Platform | None:
+        """Retrieve a platform aggregate by ID, including its sync history."""
         platform = next((item for item in self.db if item.id == platform_id), None)
-        if len(syncs) is not None:
+        if platform:
+            # Reconstruct sync history for this aggregate
+            syncs = [item for item in self.syncs if item["platform_id"] == platform_id]
             for sync in syncs:
-                if platform is not None:
-                    platform.add_sync(sync)
-
-        if platform is None:
-            raise ValueError(f"Platform with id {platform_id} not found")
-
+                platform.add_sync(sync)
         return platform
 
-    def get_by_domain(self, domain) -> Platform:
-        platform = next((item for item in self.db if domain in str(item.url)), None)
-        if platform is not None:
-            return platform
-        raise ValueError(f"Platform with domain {domain} not found")
+    def get_by_domain(self, domain: str) -> Platform | None:
+        """Find a platform by its domain string."""
+        return next((item for item in self.db if domain in str(item.url)), None)
 
-    def all(self):
+    def all(self) -> list[Platform]:
+        """Return all registered platform aggregates."""
         return self.db
 
     def save_sync(self, platform_id, payload):
