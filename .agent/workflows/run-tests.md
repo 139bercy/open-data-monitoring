@@ -2,11 +2,13 @@
 description: Run tests using the virtual environment
 ---
 
-# Running Tests with Virtual Environment
+# Running Tests
 
-This project uses a Python virtual environment (`venv`) to manage dependencies.
+This project has both backend (Python) and frontend (TypeScript) tests.
 
-## Prerequisites
+## Backend Tests (Python)
+
+### Prerequisites
 
 Ensure the virtual environment is created and dependencies are installed:
 
@@ -21,7 +23,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Running Tests
+### Running Backend Tests
 
 // turbo-all
 
@@ -37,6 +39,34 @@ source venv/bin/activate && pytest tests/test_domain.py tests/test_datasets.py -
 # Run with coverage
 source venv/bin/activate && pytest --cov=src --cov-report=html
 ```
+
+## Frontend Tests (TypeScript)
+
+### Running Frontend Tests
+
+```bash
+# Run all frontend tests
+cd front && npm test -- --run
+
+# Run in watch mode
+cd front && npm test
+
+# Run with UI
+cd front && npm run test:ui
+
+# Run with coverage
+cd front && npm run test:coverage
+
+# Run specific test file
+cd front && npm test -- datasets.test.ts --run
+```
+
+### Test Structure
+
+- `src/__tests__/api/` - API client tests with MSW
+- `src/__tests__/components/` - Component tests with React Testing Library
+- `src/__tests__/setup.ts` - Global test configuration
+- `src/__tests__/mockData.ts` - Reusable mock data
 
 ## Running Linters
 
@@ -56,3 +86,4 @@ source venv/bin/activate && black .
 - **Always use `source venv/bin/activate &&` prefix** when running Python commands
 - The system Python (3.9) is different from the venv Python (3.14)
 - Running `pytest` directly without activating venv will use Python 3.9 and fail with syntax errors
+- Frontend tests use Vitest and don't need the venv
