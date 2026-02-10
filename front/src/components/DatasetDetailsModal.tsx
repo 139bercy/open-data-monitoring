@@ -444,7 +444,7 @@ function InfoTab({
 }) {
   return (
     <div className="fr-py-4w">
-      <div className="fr-mb-3w">
+      <div className="fr-mb-3w" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
         <Badge
           severity={dataset.hasDescription ? "success" : "error"}
           noIcon
@@ -453,6 +453,16 @@ function InfoTab({
             ? "Description renseignée"
             : "Description manquante"}
         </Badge>
+        {dataset.quality?.is_slug_valid !== undefined && (
+          <Badge
+            severity={dataset.quality.is_slug_valid ? "success" : "warning"}
+            noIcon
+          >
+            {dataset.quality.is_slug_valid
+              ? "Slug valide"
+              : "Slug contient des caractères spéciaux"}
+          </Badge>
+        )}
       </div>
       <div className="fr-text--sm">
         <p>
