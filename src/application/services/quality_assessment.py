@@ -21,33 +21,32 @@ class QualityAssessmentService:
         self.evaluator = evaluator
         self.uow = uow
 
-    def evaluate_dataset(self, dataset_id: str, dcat_path: str, charter_path: str, output: str) -> MetadataEvaluation:
+    def evaluate_dataset(
+        self, dataset_id: str | UUID, dcat_path: str, charter_path: str, output: str
+    ) -> MetadataEvaluation:
         """
-        Evaluate metadata quality for a dataset.
+        Evaluate metadata quality for a specific dataset using reference documents.
+        Persists the evaluation results and updates the dataset's quality status.
         """
+        # Ensure we work with UUID
+        dataset_uuid = UUID(str(dataset_id)) if not isinstance(dataset_id, UUID) else dataset_id
+
         with self.uow:
-            logger.info(f"Starting quality evaluation for dataset {dataset_id}")
+            logger.info(f"Starting quality evaluation for dataset {dataset_uuid}")
 
             # Load reference documents
             dcat_reference = self._load_markdown(dcat_path)
             charter = self._load_markdown(charter_path)
 
             # Fetch dataset from repository
-            dataset_uuid = UUID(dataset_id) if isinstance(dataset_id, str) and "-" in dataset_id else dataset_id
             dataset_obj = self.uow.datasets.get(dataset_uuid)
-
             if dataset_obj is None:
-                raise ValueError(f"Dataset not found: {dataset_id}")
+                raise ValueError(f"Dataset not found: {dataset_uuid}")
 
-            # Determine the raw dataset for the LLM
-            # If the dataset has versions, use the latest snapshot
-            if dataset_obj.versions:
-                raw_dataset = dataset_obj.versions[-1].snapshot
-            else:
-                # Fallback (legacy/minimal)
-                raw_dataset = dataset_obj.raw
+            # Determine the raw dataset for the LLM (prefer latest snapshot)
+            raw_dataset = dataset_obj.versions[-1].snapshot if dataset_obj.versions else dataset_obj.raw
 
-            # Evaluate
+            # Execute evaluation
             evaluation = self.evaluator.evaluate_metadata(
                 dataset=raw_dataset, dcat_reference=dcat_reference, charter=charter, output=output
             )
@@ -59,28 +58,23 @@ class QualityAssessmentService:
             from dataclasses import asdict
 
             evaluation_data = asdict(evaluation)
-
-            # Ensure evaluation_data is JSON serializable
             evaluation_data["dataset_id"] = str(evaluation_data["dataset_id"])
             evaluation_data["evaluated_at"] = evaluation_data["evaluated_at"].isoformat()
 
-            # Add or update quality
+            # Update quality metrics on the aggregate
+            is_valid_slug = getattr(dataset_obj.quality, "is_slug_valid", True) if dataset_obj.quality else True
             dataset_obj.add_quality(
-                downloads_count=dataset_obj.quality.downloads_count if dataset_obj.quality else 0,
-                api_calls_count=dataset_obj.quality.api_calls_count if dataset_obj.quality else 0,
-                has_description=dataset_obj.quality.has_description if dataset_obj.quality else False,
-                is_slug_valid=dataset_obj.quality.is_slug_valid if dataset_obj.quality else True,
+                downloads_count=dataset_obj.downloads_count,
+                api_calls_count=dataset_obj.api_calls_count,
+                has_description=bool(raw_dataset.get("description")),
+                is_slug_valid=is_valid_slug,
                 evaluation_results=evaluation_data,
             )
 
             self.uow.datasets.add(dataset_obj)
             self.uow.commit()
 
-            logger.info(
-                f"Evaluation complete and saved for {dataset_obj.slug}: "
-                f"score={evaluation.overall_score:.1f}, "
-                f"suggestions={len(evaluation.suggestions)}"
-            )
+            logger.info(f"Evaluation complete for {dataset_obj.slug}: score={evaluation.overall_score:.1f}")
 
             return evaluation
 

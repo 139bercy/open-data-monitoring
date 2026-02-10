@@ -12,6 +12,7 @@ from settings import App
 
 
 def create_platform(app: App, data: dict) -> UUID:
+    """Register a new data platform and return its unique identifier."""
     cmd = CreatePlatform(**data)
     with app.uow:
         platform = app.platform.register(
@@ -27,13 +28,14 @@ def create_platform(app: App, data: dict) -> UUID:
 
 
 def sync_platform(app: App, platform_id: UUID) -> None:
+    """Trigger a full synchronization for all datasets on a specific platform."""
     cmd = SyncPlatform(id=platform_id)
     with app.uow:
         app.platform.sync_platform(platform_id=cmd.id)
 
 
 def find_platform_from_url(app: App, url: str) -> Platform | None:
-    print(url)
+    """Identify the platform associated with a given dataset URL based on its domain."""
     with app.uow:
         try:
             return app.platform.repository.get_by_domain(get_base_url(url))
@@ -42,49 +44,27 @@ def find_platform_from_url(app: App, url: str) -> Platform | None:
 
 
 def find_dataset_id_from_url(app: App, url: str) -> str | None:
+    """Extract a platform-specific dataset ID from a full source URL."""
     platform = find_platform_from_url(app=app, url=url)
     if platform is None:
         return None
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
-    dataset_id = adapter.find_dataset_id(url=url)
-    return dataset_id
-
-
-def _handle_failed_sync_status(app: App, platform: Platform, dataset: dict) -> None:
-    """Handle failed sync status update before processing."""
-    if dataset.get("sync_status") == "failed":
-        dataset_id = app.dataset.repository.get_id_by_slug(platform_id=platform.id, slug=dataset["slug"])
-        app.dataset.repository.update_dataset_sync_status(
-            platform_id=platform.id, dataset_id=dataset_id, status="failed"
-        )
-
-
-# Helper methods _has_metrics_changed, _is_cooldown_active, and _should_create_version
-# have been moved to the Dataset aggregate as domain methods.
-
-
-def _create_or_update_dataset_version(
-    app: App, platform: Platform, instance: Dataset, existing: Dataset | None
-) -> UUID:
-    """Persist dataset and create new version."""
-    if existing:
-        instance.merge_with_existing(existing)
-        app.dataset.repository.add(dataset=instance)
-        add_version(app=app, dataset_id=str(existing.id), instance=instance)
-        logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
-        return existing.id
-    else:
-        logger.warning(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
-        app.dataset.repository.add(dataset=instance)
-        add_version(app=app, dataset_id=str(instance.id), instance=instance)
-        return instance.id
+    return adapter.find_dataset_id(url=url)
 
 
 def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
-    """Upsert a dataset and create a new version if needed."""
-    with app.uow:
-        _handle_failed_sync_status(app, platform, dataset)
+    """
+    Synchronize a dataset snapshot with the repository.
+    Always updates metadata (Modified date); creates a new version if data has changed.
+    """
+    if dataset.get("sync_status") == "failed":
+        with app.uow:
+            dataset_id = app.dataset.repository.get_id_by_slug(platform_id=platform.id, slug=dataset["slug"])
+            app.dataset.repository.update_dataset_sync_status(
+                platform_id=platform.id, dataset_id=dataset_id, status="failed"
+            )
+        return
 
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
@@ -121,7 +101,7 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
 
 
 def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
-    """Helper to create a DatasetVersionParams and add a version."""
+    """Persist a new version snapshot for a given dataset."""
     params = DatasetVersionParams(
         dataset_id=UUID(dataset_id),
         snapshot=instance.raw,
@@ -138,11 +118,11 @@ def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
 
 
 def fetch_dataset(platform: Platform, dataset_id: str) -> dict | None:
+    """Retrieve raw dataset metadata from the source platform."""
     factory = DatasetAdapterFactory()
     adapter = factory.create(platform_type=platform.type)
     try:
-        dataset = adapter.fetch(platform.url, platform.key, dataset_id)
-        return dataset
+        return adapter.fetch(platform.url, platform.key, dataset_id)
     except DatasetUnreachableError:
         logger.error(f"{platform.type.upper()} - Fetch Dataset - Dataset '{dataset_id}' not found")
         return {"platform_id": platform.id, "slug": dataset_id, "sync_status": "failed"}
@@ -157,12 +137,16 @@ def get_publishers_stats(app: App) -> list[dict[str, any]]:
         return app.dataset.repository.get_publishers_stats()
 
 
-def check_deleted_datasets(app, platform, datasets):
+def check_deleted_datasets(app: App, platform: Platform, datasets: list[dict]) -> None:
+    """
+    Detect datasets that were removed from the source platform and mark them as deleted.
+    """
     with app.uow:
         in_base = app.dataset.repository.get_buids(platform_id=platform.id)
-        # On supporte 'uid' (ODS) et 'id' (data.gouv)
+        # Support multiple ID keys from different platforms
         in_crawler = [d.get("uid") or d.get("id") or d.get("dataset_id") for d in datasets]
         deleted = set(in_base) - set(in_crawler)
+
         for buid in deleted:
             dataset = app.dataset.repository.get_by_buid(dataset_buid=buid)
             if dataset and not dataset.is_deleted:
