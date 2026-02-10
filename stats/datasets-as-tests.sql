@@ -1,1 +1,1 @@
-\copy (select p.name, p.slug as platform_slug, d.publisher, d.created, d.modified, d.slug, d.published, d.restricted from datasets d join platforms p on p.id = d.platform_id where d.slug ilike '%test%' order by d.created) to STDOUT with csv HEADER;
+'\copy (select p.name, p.slug as platform_slug, d.publisher, d.created, d.modified, d.slug, d.published, d.restricted from datasets d join platforms p on p.id = d.platform_id where d.slug ilike '%test%'and d.deleted != true order by d.created) to STDOUT with csv HEADER;
