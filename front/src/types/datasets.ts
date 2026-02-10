@@ -1,115 +1,147 @@
+// ============================================================================
+// Dataset Types
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// Domain Primitives
+// ----------------------------------------------------------------------------
+
+type UUID = string;
+type ISO8601Date = string;
+type URL = string;
+
+// ----------------------------------------------------------------------------
+// Dataset Domain Types
+// ----------------------------------------------------------------------------
+
+type Publisher = string | null;
+type DatasetTitle = string | null;
+
+type QualityIndicators = {
+    has_description: boolean;
+    is_slug_valid: boolean;  // No underscores or special chars
+    evaluation_results: any | null;  // LLM evaluation results (JSON)
+}
+
+// ----------------------------------------------------------------------------
+// List View (Table Display)
+// ----------------------------------------------------------------------------
+
 export type DatasetSummary = {
-    id: string;
-    platformId: string;
+    id: UUID;
+    platformId: UUID;
     platformName?: string;
-    publisher: string | null;
-    title: string | null;
-    created: string;     // ISO8601
-    modified: string;    // ISO8601
-    downloadsCount?: number;  // present if include_counts=true
-    apiCallsCount?: number;   // present if include_counts=true
+    publisher: Publisher;
+    title: DatasetTitle;
+    created: ISO8601Date;
+    modified: ISO8601Date;
+    downloadsCount?: number;
+    apiCallsCount?: number;
     viewsCount?: number;
     reusesCount?: number;
     followersCount?: number;
     popularityScore?: number;
-    versionsCount?: number;   // number of versions (dataset_versions)
-
-    page: string;        // source link
+    versionsCount?: number;
+    page: URL;
     restricted: boolean | null;
     published: boolean | null;
     lastSyncStatus: string;
     hasDescription: boolean;
     isDeleted: boolean | null;
-    quality?: {
-        has_description: boolean;
-        is_slug_valid: boolean;
-        evaluation_results: any | null;
-    };
+    quality?: QualityIndicators;
 };
 
+// ----------------------------------------------------------------------------
+// Version History
+// ----------------------------------------------------------------------------
+
+/**
+ * Immutable snapshot of dataset state at a point in time.
+ * Backend pre-calculates diffs for performance.
+ */
 export type SnapshotVersion = {
-    id: string;
-    timestamp: string;         // ISO8601
+    id: UUID;
+    timestamp: ISO8601Date;
     downloadsCount: number | null;
     apiCallsCount: number | null;
     viewsCount?: number | null;
     reusesCount?: number | null;
     followersCount?: number | null;
     popularityScore?: number | null;
-    page: string;
-    title?: string | null;
-    data?: unknown;            // only when include_data=true
-    diff?: any;                // pre-calculated diff from backend
+    page: URL;
+    title?: DatasetTitle;
+    data?: unknown;  // Full snapshot (only when include_data=true)
+    diff?: any;  // Pre-calculated by backend
 };
 
+// ----------------------------------------------------------------------------
+// Detail View (Modal Display)
+// ----------------------------------------------------------------------------
 
 export type DatasetDetail = {
-    id: string;
-    platformId: string;
-    publisher: string | null;
-    title: string | null;
-    buid: string;
+    id: UUID;
+    platformId: UUID;
+    publisher: Publisher;
+    title: DatasetTitle;
+    buid: string;  // Business UID from source platform
     slug: string;
-    page: string;
-    created: string;
-    modified: string;
+    page: URL;
+    created: ISO8601Date;
+    modified: ISO8601Date;
     published: boolean | null;
     restricted: boolean | null;
     hasDescription: boolean;
     isDeleted: boolean | null;
-    quality?: {
-        has_description: boolean;
-        is_slug_valid: boolean;
-        evaluation_results: any | null;
-    };
+    quality?: QualityIndicators;
     currentSnapshot: SnapshotVersion | null;
-    snapshots?: SnapshotVersion[] | null; // only when include_snapshots=true
+    snapshots?: SnapshotVersion[] | null;  // Only when include_snapshots=true
 };
+
+// ----------------------------------------------------------------------------
+// API Contracts
+// ----------------------------------------------------------------------------
 
 export type PaginatedResponse<T> = {
     items: T[];
     total: number;
-    page: number;
+    page: number;  // 1-indexed
     pageSize: number;
 };
 
 export type DatasetListQuery = {
-    platformId?: string;
-    publisher?: string;
-    createdFrom?: string;
-    createdTo?: string;
-    modifiedFrom?: string;
-    modifiedTo?: string;
-    q?: string; // search on slug only
+    // Filters
+    platformId?: UUID;
+    publisher?: string;  // Partial match
+    q?: string;  // Searches slug only
     isDeleted?: boolean;
-    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count' | 'popularity_score' | 'views_count' | 'reuses_count' | 'followers_count';
 
+    // Date ranges
+    createdFrom?: ISO8601Date;
+    createdTo?: ISO8601Date;
+    modifiedFrom?: ISO8601Date;
+    modifiedTo?: ISO8601Date;
 
+    // Sorting
+    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count' | 'popularity_score';
     order?: 'asc' | 'desc';
+
+    // Pagination
     page?: number;
     pageSize?: number;
 };
 
-export type PlatformSync = {
-    id: string
-    platform_id: string
-    timestamp: string
-    status: string
-    datasets_count: number
-}
+// ----------------------------------------------------------------------------
+// Publishers
+// ----------------------------------------------------------------------------
 
-export type PlatformRef = {
-    id: string;
-    name: string;
-    created: string;  // ISO8601
-    slug: string;
-    type: string;
-    url: string;
-    key: string;
-    lastSync: string
-    lastSyncStatus: string
-    datasetsCount: number
-    syncs?: PlatformSync[]
-};
-
+/**
+ * List of all publishers in the system.
+ * Used for autocomplete and filtering.
+ */
 export type PublishersRef = string[];
+
+// ----------------------------------------------------------------------------
+// Re-exports
+// ----------------------------------------------------------------------------
+
+export type { PlatformRef, PlatformSync } from './platforms';

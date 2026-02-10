@@ -54,6 +54,7 @@ const copyToClipboard = async (text: string) => {
 /**
  * Custom Hooks
  */
+/* Gère l'état d'un dataset */
 function useDatasetManager(initialDataset: DatasetDetail | null) {
   const [dataset, setDataset] = useState<DatasetDetail | null>(initialDataset);
   const [loading, setLoading] = useState(false);
@@ -75,6 +76,7 @@ function useDatasetManager(initialDataset: DatasetDetail | null) {
   return { dataset, setDataset, loading, setLoading, refresh };
 }
 
+/* Gère l'état de l'audit de qualité (appel LLM) */
 function useQualityAudit(datasetId?: string, onRefresh?: () => Promise<void>) {
   const [evaluating, setEvaluating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +98,7 @@ function useQualityAudit(datasetId?: string, onRefresh?: () => Promise<void>) {
   return { evaluating, error, evaluate };
 }
 
+/* Gère l'état de l'historique des versions d'un jeu de données */
 function useHistoryManager(datasetId?: string) {
   const [versions, setVersions] = useState<SnapshotVersion[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -158,6 +161,7 @@ function useHistoryManager(datasetId?: string) {
 /**
  * Sub-components
  */
+/* Affiche un snapshot */
 function SnapshotItem({
   snap,
   diff,
@@ -424,6 +428,7 @@ function SnapshotItem({
   );
 }
 
+/* Affiche l'onglet Informations sur un jeu de données */
 function InfoTab({
   dataset,
   platformName,
@@ -533,6 +538,7 @@ function InfoTab({
   );
 }
 
+/* Affiche l'onglet Qualité du jeu de données */
 function QualityTab({
   dataset,
   evaluating,
@@ -702,6 +708,7 @@ function QualityTab({
   );
 }
 
+/* Affiche l'historique des versions d'un jeu de données */
 function HistoryTab({
   versions,
   loading,
