@@ -22,8 +22,9 @@ jq -c --arg freq "$FREQUENCY" '.jobs[] | select(.frequency == $freq)' "$CONFIG_F
   OUTPUT_PATH="${DATE}-${OUTPUT_FILE}"
 
   echo "▶️  [$LABEL] SQL Query : $SQL_FILE → $OUTPUT_PATH"
-  psql -U postgres -d $DATABASE -h localhost -p "$PORT" -At -f "$SQL_FILE" -o "$OUTPUT_PATH"
+  psql -X -U postgres -d $DATABASE -h localhost -p "$PORT" -At -f "$SQL_FILE" -o "$OUTPUT_PATH"
   echo "✅  Export to $OUTPUT_PATH"
+
   echo "☁️  Send to ODS platform (dataset UID : $DATASET_UID), $OUTPUT_FILE"
   python stats/push_stats.py --file "$OUTPUT_PATH" --dataset_uid "$DATASET_UID"
   echo ""
