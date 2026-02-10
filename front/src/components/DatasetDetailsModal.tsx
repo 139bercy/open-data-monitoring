@@ -16,7 +16,7 @@ import {
   compareSnapshotsModal,
 } from "./CompareSnapshotsModal";
 import { calculateDownloadsPerDay } from "../utils/calculations";
-import { computeDiff, DiffSummary } from "../utils/diff";
+import { computeDiff, DiffSummary, parseBackendDiff } from "../utils/diff";
 
 /**
  * Constants & Utils
@@ -174,6 +174,8 @@ function SnapshotItem({
   isCurrent?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showFullSnapshot, setShowFullSnapshot] = useState(false);
+
   const hasDiff =
     !!diff && diff.added.length + diff.removed.length + diff.changed.length > 0;
 
@@ -224,12 +226,13 @@ function SnapshotItem({
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end", maxWidth: "60%" }}>
           <Badge
             severity="info"
             noIcon
             small
           >
+
             {snap.apiCallsCount ?? "—"} API
           </Badge>
           <Badge
@@ -237,8 +240,33 @@ function SnapshotItem({
             noIcon
             small
           >
+
             {snap.downloadsCount ?? "—"} DL
           </Badge>
+          {snap.viewsCount !== null && (
+            <Badge severity="info" noIcon small>
+              {snap.viewsCount} 👀
+            </Badge>
+          )}
+
+          {snap.reusesCount !== null && (
+            <Badge severity="new" noIcon small>
+              {snap.reusesCount} 💡
+            </Badge>
+          )}
+
+          {snap.followersCount !== null && (
+            <Badge severity="info" noIcon small>
+              {snap.followersCount} 👤
+            </Badge>
+          )}
+
+          {snap.popularityScore !== null && (
+            <Badge noIcon small style={{ backgroundColor: "var(--background-contrast-info)", color: "var(--text-label-info)" }}>
+              {Math.round((snap.popularityScore ?? 0) * 100) / 100} ⭐
+            </Badge>
+          )}
+
           {isCurrent && (
             <Badge
               noIcon
@@ -263,6 +291,7 @@ function SnapshotItem({
             className={expanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"}
           />
         </div>
+
       </div>
 
       {expanded && (
@@ -279,7 +308,14 @@ function SnapshotItem({
               <p className="fr-text--xs fr-text--bold fr-mb-1w">
                 Différences :
               </p>
-              <div style={{ display: "flex", gap: "1rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "1rem",
+                  flexWrap: "wrap",
+                  marginBottom: "0.5rem",
+                }}
+              >
                 <span
                   className="fr-text--xs"
                   style={{ color: "var(--text-default-success)" }}
@@ -299,25 +335,89 @@ function SnapshotItem({
                   ~{diff!.changed.length}
                 </span>
               </div>
+
+              <div
+                className="fr-text--xs"
+                style={{
+                  maxHeight: "150px",
+                  overflow: "auto",
+                  color: "var(--text-mention-grey)",
+                  fontFamily: "monospace",
+                }}
+              >
+                {[
+                  ...diff!.added.map((f) => (
+                    <div key={`add-${f}`} style={{ color: "var(--text-default-success)" }}>
+                      + {f}
+                    </div>
+                  )),
+                  ...diff!.removed.map((f) => (
+                    <div key={`rem-${f}`} style={{ color: "var(--text-default-error)" }}>
+                      - {f}
+                    </div>
+                  )),
+                  ...diff!.changed.map((f) => (
+                    <div key={`chg-${f}`} style={{ color: "var(--text-default-info)" }}>
+                      ~ {f}
+                    </div>
+                  )),
+                ]}
+              </div>
             </div>
           )}
-          <Button
-            priority="tertiary"
-            size="small"
-            iconId="ri-file-copy-line"
-            onClick={() =>
-              copyToClipboard(JSON.stringify((snap as any).data, null, 2))
-            }
-            className="fr-mb-1w"
-          >
-            Copier JSON
-          </Button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <Button
+                priority="tertiary"
+                size="small"
+                iconId="ri-file-copy-line"
+                onClick={() =>
+                  copyToClipboard(JSON.stringify(snap.diff ?? {}, null, 2))
+                }
+                className="fr-mb-1w"
+                disabled={!snap.diff}
+              >
+                Copier Diff
+              </Button>
+              <Button
+                priority="tertiary"
+                size="small"
+                onClick={() => setShowFullSnapshot(!showFullSnapshot)}
+                className="fr-mb-1w"
+              >
+                {showFullSnapshot ? "Voir Diff" : "Voir Snapshot"}
+              </Button>
+            </div>
+            {!(snap as any).data && (
+              <span className="fr-text--xs" style={{ fontStyle: "italic", color: "var(--text-mention-grey)" }}>
+                JSON non chargé
+              </span>
+            )}
+          </div>
           <pre
             className="fr-text--xs"
-            style={{ maxHeight: "300px", overflow: "auto", margin: 0 }}
+            style={{
+              maxHeight: "300px",
+              overflow: "auto",
+              margin: 0,
+              padding: "0.5rem",
+              backgroundColor: "rgba(0,0,0,0.03)",
+              borderRadius: "4px",
+              border: "1px solid var(--border-default-grey)"
+            }}
           >
-            {JSON.stringify((snap as any).data, null, 2)}
+            {showFullSnapshot ? (
+              (snap as any).data
+                ? JSON.stringify((snap as any).data, null, 2)
+                : "Aucun snapshot disponible"
+            ) : (
+              snap.diff
+                ? JSON.stringify(snap.diff, null, 2)
+                : "Aucune différence calculée (version initiale ou identique)"
+            )}
           </pre>
+
+
         </div>
       )}
     </div>
@@ -382,6 +482,34 @@ function InfoTab({
           <strong>Moyenne :</strong> {downloadsPerDay ?? "—"} DL/jour{" "}
           {versionsCount > 1 ? `(sur ${versionsCount} j)` : ""}
         </p>
+        {dataset.currentSnapshot?.viewsCount !== null && (
+          <p>
+            <strong>Vues :</strong> {dataset.currentSnapshot?.viewsCount ?? "—"} 👀
+          </p>
+        )}
+        {dataset.currentSnapshot?.reusesCount !== null && (
+          <p>
+            <strong>Réutilisations :</strong>{" "}
+            <Badge severity="new" noIcon small>
+              {dataset.currentSnapshot?.reusesCount} 💡
+            </Badge>
+          </p>
+        )}
+        {dataset.currentSnapshot?.followersCount !== null && (
+          <p>
+            <strong>Abonnés :</strong> {dataset.currentSnapshot?.followersCount ?? "—"} 👤
+          </p>
+        )}
+        {dataset.currentSnapshot?.popularityScore !== null && (
+          <p>
+            <strong>Popularité :</strong>{" "}
+            <Badge noIcon small style={{ backgroundColor: "var(--background-contrast-info)", color: "var(--text-label-info)" }}>
+              {Math.round((dataset.currentSnapshot?.popularityScore ?? 0) * 100) / 100} ⭐
+            </Badge>
+          </p>
+        )}
+
+
       </div>
       <div className="fr-mt-4w">
         <Button
@@ -658,7 +786,13 @@ function HistoryTab({
             onSelect={toggleSelection}
             selected={selectedSnapshots.has(s.id)}
             displayCheckbox
-            diff={baseline ? computeDiff(baseline.data, s.data) : undefined}
+            diff={
+              s.diff
+                ? parseBackendDiff(s.diff)
+                : baseline
+                  ? computeDiff(baseline.data, s.data)
+                  : undefined
+            }
           />
         ))}
       </div>

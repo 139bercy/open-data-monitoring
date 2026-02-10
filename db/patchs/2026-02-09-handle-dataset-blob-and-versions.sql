@@ -15,8 +15,15 @@ ALTER TABLE dataset_quality
     ALTER COLUMN api_calls_count DROP NOT NULL,
     ALTER COLUMN api_calls_count DROP DEFAULT,
     ADD COLUMN IF NOT EXISTS is_slug_valid boolean DEFAULT TRUE,
-    ADD COLUMN IF NOT EXISTS evaluation_results jsonb,
-    ADD CONSTRAINT dataset_quality_dataset_id_key UNIQUE (dataset_id);
+    ADD COLUMN IF NOT EXISTS evaluation_results jsonb;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'dataset_quality_dataset_id_key') THEN
+        ALTER TABLE dataset_quality ADD CONSTRAINT dataset_quality_dataset_id_key UNIQUE (dataset_id);
+    END IF;
+END;
+$$;
 
 COMMENT ON COLUMN dataset_quality.is_slug_valid IS 'L''identifiant du jeu de données ne comporte pas de caractères indésirables (ex: _)';
 

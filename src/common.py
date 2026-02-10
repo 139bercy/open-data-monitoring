@@ -42,7 +42,28 @@ def calculate_snapshot_diff(old: dict, new: dict) -> dict:
                 inner = calculate_snapshot_diff(old[key], new[key])
                 if inner:
                     diff[key] = inner
+            elif isinstance(old[key], list) and isinstance(new[key], list):
+                # Treat lists as dicts with string indices for granular diff.
+                old_list_dict = {str(i): v for i, v in enumerate(old[key])}
+                new_list_dict = {str(i): v for i, v in enumerate(new[key])}
+                inner = calculate_snapshot_diff(old_list_dict, new_list_dict)
+                if inner:
+                    diff[key] = inner
             else:
                 diff[key] = {"_t": "changed", "old": old[key], "new": new[key]}
 
     return diff
+
+
+def deep_merge(base: dict, volatile: dict) -> dict:
+    """Deep merges volatile data back into base snapshot."""
+    if not volatile:
+        return base
+
+    result = base.copy()
+    for key, value in volatile.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result

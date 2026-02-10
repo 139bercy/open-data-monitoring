@@ -59,8 +59,13 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<{ total
         modified: it.modified,
         downloadsCount: it.downloads_count,
         apiCallsCount: it.api_calls_count,
+        viewsCount: it.views_count,
+        reusesCount: it.reuses_count,
+        followersCount: it.followers_count,
+        popularityScore: it.popularity_score,
         versionsCount: it.versions_count,
         page: it.page,
+
         restricted: it.restricted ?? null,
         published: it.published ?? null,
         lastSync: it.last_sync,
@@ -103,10 +108,16 @@ export async function getDatasetDetail(id: string, includeSnapshots = false): Pr
         timestamp: s.timestamp,
         downloadsCount: s.downloads_count ?? null,
         apiCallsCount: s.api_calls_count ?? null,
+        viewsCount: s.views_count ?? null,
+        reusesCount: s.reuses_count ?? null,
+        followersCount: s.followers_count ?? null,
+        popularityScore: s.popularity_score ?? null,
         page: s.page,
         title: s.title ?? null,
-        data: s.data
+        data: s.data,
+        diff: s.diff
     });
+
     return {
         id: data.id,
         platformId: data.platform_id,
@@ -139,10 +150,16 @@ export async function getDatasetVersions(id: string, params?: { page?: number; p
         timestamp: s.timestamp,
         downloadsCount: s.downloads_count ?? null,
         apiCallsCount: s.api_calls_count ?? null,
+        viewsCount: s.views_count ?? null,
+        reusesCount: s.reuses_count ?? null,
+        followersCount: s.followers_count ?? null,
+        popularityScore: s.popularity_score ?? null,
         page: s.page,
         title: s.title ?? null,
-        data: s.data
+        data: s.data,
+        diff: s.diff
     }));
+
     return { items, total: data.total ?? 0, page: data.page ?? query.page, pageSize: data.page_size ?? query.page_size }
 }
 export async function evaluateDataset(id: string): Promise<any> {

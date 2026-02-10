@@ -8,7 +8,12 @@ export type DatasetSummary = {
     modified: string;    // ISO8601
     downloadsCount?: number;  // present if include_counts=true
     apiCallsCount?: number;   // present if include_counts=true
+    viewsCount?: number;
+    reusesCount?: number;
+    followersCount?: number;
+    popularityScore?: number;
     versionsCount?: number;   // number of versions (dataset_versions)
+
     page: string;        // source link
     restricted: boolean | null;
     published: boolean | null;
@@ -27,10 +32,16 @@ export type SnapshotVersion = {
     timestamp: string;         // ISO8601
     downloadsCount: number | null;
     apiCallsCount: number | null;
+    viewsCount?: number | null;
+    reusesCount?: number | null;
+    followersCount?: number | null;
+    popularityScore?: number | null;
     page: string;
     title?: string | null;
     data?: unknown;            // only when include_data=true
+    diff?: any;                // pre-calculated diff from backend
 };
+
 
 export type DatasetDetail = {
     id: string;
@@ -71,7 +82,9 @@ export type DatasetListQuery = {
     modifiedTo?: string;
     q?: string; // search on slug only
     isDeleted?: boolean;
-    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count';
+    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count' | 'popularity_score' | 'views_count' | 'reuses_count' | 'followers_count';
+
+
     order?: 'asc' | 'desc';
     page?: number;
     pageSize?: number;

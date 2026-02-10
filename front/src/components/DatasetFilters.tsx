@@ -46,17 +46,18 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
       >
         <div className="fr-col-12 fr-col-md-3">
           <Input
-            label="Rechercher par slug"
+            label="Recherche"
             nativeInputProps={{
               type: "search",
               value: query.q ?? "",
               onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
                 onChange({ q: e.currentTarget.value, page: 1 }),
-              placeholder: "ex: prix-des-controles...",
+              placeholder: "Titre, slug...",
             }}
             style={{ transition: "box-shadow .2s ease" }}
           />
         </div>
+
         <div className="fr-col-12 fr-col-md-3">
           <Select
             label="Statut"

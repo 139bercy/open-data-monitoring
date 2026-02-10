@@ -64,18 +64,18 @@ def _bind_to_platform_model(platforms_raw) -> list[PlatformDTO]:
 
     return [
         PlatformDTO(
-            id=p.id,
-            name=p.name,
-            slug=str(p.slug),
-            type=str(p.type),
-            url=str(p.url),
-            organization_id=p.organization_id,
-            key=p.key,
-            datasets_count=p.datasets_count,
-            last_sync=p.last_sync,
-            created_at=p.created_at,
-            last_sync_status=str(p.last_sync_status) if p.last_sync_status else None,
-            syncs=p.syncs,
+            id=p["id"],
+            name=p["name"],
+            slug=str(p["slug"]),
+            type=str(p["type"]),
+            url=str(p["url"]),
+            organization_id=p["organization_id"],
+            key=p["key"],
+            datasets_count=p["datasets_count"],
+            last_sync=p["last_sync"],
+            created_at=p["created_at"],
+            last_sync_status=str(p["last_sync_status"]) if p["last_sync_status"] else None,
+            syncs=p["syncs"],
         )
         for p in platforms_raw
     ]

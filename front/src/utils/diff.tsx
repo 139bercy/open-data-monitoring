@@ -44,3 +44,29 @@ export function computeDiff(base: unknown, other: unknown): DiffSummary {
   }
   return { added, removed, changed };
 }
+
+export function parseBackendDiff(richDiff: any): DiffSummary {
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: string[] = [];
+
+  function traverse(obj: any, prefix = "") {
+    if (!obj || typeof obj !== "object") return;
+
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      const nextPrefix = prefix ? `${prefix}.${key}` : key;
+
+      if (val && typeof val === "object" && "_t" in val) {
+        if (val._t === "added") added.push(nextPrefix);
+        else if (val._t === "removed") removed.push(nextPrefix);
+        else if (val._t === "changed") changed.push(nextPrefix);
+      } else if (val && typeof val === "object") {
+        traverse(val, nextPrefix);
+      }
+    }
+  }
+
+  traverse(richDiff);
+  return { added, removed, changed };
+}

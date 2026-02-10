@@ -65,8 +65,6 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
     [total, pageSize]
   );
 
-  console.log(items);
-
   const skeletonRows = useMemo(() => {
     const count = Math.max(1, skeletonRowCount ?? Math.min(10, pageSize || 10));
     return Array.from({ length: count }, (_, i) => [
@@ -215,7 +213,30 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
               : ""}
           </button>,
           <button
+            key="h-views"
+            className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
+            type="button"
+            disabled={!!loading}
+            onClick={() => {
+              const nextOrder =
+                props.order === "asc" && props.sortBy === "views_count"
+                  ? "desc"
+                  : "asc";
+              props.onSortChange?.("views_count", nextOrder as "asc" | "desc");
+            }}
+            aria-pressed={props.sortBy === "views_count"}
+            aria-label="Trier par vues"
+          >
+            Vues{" "}
+            {props.sortBy === "views_count"
+              ? props.order === "asc"
+                ? "▲"
+                : "▼"
+              : ""}
+          </button>,
+          <button
             key="h-api"
+
             className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
             type="button"
             disabled={!!loading}
@@ -290,6 +311,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
               : ""}
           </button>,
           "Action",
+
         ]}
         data={
           loading
@@ -365,6 +387,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 item.publisher ?? "—",
                 formatDate(item.created),
                 formatDate(item.modified),
+                formatNumber(item.viewsCount),
                 formatNumber(item.apiCallsCount),
                 formatNumber(item.downloadsCount),
                 formatNumber(item.versionsCount),

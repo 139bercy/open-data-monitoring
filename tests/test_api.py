@@ -48,20 +48,23 @@ def test_api_create_platform(mock_app, mock_create):
 @patch("interfaces.api.routers.platforms.domain_app")
 def test_api_list_platforms(mock_app):
     # Arrange
-    mock_platform = MagicMock()
-    mock_platform.id = uuid4()
-    mock_platform.name = "List Platform"
-    mock_platform.slug = "list-platform"
-    mock_platform.type = "opendatasoft"
-    mock_platform.url = "https://list.com"
-    mock_platform.organization_id = "org-1"
-    mock_platform.key = None
-    mock_platform.datasets_count = 10
-    mock_platform.last_sync = None
-    mock_platform.last_sync_status = None
-    mock_platform.syncs = []
+    platform_id = uuid4()
+    mock_platform_dict = {
+        "id": platform_id,
+        "name": "List Platform",
+        "slug": "list-platform",
+        "type": "opendatasoft",
+        "url": "https://list.com",
+        "organization_id": "org-1",
+        "key": None,
+        "datasets_count": 10,
+        "last_sync": None,
+        "created_at": None,
+        "last_sync_status": None,
+        "syncs": [],
+    }
 
-    mock_app.platform.get_all_platforms.return_value = [mock_platform]
+    mock_app.platform.get_all_platforms.return_value = [mock_platform_dict]
 
     # Act
     response = client.get("/api/v1/platforms/")

@@ -4,8 +4,9 @@ from fastapi import APIRouter, HTTPException, Query
 
 from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
 from application.services.quality_assessment import QualityAssessmentService
+from common import deep_merge
 from infrastructure.llm.openai_evaluator import OpenAIEvaluator
-from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse
+from interfaces.api.schemas.datasets import DatasetAPI, DatasetCreateResponse, DatasetResponse, DatasetVersionsResponse
 from logger import logger
 from settings import app as domain_app
 
@@ -119,6 +120,11 @@ def _build_order_clause(sort_by: str, order: str) -> tuple[str, str]:
             "title",
             "api_calls_count",
             "downloads_count",
+            "versions_count",
+            "popularity_score",
+            "views_count",
+            "reuses_count",
+            "followers_count",
         )
         else "modified"
     )
@@ -132,6 +138,14 @@ def _build_order_clause(sort_by: str, order: str) -> tuple[str, str]:
         order_sql = "COALESCE(lv.downloads_count, 0)"
     elif sort_column == "versions_count":
         order_sql = "COALESCE(vc.versions_count, 0)"
+    elif sort_column == "popularity_score":
+        order_sql = "COALESCE(lv.popularity_score, 0)"
+    elif sort_column == "views_count":
+        order_sql = "COALESCE(lv.views_count, 0)"
+    elif sort_column == "reuses_count":
+        order_sql = "COALESCE(lv.reuses_count, 0)"
+    elif sort_column == "followers_count":
+        order_sql = "COALESCE(lv.followers_count, 0)"
     elif sort_column == "publisher":
         order_sql = "COALESCE(publisher, '')"
     else:
@@ -161,7 +175,7 @@ async def list_datasets(
     q: str | None = None,
     sort_by: str = Query(  # noqa: B008
         "modified",
-        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count)$",
+        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count|popularity_score|views_count|reuses_count|followers_count)$",
     ),
     order: str = Query("desc", pattern="^(asc|desc)$"),  # noqa: B008
     page: int = 1,
@@ -196,7 +210,7 @@ async def list_datasets(
         # Latest snapshot per dataset to derive a title and counts (works for datagouv and opendatasoft shapes)
         list_query = f"""
             WITH latest_versions AS (
-                SELECT DISTINCT ON (dataset_id) dataset_id, snapshot, downloads_count, api_calls_count, timestamp
+                SELECT DISTINCT ON (dataset_id) dataset_id, title, blob_id, downloads_count, api_calls_count, views_count, reuses_count, followers_count, popularity_score, timestamp
                 FROM dataset_versions
                 ORDER BY dataset_id, timestamp DESC
             ),
@@ -220,12 +234,18 @@ async def list_datasets(
                    d.slug,
                    d.page,
                    COALESCE(
-                       (lv.snapshot ->> 'title'),
-                       (lv.snapshot -> 'metas' ->> 'title'),
+                       lv.title,
+                       (db.data ->> 'title'),
+                       (db.data -> 'metas' -> 'default' ->> 'title'),
                        d.slug
                    ) AS title,
+                   lv.timestamp AS timestamp,
                    lv.api_calls_count AS api_calls_count,
                    lv.downloads_count AS downloads_count,
+                   lv.views_count AS views_count,
+                   lv.reuses_count AS reuses_count,
+                   lv.followers_count AS followers_count,
+                   lv.popularity_score AS popularity_score,
                    COALESCE(vc.versions_count, 0) AS versions_count,
                    d.last_sync,
                    d.last_sync_status,
@@ -233,10 +253,13 @@ async def list_datasets(
                    dq.has_description as has_description,
                    dq.is_slug_valid as is_slug_valid,
                    dq.evaluation_results as evaluation_results
+
             FROM datasets d
             LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
+            LEFT JOIN dataset_blobs db ON lv.blob_id = db.id
             LEFT JOIN version_counts vc ON vc.dataset_id = d.id
             LEFT JOIN latest_quality dq ON d.id = dq.dataset_id
+
             WHERE {where_sql}
             ORDER BY {order_sql} {sort_dir}
             LIMIT %s OFFSET %s
@@ -250,12 +273,17 @@ async def list_datasets(
                 "platform_id": r["platform_id"],
                 "publisher": r.get("publisher"),
                 "title": r.get("title"),
+                "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
                 "created": r["created"].isoformat() if r.get("created") else None,
                 "modified": r["modified"].isoformat() if r.get("modified") else None,
                 "restricted": r.get("restricted"),
                 "published": r.get("published"),
                 "downloads_count": r.get("downloads_count"),
                 "api_calls_count": r.get("api_calls_count"),
+                "views_count": r.get("views_count"),
+                "reuses_count": r.get("reuses_count"),
+                "followers_count": r.get("followers_count"),
+                "popularity_score": r.get("popularity_score"),
                 "versions_count": r.get("versions_count"),
                 "page": r.get("page"),
                 "last_sync": r.get("last_sync"),
@@ -304,32 +332,40 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
             raise HTTPException(status_code=404, detail="Dataset not found")
         d = rows[0]
 
-        # Latest version for current snapshot
         cur_query = (
-            "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, "
-            "COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
-            "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT 1"
+            "SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.metadata_volatile, db.data as blob_data, dv.title, "
+            "COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title "
+            "FROM dataset_versions dv "
+            "LEFT JOIN dataset_blobs db ON dv.blob_id = db.id "
+            "WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT 1"
         )
-        cur_rows = domain_app.dataset.repository.client.fetchall(cur_query, (str(dataset_id),))
+        cur_rows = domain_app.dataset.repository.client.fetchall(
+            cur_query,
+            (str(dataset_id),),
+        )
         current_snapshot = None
         if cur_rows:
             r = cur_rows[0]
+            snapshot_data = deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {})
             current_snapshot = {
                 "id": r["id"],
                 "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
                 "downloads_count": r.get("downloads_count"),
                 "api_calls_count": r.get("api_calls_count"),
                 "page": d.get("page"),
-                "title": r.get("title"),
-                "data": r.get("snapshot"),
+                "title": r.get("derived_title"),
+                "data": snapshot_data,
             }
 
         # Optional snapshots list (not paginated here, front uses /versions normally)
         snapshots = None
         if include_snapshots:
             list_rows = domain_app.dataset.repository.client.fetchall(
-                "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
-                "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT 50",
+                "SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.metadata_volatile, db.data as blob_data, "
+                "COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title "
+                "FROM dataset_versions dv "
+                "LEFT JOIN dataset_blobs db ON dv.blob_id = db.id "
+                "WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT 50",
                 (str(dataset_id),),
             )
             snapshots = [
@@ -339,8 +375,8 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
                     "downloads_count": r.get("downloads_count"),
                     "api_calls_count": r.get("api_calls_count"),
                     "page": d.get("page"),
-                    "title": r.get("title"),
-                    "data": r.get("snapshot"),
+                    "title": r.get("derived_title"),
+                    "data": deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {}),
                 }
                 for r in list_rows
             ]
@@ -373,7 +409,7 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{dataset_id}/versions")
+@router.get("/{dataset_id}/versions", response_model=DatasetVersionsResponse)
 async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int = 10, include_data: bool = False):
     """
     Liste paginée des versions (snapshots) d'un dataset.
@@ -389,22 +425,30 @@ async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int =
     total = int(cnt_rows[0]["cnt"]) if cnt_rows else 0
 
     rows = domain_app.dataset.repository.client.fetchall(
-        "SELECT id, timestamp, downloads_count, api_calls_count, snapshot, COALESCE(snapshot->>'title', snapshot->'metas'->>'title') AS title "
-        "FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp DESC LIMIT %s OFFSET %s",
+        "SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, db.data as blob_data, "
+        "COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title "
+        "FROM dataset_versions dv "
+        "LEFT JOIN dataset_blobs db ON dv.blob_id = db.id "
+        "WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT %s OFFSET %s",
         (str(dataset_id), page_size, offset),
     )
     items = [
         {
             "id": r["id"],
-            "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+            "timestamp": r["timestamp"],
             "downloads_count": r.get("downloads_count"),
             "api_calls_count": r.get("api_calls_count"),
-            "page": None,
-            "title": r.get("title"),
-            "data": r.get("snapshot") if include_data else None,
+            "views_count": r.get("views_count"),
+            "reuses_count": r.get("reuses_count"),
+            "followers_count": r.get("followers_count"),
+            "popularity_score": r.get("popularity_score"),
+            "title": r.get("derived_title"),
+            "diff": r.get("diff"),
+            "data": deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {}) if include_data else None,
         }
         for r in rows
     ]
+
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 

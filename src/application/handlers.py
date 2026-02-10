@@ -97,25 +97,27 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     with app.uow:
         existing = app.dataset.repository.get_by_buid(instance.buid)
 
+        if existing:
+            instance.merge_with_existing(existing)
+
+        # Always update the primary dataset record (refreshes modified, last_sync, title, etc.)
+        app.dataset.repository.add(dataset=instance)
+
         should_version = existing.should_version(instance) if existing else True
-        metrics_changed = existing.has_metrics_changed(instance) if existing else False
-        is_cooldown = existing.is_cooldown_active() if existing else False
 
-        logger.debug(
-            f"[{platform.type.upper()}] {instance.slug} - Hash changed: {existing.checksum != instance.checksum if existing else 'N/A'}, "
-            f"Metrics changed: {metrics_changed}, Cooldown: {is_cooldown}, Should version: {should_version}"
-        )
+        if should_version:
+            add_version(app=app, dataset_id=str(instance.id), instance=instance)
+            if existing:
+                logger.info(f"{platform.type.upper()} - Dataset '{instance.slug}' has changed. New version created")
+            else:
+                logger.info(f"{platform.type.upper()} - New dataset '{instance.slug}'.")
 
-        if not should_version:
-            return instance.id
-
-        dataset_id = _create_or_update_dataset_version(app, platform, instance, existing)
-
+        # Always update sync status to "success" for successful synchronization
         app.dataset.repository.update_dataset_sync_status(
-            platform_id=platform.id, dataset_id=dataset_id, status="success"
+            platform_id=platform.id, dataset_id=instance.id, status="success"
         )
 
-        return dataset_id
+        return instance.id
 
 
 def add_version(app: App, dataset_id: str, instance: Dataset) -> None:
@@ -163,7 +165,7 @@ def check_deleted_datasets(app, platform, datasets):
         deleted = set(in_base) - set(in_crawler)
         for buid in deleted:
             dataset = app.dataset.repository.get_by_buid(dataset_buid=buid)
-            if dataset:
+            if dataset and not dataset.is_deleted:
                 dataset.mark_as_deleted()
                 app.dataset.repository.update_dataset_state(dataset)
                 logger.info(f"{platform.type.upper()} - Dataset '{dataset.slug}' deleted")
