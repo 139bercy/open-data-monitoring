@@ -45,4 +45,4 @@ exec-db: ## Connect to database container via psql
 	docker exec -it open-data-monitoring-db psql -U postgres -d postgres
 
 stats: ## Run and push statistics
-	./stats/stats.sh && python stats/push_stats.py
+	./stats/run-stats.sh

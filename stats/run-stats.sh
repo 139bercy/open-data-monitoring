@@ -4,14 +4,27 @@ set -euo pipefail
 
 CONFIG_FILE="stats/config.json"
 DATE=$(date +"%Y-%m-%d")
+PUSH_ENABLED=true
+FREQUENCY="daily"
 
-FREQUENCY=${1:-daily}  # Default = daily
+# Parse arguments
+for arg in "$@"; do
+  if [[ "$arg" == "--no-push" ]]; then
+    PUSH_ENABLED=false
+  else
+    FREQUENCY="$arg"
+  fi
+done
+
 PORT=$(jq -r '.port' "$CONFIG_FILE")
 DATABASE=$(jq -r '.database' "$CONFIG_FILE")
 
 echo "📄 Use config file: $CONFIG_FILE"
 echo "📦 Use database $DATABASE:$PORT"
 echo "⏲️ Frequency: $FREQUENCY"
+if [ "$PUSH_ENABLED" = false ]; then
+  echo "🚫 Mode --no-push active : les fichiers ne seront pas envoyés."
+fi
 
 jq -c --arg freq "$FREQUENCY" '.jobs[] | select(.frequency == $freq)' "$CONFIG_FILE" | while read -r job; do
   SQL_FILE=$(echo "$job" | jq -r '.sql')
@@ -25,7 +38,11 @@ jq -c --arg freq "$FREQUENCY" '.jobs[] | select(.frequency == $freq)' "$CONFIG_F
   psql -X -U postgres -d $DATABASE -h localhost -p "$PORT" -At -f "$SQL_FILE" -o "$OUTPUT_PATH"
   echo "✅  Export to $OUTPUT_PATH"
 
-  echo "☁️  Send to ODS platform (dataset UID : $DATASET_UID), $OUTPUT_FILE"
-  python stats/push_stats.py --file "$OUTPUT_PATH" --dataset_uid "$DATASET_UID"
+  if [ "$PUSH_ENABLED" = true ]; then
+    echo "☁️  Send to ODS platform (dataset UID : $DATASET_UID), $OUTPUT_FILE"
+    python stats/push_stats.py --file "$OUTPUT_PATH" --dataset_uid "$DATASET_UID"
+  else
+    echo "⏭️  Skip push (--no-push)"
+  fi
   echo ""
 done
