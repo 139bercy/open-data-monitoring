@@ -383,7 +383,21 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                   )}
                 </div>,
                 item.title ?? "—",
-                item.platformName ?? item.platformId,
+                <span
+                  className={`fr-badge ${
+                    item.platformType === "opendatasoft"
+                      ? "fr-badge--purple-glycine"
+                      : (item.platformType === "datagouv" || item.platformType === "datagouvfr")
+                        ? "fr-badge--blue-france"
+                        : "fr-badge--info"
+                  }`}
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {item.platformName ?? item.platformId}
+                </span>,
                 item.publisher ?? "—",
                 formatDate(item.created),
                 formatDate(item.modified),

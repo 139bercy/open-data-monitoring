@@ -100,6 +100,7 @@ def test_api_list_datasets_tests(mock_app):
 
     mock_dataset_raw = {
         "id": uuid4(),
+        "platform_id": uuid4(),
         "timestamp": now,
         "buid": "buid-test",
         "slug": "dataset-test",

@@ -50,6 +50,9 @@ ALTER TABLE dataset_versions
     ADD COLUMN IF NOT EXISTS title text,
     ADD COLUMN IF NOT EXISTS metadata_volatile jsonb;
 
+-- 5. Compatibility: Make legacy snapshot nullable (Deduplication enabled)
+ALTER TABLE dataset_versions ALTER COLUMN snapshot DROP NOT NULL;
+
 -- 5. Performance: Add index for foreign key lookups
 CREATE INDEX IF NOT EXISTS idx_dataset_versions_blob_id ON dataset_versions (blob_id);
 

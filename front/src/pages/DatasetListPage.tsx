@@ -126,19 +126,23 @@ export function DatasetListPage(): JSX.Element {
 
   const title = useMemo(() => "Jeux de données", []);
 
-  // Resolve platform_id -> platform name for display
-  const platformNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    platforms.forEach((p) => map.set(p.id, p.name ?? p.slug));
+  // Resolve platform_id -> platform info for display
+  const platformInfoById = useMemo(() => {
+    const map = new Map<string, PlatformRef>();
+    platforms.forEach((p) => map.set(p.id, p));
     return map;
   }, [platforms]);
 
   const displayItems = useMemo(() => {
-    return data.items.map((it) => ({
-      ...it,
-      platformName: platformNameById.get(it.platformId) ?? it.platformName,
-    }));
-  }, [data.items, platformNameById]);
+    return data.items.map((it) => {
+      const p = platformInfoById.get(it.platformId);
+      return {
+        ...it,
+        platformName: p?.name ?? it.platformName,
+        platformType: p?.type,
+      };
+    });
+  }, [data.items, platformInfoById]);
 
   return (
     <div
@@ -214,7 +218,7 @@ export function DatasetListPage(): JSX.Element {
       <DatasetDetailsModal
         dataset={selected}
         platformName={
-          selected ? (platformNameById.get(selected.platformId) ?? null) : null
+          selected ? (platformInfoById.get(selected.platformId)?.name ?? null) : null
         }
         platformUrl={selected?.page ? new URL(selected.page).origin : null}
       />

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 # ============================================================================
 # Domain Types
@@ -10,14 +10,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 PlatformId = Annotated[UUID, Field(description="Unique internal identifier for the platform")]
 OrganizationId = Annotated[str, Field(description="External organization identifier from the source platform")]
-PlatformSlug = Annotated[str, Field(description="URL-friendly identifier for the platform")]
+PlatformSlug = Annotated[str, BeforeValidator(str), Field(description="URL-friendly identifier for the platform")]
 PlatformType = Annotated[
     str, Field(description="Platform engine type (e.g., 'opendatasoft', 'datagouv')", examples=["opendatasoft"])
 ]
 SyncStatus = Annotated[
     str, Field(description="Status of the last synchronization process", examples=["success", "failed", "pending"])
 ]
-URL = Annotated[str, Field(description="Base URL of the data platform")]
+URL = Annotated[str, BeforeValidator(str), Field(description="Base URL of the data platform")]
 APIKey = Annotated[str, Field(description="Secure API key for authentication")]
 
 # ============================================================================

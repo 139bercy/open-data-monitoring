@@ -1,6 +1,7 @@
 import hashlib
 import json
 import uuid
+from uuid import UUID
 
 from psycopg2.extras import Json
 
@@ -477,13 +478,14 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             )
             SELECT d.id,
                    d.platform_id,
+                   d.buid,
+                   d.slug,
                    d.publisher,
+                   d.page,
                    d.created,
                    d.modified,
                    d.restricted,
                    d.published,
-                   d.slug,
-                   d.page,
                    COALESCE(
                        lv.title,
                        (db.data ->> 'title'),
@@ -522,6 +524,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             {
                 "id": r["id"],
                 "platform_id": r["platform_id"],
+                "buid": r.get("buid"),
+                "slug": r.get("slug"),
                 "publisher": r.get("publisher"),
                 "title": r.get("title"),
                 "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
@@ -637,6 +641,34 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         sort_dir = "DESC" if order.lower() != "asc" else "ASC"
         return order_sql, sort_dir
+
+    def list_publishers(self, platform_id: UUID | None = None, q: str | None = None, limit: int = 50) -> list[str]:
+        """Get a list of distinct publishers, optionally filtered by platform or name."""
+        where_clauses = ["publisher IS NOT NULL"]
+        params: list = []
+
+        if platform_id is not None:
+            where_clauses.append("platform_id = %s")
+            params.append(str(platform_id))
+
+        if q:
+            where_clauses.append("publisher ILIKE %s")
+            params.append(f"%{q}%")
+
+        where_sql = " AND ".join(where_clauses)
+
+        query = f"""
+            SELECT publisher
+            FROM datasets
+            WHERE {where_sql}
+            GROUP BY publisher
+            ORDER BY COUNT(*) DESC
+            LIMIT %s
+        """
+        params.append(limit)
+
+        rows = self.client.fetchall(query, tuple(params))
+        return [r["publisher"] for r in rows if r.get("publisher")]
 
     def get_detail(self, dataset_id: uuid.UUID, include_snapshots: bool = False) -> dict | None:
         """Get full dataset details including current snapshot and optionally history."""

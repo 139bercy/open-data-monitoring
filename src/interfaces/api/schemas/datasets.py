@@ -34,6 +34,7 @@ class DatasetAPI(BaseModel):
 
     # Identity
     id: DatasetId | None = None
+    platform_id: UUID
     buid: BusinessUID
     slug: DatasetSlug
     title: str | None = None
@@ -63,7 +64,7 @@ class DatasetAPI(BaseModel):
 
     # Sync status
     last_sync: datetime.datetime | None = None
-    last_sync_status: SyncStatus
+    last_sync_status: SyncStatus | None = None
 
 
 # ============================================================================

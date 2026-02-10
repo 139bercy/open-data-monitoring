@@ -52,6 +52,7 @@ async def get_tests():
     datasets_list = [
         DatasetAPI(
             id=dataset["id"],
+            platform_id=dataset["platform_id"],
             timestamp=dataset["timestamp"],
             buid=dataset["buid"],
             slug=dataset["slug"],

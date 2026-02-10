@@ -1,6 +1,7 @@
 import uuid
 from collections import Counter
 from datetime import datetime, timezone
+from uuid import UUID
 
 from common import calculate_snapshot_diff
 from domain.datasets.aggregate import Dataset
@@ -306,3 +307,21 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         ]
 
         return items, total
+
+    def list_publishers(self, platform_id: UUID | None = None, q: str | None = None, limit: int = 50) -> list[str]:
+        """Get a list of distinct publishers, optionally filtered by platform or name."""
+        publishers = []
+        for d in self.db:
+            if platform_id and d.platform_id != platform_id:
+                continue
+            if q and (d.publisher is None or q.lower() not in d.publisher.lower()):
+                continue
+            if d.publisher:
+                publishers.append(d.publisher)
+
+        # Count frequencies for ordering (descending)
+        from collections import Counter
+
+        counts = Counter(publishers)
+        sorted_publishers = [p for p, count in counts.most_common(limit)]
+        return sorted_publishers

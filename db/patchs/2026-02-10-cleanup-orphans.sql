@@ -4,8 +4,7 @@
 
 BEGIN;
 
---DELETE FROM dataset_versions
-SELECT count(*) FROM dataset_versions
+DELETE FROM dataset_versions
 WHERE dataset_id NOT IN (SELECT id FROM datasets);
 
 COMMIT;

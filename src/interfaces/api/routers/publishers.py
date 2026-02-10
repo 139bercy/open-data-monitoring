@@ -11,32 +11,8 @@ router = APIRouter(prefix="/publishers", tags=["publishers"])
 @router.get("")
 async def get_publishers(platform_id: UUID | None = None, q: str | None = None, limit: int = 50):
     """
-    Retourne la liste des publishers distincts (chaînes), éventuellement filtrée par plateforme et par recherche.
-    Forme de réponse adaptée au front: { "items": ["Publisher A", "Publisher B", ...] }
+    Retrieve the list of unique publishers (organizations) from indexed datasets.
+    Supports filtering by platform and name search.
     """
-    where_clauses = ["publisher IS NOT NULL"]
-    params: list = []
-
-    if platform_id is not None:
-        where_clauses.append("platform_id = %s")
-        params.append(str(platform_id))
-
-    if q:
-        where_clauses.append("publisher ILIKE %s")
-        params.append(f"%{q}%")
-
-    where_sql = " AND ".join(where_clauses)
-
-    query = f"""
-        SELECT publisher
-        FROM datasets
-        WHERE {where_sql}
-        GROUP BY publisher
-        ORDER BY COUNT(*) DESC
-        LIMIT %s
-    """
-    params.append(limit)
-
-    rows = domain_app.dataset.repository.client.fetchall(query, tuple(params))
-    items = [r["publisher"] for r in rows if r.get("publisher")]
+    items = domain_app.dataset.repository.list_publishers(platform_id=platform_id, q=q, limit=limit)
     return {"items": items}

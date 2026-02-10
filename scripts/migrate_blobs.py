@@ -26,11 +26,18 @@ def migrate(db_name=None, db_user=None, db_pass=None, db_host=None, db_port=None
 
     print(f"Starting migration on {db_name}: Deduplicating snapshots into dataset_blobs (Smart Hashing)...")
 
-    # 1. Reset migration progress
-    print("Resetting existing blob links...")
-    writer_client.execute("UPDATE dataset_versions SET blob_id = NULL WHERE blob_id IS NOT NULL")
-    writer_client.execute("DELETE FROM dataset_blobs")
+    # 0. Ensure schema is compatible
+    print("Ensuring snapshot column is nullable...")
+    writer_client.execute("ALTER TABLE dataset_versions ALTER COLUMN snapshot DROP NOT NULL;")
     writer_client.commit()
+
+    # 1. Migration progress check
+    migrated_count = writer_client.fetchone(
+        "SELECT count(*) as count FROM dataset_versions WHERE snapshot IS NULL AND blob_id IS NOT NULL"
+    )["count"]
+    if migrated_count > 0:
+        print(f"INFO: {migrated_count} versions already migrated and optimized (snapshot nulled).")
+        print("Continuing with remaining versions...")
 
     # 2. Fetch total count for progress reporting
     total_count = writer_client.fetchone("SELECT count(*) as count FROM dataset_versions WHERE snapshot IS NOT NULL")[
@@ -160,6 +167,7 @@ def migrate(db_name=None, db_user=None, db_pass=None, db_host=None, db_port=None
             writer_client.execute(
                 """UPDATE dataset_versions SET
                    blob_id = %s,
+                   snapshot = NULL, -- Optimization: clear legacy data
                    downloads_count = %s,
                    api_calls_count = %s,
                    views_count = %s,

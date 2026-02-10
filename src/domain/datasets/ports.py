@@ -75,3 +75,8 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
     def get_versions(self, dataset_id: UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
         """Get paginated version history for a dataset."""
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def list_publishers(self, platform_id: UUID | None = None, q: str | None = None, limit: int = 50) -> list[str]:
+        """Get a list of distinct publishers, optionally filtered by platform or name."""
+        raise NotImplementedError

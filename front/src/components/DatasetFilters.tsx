@@ -22,7 +22,18 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
   const platformOptions = useMemo(
     () => [
       { value: "", label: "Toutes les plateformes" },
-      ...platforms.map((p) => ({ value: p.id, label: p.name ?? p.slug })),
+      ...platforms.map((p) => {
+        const typeLabel =
+          p.type === "opendatasoft"
+            ? "ODS"
+            : p.type === "datagouv"
+              ? "DataGouv"
+              : p.type;
+        return {
+          value: p.id,
+          label: `${typeLabel} - ${p.name ?? p.slug}`,
+        };
+      }),
     ],
     [platforms]
   );

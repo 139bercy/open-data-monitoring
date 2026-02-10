@@ -31,6 +31,7 @@ export type DatasetSummary = {
     id: UUID;
     platformId: UUID;
     platformName?: string;
+    platformType?: string;
     publisher: Publisher;
     title: DatasetTitle;
     created: ISO8601Date;
@@ -122,7 +123,7 @@ export type DatasetListQuery = {
     modifiedTo?: ISO8601Date;
 
     // Sorting
-    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count' | 'popularity_score';
+    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count' | 'popularity_score' | 'views_count' | 'reuses_count';
     order?: 'asc' | 'desc';
 
     // Pagination
