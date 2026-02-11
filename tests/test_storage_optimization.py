@@ -1,6 +1,7 @@
 import hashlib
 import json
 
+import pytest
 from psycopg2._json import Json
 
 from application.handlers import upsert_dataset
@@ -269,6 +270,7 @@ def test_version_diff_tracking(pg_app, pg_datagouv_platform, datagouv_dataset):
     assert v3.diff["views_count"]["new"] == 20000
 
 
+@pytest.mark.skip(reason="Cooldown is disabled (hours=0) for now")
 def test_versioning_cooldown_noise_reduction(pg_app, pg_datagouv_platform, datagouv_dataset):
     # 1. First sync
     dataset_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)

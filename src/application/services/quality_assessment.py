@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from uuid import UUID
 
@@ -43,12 +45,25 @@ class QualityAssessmentService:
             if dataset_obj is None:
                 raise ValueError(f"Dataset not found: {dataset_uuid}")
 
-            # Determine the raw dataset for the LLM (prefer latest snapshot)
-            raw_dataset = dataset_obj.versions[-1].snapshot if dataset_obj.versions else dataset_obj.raw
+            # Determine the raw dataset for the LLM (prefer latest merged snapshot)
+            raw_dataset = dataset_obj.raw
+            if dataset_obj.versions:
+                raw_dataset = dataset_obj.versions[-1].snapshot
+
+            # Focus the LLM on metadata only to reduce noise (especially for ODS which includes fields, security, etc.)
+            # We extract key blocks: metas, metadata, and root identifiers
+            llm_context = {
+                "title": raw_dataset.get("title") or raw_dataset.get("dataset_id"),
+                "publisher": raw_dataset.get("publisher"),
+                "metas": raw_dataset.get("metas"),
+                "metadata": raw_dataset.get("metadata"),
+            }
+            # Remove None values to further clean up
+            llm_context = {k: v for k, v in llm_context.items() if v is not None}
 
             # Execute evaluation
             evaluation = self.evaluator.evaluate_metadata(
-                dataset=raw_dataset, dcat_reference=dcat_reference, charter=charter, output=output
+                dataset=llm_context, dcat_reference=dcat_reference, charter=charter, output=output
             )
 
             evaluation.dataset_id = dataset_obj.id
@@ -61,13 +76,32 @@ class QualityAssessmentService:
             evaluation_data["dataset_id"] = str(evaluation_data["dataset_id"])
             evaluation_data["evaluated_at"] = evaluation_data["evaluated_at"].isoformat()
 
+            # Null-safe deep check helper
+            def get_nested(d, *keys):
+                for k in keys:
+                    if not isinstance(d, dict):
+                        return None
+                    d = d.get(k)
+                return d
+
+            # Determine if description is missing (handling nested structures for ODS/DataGouv)
+            has_desc = False
+            if raw_dataset.get("description"):
+                has_desc = True
+            elif get_nested(raw_dataset, "metas", "default", "description"):
+                has_desc = True
+            elif get_nested(raw_dataset, "metadata", "default", "description"):
+                has_desc = True
+            elif get_nested(raw_dataset, "metadata", "default", "description", "value"):
+                # Handle ODS V2 value-wrapped strings if present
+                has_desc = True
+
             # Update quality metrics on the aggregate
-            is_valid_slug = getattr(dataset_obj.quality, "is_slug_valid", True) if dataset_obj.quality else True
             dataset_obj.add_quality(
                 downloads_count=dataset_obj.downloads_count,
                 api_calls_count=dataset_obj.api_calls_count,
-                has_description=bool(raw_dataset.get("description")),
-                is_slug_valid=is_valid_slug,
+                has_description=has_desc,
+                is_slug_valid=dataset_obj.slug.is_valid(),
                 evaluation_results=evaluation_data,
             )
 

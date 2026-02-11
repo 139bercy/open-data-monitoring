@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import json
 import uuid
@@ -173,7 +175,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ),
         )
 
-    def add_version(self, params: "DatasetVersionParams") -> None:
+    def add_version(self, params: DatasetVersionParams) -> None:
         """Add a new version of a dataset using Parameter Object pattern."""
         stripped, volatile = strip_volatile_fields(params.snapshot)
 
@@ -391,7 +393,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             """SELECT id FROM datasets WHERE platform_id = %s AND slug = %s; """,
             (str(platform_id), str(slug)),
         )
-        return result["id"]
+        return result["id"] if result else None
 
     def update_dataset_sync_status(self, platform_id, dataset_id, status):
         self.client.execute(

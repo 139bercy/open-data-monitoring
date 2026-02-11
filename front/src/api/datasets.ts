@@ -169,3 +169,7 @@ export async function evaluateDataset(id: string): Promise<any> {
     const data = await api.post<any>(`/datasets/${id}/evaluate`, {});
     return data;
 }
+
+export async function syncDatasetFromSource(url: string): Promise<any> {
+    return api.post<any>(`/datasets/add?url=${encodeURIComponent(url)}`, {});
+}

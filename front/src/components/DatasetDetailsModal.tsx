@@ -10,6 +10,7 @@ import {
   getDatasetVersions,
   evaluateDataset,
   getDatasetDetail,
+  syncDatasetFromSource,
 } from "../api/datasets";
 import {
   CompareSnapshotsModal,
@@ -98,6 +99,28 @@ function useQualityAudit(datasetId?: string, onRefresh?: () => Promise<void>) {
   return { evaluating, error, evaluate };
 }
 
+/* Gère l'état de synchronisation avec la source */
+function useSyncDataset(datasetUrl?: string, onRefresh?: () => Promise<void>) {
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const sync = useCallback(async () => {
+    if (!datasetUrl) return;
+    setSyncing(true);
+    setError(null);
+    try {
+      await syncDatasetFromSource(datasetUrl);
+      if (onRefresh) await onRefresh();
+    } catch (err: any) {
+      setError(err.message ?? "La synchronisation a échoué");
+    } finally {
+      setSyncing(false);
+    }
+  }, [datasetUrl, onRefresh]);
+
+  return { syncing, error, sync };
+}
+
 /* Gère l'état de l'historique des versions d'un jeu de données */
 function useHistoryManager(datasetId?: string) {
   const [versions, setVersions] = useState<SnapshotVersion[] | null>(null);
@@ -161,6 +184,67 @@ function useHistoryManager(datasetId?: string) {
 /**
  * Sub-components
  */
+/* Affiche un badge de score de qualité proéminent */
+function QualityScoreBadge({ score }: { score?: number | null }) {
+  if (score === undefined || score === null) return null;
+  const rounded = Math.round(score);
+
+  let severity: "success" | "info" | "warning" | "error" = "error";
+  if (rounded >= 85) severity = "success";
+  else if (rounded >= 70) severity = "info";
+  else if (rounded >= 50) severity = "warning";
+
+  return (
+    <div
+      className="fr-p-2w"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        backgroundColor: "var(--background-alt-blue-france)",
+        borderRadius: "8px",
+        minWidth: "120px",
+        border: "1px solid var(--border-default-blue-france)",
+      }}
+    >
+      <span
+        className="fr-text--xs fr-mb-1v"
+        style={{ textTransform: "uppercase", fontWeight: "bold", opacity: 0.8 }}
+      >
+        Score Qualité IA
+      </span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
+        <span
+          className="fr-h3 fr-mb-0"
+          style={{ color: "var(--text-title-blue-france)" }}
+        >
+          {rounded}
+        </span>
+        <span
+          className="fr-text--sm"
+          style={{ opacity: 0.6 }}
+        >
+          /100
+        </span>
+      </div>
+      <Badge
+        severity={severity}
+        noIcon
+        small
+        className="fr-mt-1v"
+      >
+        {rounded >= 85
+          ? "Excellent"
+          : rounded >= 70
+            ? "Bon"
+            : rounded >= 50
+              ? "Moyen"
+              : "Faible"}
+      </Badge>
+    </div>
+  );
+}
+
 /* Affiche un snapshot */
 function SnapshotItem({
   snap,
@@ -435,12 +519,16 @@ function InfoTab({
   platformUrl,
   downloadsPerDay,
   versionsCount,
+  onSync,
+  syncing,
 }: {
   dataset: DatasetDetail;
   platformName?: string | null;
   platformUrl?: string | null;
   downloadsPerDay: number | string | null;
   versionsCount: number;
+  onSync: () => void;
+  syncing: boolean;
 }) {
   return (
     <div className="fr-py-4w">
@@ -463,6 +551,16 @@ function InfoTab({
               : "Slug contient des caractères spéciaux"}
           </Badge>
         )}
+        <Button
+          priority="tertiary"
+          size="small"
+          iconId="ri-refresh-line"
+          onClick={onSync}
+          disabled={syncing || !!dataset.isDeleted}
+          className="fr-ml-auto"
+        >
+          {syncing ? "Synchro..." : "Synchroniser depuis la source"}
+        </Button>
       </div>
       <div className="fr-text--sm">
         <p>
@@ -554,11 +652,15 @@ function QualityTab({
   evaluating,
   evalError,
   onEvaluate,
+  onSyncAndEvaluate,
+  syncing,
 }: {
   dataset: DatasetDetail;
   evaluating: boolean;
   evalError: string | null;
   onEvaluate: () => void;
+  onSyncAndEvaluate: () => void;
+  syncing: boolean;
 }) {
   const results = dataset.quality?.evaluation_results;
   const score = results?.overall_score ?? 0;
@@ -574,15 +676,27 @@ function QualityTab({
         className="fr-mb-4w"
       >
         <h6 className="fr-h6 fr-mb-0">Audit Qualité (IA)</h6>
-        <Button
-          priority="secondary"
-          size="small"
-          iconId="ri-ai-generate"
-          onClick={onEvaluate}
-          disabled={evaluating || !!dataset.isDeleted}
-        >
-          {evaluating ? "Audit en cours..." : "Relancer l'audit"}
-        </Button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Button
+            priority="secondary"
+            size="small"
+            iconId="ri-refresh-line"
+            onClick={onSyncAndEvaluate}
+            disabled={evaluating || syncing || !!dataset.isDeleted}
+            title="Synchronise les données puis relance l'audit pour voir l'impact de vos modifications"
+          >
+            {syncing ? "Synchro..." : evaluating ? "Audit..." : "Sync & Évaluer"}
+          </Button>
+          <Button
+            priority="tertiary"
+            size="small"
+            iconId="ri-ai-generate"
+            onClick={onEvaluate}
+            disabled={evaluating || syncing || !!dataset.isDeleted}
+          >
+            {evaluating ? "Audit en cours..." : "Audit seul"}
+          </Button>
+        </div>
       </div>
 
       {evalError && (
@@ -831,6 +945,7 @@ export function DatasetDetailsModal({
     error: evalError,
     evaluate,
   } = useQualityAudit(dataset?.id, refresh);
+  const { syncing, sync } = useSyncDataset(dataset?.page, refresh);
   const {
     versions,
     loading: loadingVersions,
@@ -877,14 +992,37 @@ export function DatasetDetailsModal({
           className="fr-grid-row fr-grid-row--middle fr-mb-4w"
           style={{ marginTop: "-1rem" }}
         >
-          <h1 className="fr-h3 fr-mb-0">{dataset.title ?? dataset.slug}</h1>
-          <Badge
-            noIcon
-            small
-            className="fr-ml-2w"
-          >
-            {dataset.slug}
-          </Badge>
+          <div className="fr-col">
+            <h1 className="fr-h3 fr-mb-1w">{dataset.title ?? dataset.slug}</h1>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <Badge
+                noIcon
+                small
+              >
+                {dataset.slug}
+              </Badge>
+              {platformName && (
+                <Badge
+                  noIcon
+                  small
+                  severity="info"
+                >
+                  {platformName}
+                </Badge>
+              ) || (
+                <Badge
+                  noIcon
+                  small
+                  severity="info"
+                >
+                  {dataset.platformId}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <div className="fr-col--auto">
+            <QualityScoreBadge score={dataset.quality?.evaluation_results?.overall_score} />
+          </div>
         </div>
 
         <Tabs
@@ -898,6 +1036,8 @@ export function DatasetDetailsModal({
                   platformUrl={platformUrl}
                   downloadsPerDay={downloadsPerDay}
                   versionsCount={versions?.length ?? 0}
+                  onSync={sync}
+                  syncing={syncing}
                 />
               ),
             },
@@ -909,6 +1049,11 @@ export function DatasetDetailsModal({
                   evaluating={evaluating}
                   evalError={evalError}
                   onEvaluate={evaluate}
+                  syncing={syncing}
+                  onSyncAndEvaluate={async () => {
+                    await sync();
+                    await evaluate();
+                  }}
                 />
               ),
             },

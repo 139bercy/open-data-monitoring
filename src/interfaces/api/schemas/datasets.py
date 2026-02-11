@@ -75,15 +75,11 @@ class DatasetAPI(BaseModel):
 class DatasetCreateResponse(BaseModel):
     """Response after creating a new dataset via API."""
 
+    status: str = "success"
     id: DatasetId
-    name: str
-    timestamp: str
+    platform_id: UUID
     buid: BusinessUID
     slug: DatasetSlug
-    organization_id: str
-    type: str  # Platform type
-    url: SourceURL
-    key: str  # API key used
 
 
 # ============================================================================
@@ -144,7 +140,7 @@ class DatasetDetailAPI(DatasetAPI):
 class DatasetVersionsResponse(BaseModel):
     """Paginated list of dataset versions."""
 
-    items: list[SnapshotVersionAPI]
-    total: int
+    versions: list[SnapshotVersionAPI]
+    total_versions: int
     page: int  # 1-indexed
     page_size: int

@@ -49,8 +49,12 @@ class OpenAIEvaluator(LLMEvaluator):
         logger.info(f"Evaluating metadata with OpenAI model {self.model_name}")
 
         # Build prompts
-        system_prompt = build_system_prompt(dcat_reference, charter, output)
-        user_prompt = build_user_prompt(dataset["metas"], output)
+        try:
+            system_prompt = build_system_prompt(dcat_reference, charter, output)
+            user_prompt = build_user_prompt(dataset, output)
+        except Exception as e:
+            logger.error(f"Failed to build prompts for dataset evaluation: {e}")
+            raise RuntimeError(f"Prompt builders failed: {e}")
 
         # Call OpenAI
         try:

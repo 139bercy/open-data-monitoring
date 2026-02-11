@@ -12,6 +12,16 @@ from domain.platform.ports import DatasetAdapter
 class OpendatasoftDatasetAdapter(DatasetAdapter):
     @staticmethod
     def find_dataset_id(url: str):
+        # Handle ODS exploration URLs: extract the part after '/dataset/'
+        # Example: https://.../explore/dataset/my-dataset-id/information/
+        if "/dataset/" in url:
+            parts = url.split("/dataset/")
+            remainder = parts[1]
+            # Take the first segment after /dataset/
+            dataset_id = remainder.split("/")[0]
+            return dataset_id
+
+        # Fallback for simpler URLs
         if url.endswith("/"):
             return url.split("/")[-2]
         return url.split("/")[-1]

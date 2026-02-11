@@ -24,6 +24,12 @@ class Slug(ValueObject):
         if not re.match(r"^[a-z0-9-_]+$", self.value):
             raise InvalidDomainValueError(f"Invalid slug format: {self.value}")
 
+    def is_valid(self) -> bool:
+        """Check if slug follows standard naming conventions (no underscores)."""
+        # Business Rule: A "valid" quality slug should generally avoid underscores.
+        # While the system supports them, we flag them in the quality report.
+        return bool(re.match(r"^[a-z0-9-]+$", self.value))
+
     def normalize(self) -> "Slug":
         """Return normalized version of slug (lowercase, underscores to hyphens).
 

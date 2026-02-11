@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 from application.commands.platform import CreatePlatform, SyncPlatform
@@ -61,9 +63,10 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
     if dataset.get("sync_status") == "failed":
         with app.uow:
             dataset_id = app.dataset.repository.get_id_by_slug(platform_id=platform.id, slug=dataset["slug"])
-            app.dataset.repository.update_dataset_sync_status(
-                platform_id=platform.id, dataset_id=dataset_id, status="failed"
-            )
+            if dataset_id:
+                app.dataset.repository.update_dataset_sync_status(
+                    platform_id=platform.id, dataset_id=dataset_id, status="failed"
+                )
         return
 
     factory = DatasetAdapterFactory()

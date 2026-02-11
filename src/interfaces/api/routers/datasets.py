@@ -12,7 +12,6 @@ from interfaces.api.schemas.datasets import (
     DatasetResponse,
     DatasetVersionsResponse,
 )
-from logger import logger
 from settings import app as domain_app
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
@@ -21,17 +20,32 @@ router = APIRouter(prefix="/datasets", tags=["datasets"])
 @router.post("/add", response_model=DatasetCreateResponse)
 async def add_dataset(url: str):
     """
-    Ajoute un dataset à la base de données.
+    Ajoute un dataset à la base de données à partir de son URL source.
+    Supporte ODS (explore/dataset/...) et DataGouv.
     """
     platform = find_platform_from_url(app=domain_app, url=url)
+    if not platform:
+        raise HTTPException(status_code=404, detail=f"No platform found for URL: {url}")
+
     dataset_id = find_dataset_id_from_url(app=domain_app, url=url)
-    if dataset_id is None:
-        logger.warning(f"Dataset not found for url: {url}")
-        return
+    if not dataset_id:
+        raise HTTPException(status_code=404, detail=f"Could not extract dataset ID from URL: {url}")
 
     dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-    upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
-    return {"status": "success", "dataset_id": dataset_id}
+    if not dataset or dataset.get("sync_status") == "failed":
+        raise HTTPException(status_code=400, detail=f"Failed to fetch dataset metadata from {platform.type}")
+
+    dataset_uuid = upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
+    if not dataset_uuid:
+        raise HTTPException(status_code=500, detail="Internal error during dataset persistence")
+
+    return {
+        "status": "success",
+        "id": dataset_uuid,
+        "platform_id": platform.id,
+        "buid": dataset.get("uid") or dataset.get("id") or dataset.get("dataset_id"),
+        "slug": dataset_id,
+    }
 
 
 @router.get("/tests", response_model=DatasetResponse)
@@ -129,7 +143,7 @@ async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int =
     Liste paginée des versions (snapshots) d'un dataset.
     """
     items, total = domain_app.dataset.repository.get_versions(dataset_id, page, page_size)
-    return {"items": items, "total": total, "page": page, "page_size": page_size}
+    return {"versions": items, "total_versions": total, "page": page, "page_size": page_size}
 
 
 @router.get("/publisher/{publisher_name}", response_model=DatasetResponse)
