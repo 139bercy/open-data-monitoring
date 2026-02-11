@@ -22,8 +22,6 @@ export-es: ## Export SQLite DB (dev) to SQL
 
 clean: ## Clean temporary files and format code
 	find . -name .DS_Store -print -delete
-	black src tests
-	isort .
 	rm -rf htmlcov .coverage .pytest_cache .ruff_cache
 
 clean-db: ## Remove local dev data
