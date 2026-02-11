@@ -26,7 +26,9 @@ export function PlatformSyncsModal(props: {
             </p>
             <p className="fr-text--sm fr-text--grey">
               {props.platform.syncs && props.platform.syncs.length > 0
-                ? `${props.platform.syncs.length} synchronisation${props.platform.syncs.length > 1 ? "s" : ""}`
+                ? `${props.platform.syncs.length} synchronisation${
+                    props.platform.syncs.length > 1 ? "s" : ""
+                  }`
                 : "Aucune synchronisation"}
             </p>
           </div>

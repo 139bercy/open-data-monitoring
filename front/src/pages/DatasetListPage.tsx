@@ -218,7 +218,9 @@ export function DatasetListPage(): JSX.Element {
       <DatasetDetailsModal
         dataset={selected}
         platformName={
-          selected ? (platformInfoById.get(selected.platformId)?.name ?? null) : null
+          selected
+            ? platformInfoById.get(selected.platformId)?.name ?? null
+            : null
         }
         platformUrl={selected?.page ? new URL(selected.page).origin : null}
       />

@@ -314,13 +314,21 @@ function SnapshotItem({
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end", maxWidth: "60%" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "0.4rem",
+            alignItems: "center",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+            maxWidth: "60%",
+          }}
+        >
           <Badge
             severity="info"
             noIcon
             small
           >
-
             {snap.apiCallsCount ?? "—"} API
           </Badge>
           <Badge
@@ -328,29 +336,47 @@ function SnapshotItem({
             noIcon
             small
           >
-
             {snap.downloadsCount ?? "—"} DL
           </Badge>
           {snap.viewsCount !== null && (
-            <Badge severity="info" noIcon small>
+            <Badge
+              severity="info"
+              noIcon
+              small
+            >
               {snap.viewsCount} 👀
             </Badge>
           )}
 
           {snap.reusesCount !== null && (
-            <Badge severity="new" noIcon small>
+            <Badge
+              severity="new"
+              noIcon
+              small
+            >
               {snap.reusesCount} 💡
             </Badge>
           )}
 
           {snap.followersCount !== null && (
-            <Badge severity="info" noIcon small>
+            <Badge
+              severity="info"
+              noIcon
+              small
+            >
               {snap.followersCount} 👤
             </Badge>
           )}
 
           {snap.popularityScore !== null && (
-            <Badge noIcon small style={{ backgroundColor: "var(--background-contrast-info)", color: "var(--text-label-info)" }}>
+            <Badge
+              noIcon
+              small
+              style={{
+                backgroundColor: "var(--background-contrast-info)",
+                color: "var(--text-label-info)",
+              }}
+            >
               {Math.round((snap.popularityScore ?? 0) * 100) / 100} ⭐
             </Badge>
           )}
@@ -379,7 +405,6 @@ function SnapshotItem({
             className={expanded ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"}
           />
         </div>
-
       </div>
 
       {expanded && (
@@ -435,17 +460,26 @@ function SnapshotItem({
               >
                 {[
                   ...diff!.added.map((f) => (
-                    <div key={`add-${f}`} style={{ color: "var(--text-default-success)" }}>
+                    <div
+                      key={`add-${f}`}
+                      style={{ color: "var(--text-default-success)" }}
+                    >
                       + {f}
                     </div>
                   )),
                   ...diff!.removed.map((f) => (
-                    <div key={`rem-${f}`} style={{ color: "var(--text-default-error)" }}>
+                    <div
+                      key={`rem-${f}`}
+                      style={{ color: "var(--text-default-error)" }}
+                    >
                       - {f}
                     </div>
                   )),
                   ...diff!.changed.map((f) => (
-                    <div key={`chg-${f}`} style={{ color: "var(--text-default-info)" }}>
+                    <div
+                      key={`chg-${f}`}
+                      style={{ color: "var(--text-default-info)" }}
+                    >
                       ~ {f}
                     </div>
                   )),
@@ -453,7 +487,14 @@ function SnapshotItem({
               </div>
             </div>
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <Button
                 priority="tertiary"
@@ -477,7 +518,13 @@ function SnapshotItem({
               </Button>
             </div>
             {!(snap as any).data && (
-              <span className="fr-text--xs" style={{ fontStyle: "italic", color: "var(--text-mention-grey)" }}>
+              <span
+                className="fr-text--xs"
+                style={{
+                  fontStyle: "italic",
+                  color: "var(--text-mention-grey)",
+                }}
+              >
                 JSON non chargé
               </span>
             )}
@@ -491,21 +538,17 @@ function SnapshotItem({
               padding: "0.5rem",
               backgroundColor: "rgba(0,0,0,0.03)",
               borderRadius: "4px",
-              border: "1px solid var(--border-default-grey)"
+              border: "1px solid var(--border-default-grey)",
             }}
           >
-            {showFullSnapshot ? (
-              (snap as any).data
+            {showFullSnapshot
+              ? (snap as any).data
                 ? JSON.stringify((snap as any).data, null, 2)
                 : "Aucun snapshot disponible"
-            ) : (
-              snap.diff
+              : snap.diff
                 ? JSON.stringify(snap.diff, null, 2)
-                : "Aucune différence calculée (version initiale ou identique)"
-            )}
+                : "Aucune différence calculée (version initiale ou identique)"}
           </pre>
-
-
         </div>
       )}
     </div>
@@ -532,7 +575,10 @@ function InfoTab({
 }) {
   return (
     <div className="fr-py-4w">
-      <div className="fr-mb-3w" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+      <div
+        className="fr-mb-3w"
+        style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
+      >
         <Badge
           severity={dataset.hasDescription ? "success" : "error"}
           noIcon
@@ -597,32 +643,46 @@ function InfoTab({
         </p>
         {dataset.currentSnapshot?.viewsCount !== null && (
           <p>
-            <strong>Vues :</strong> {dataset.currentSnapshot?.viewsCount ?? "—"} 👀
+            <strong>Vues :</strong> {dataset.currentSnapshot?.viewsCount ?? "—"}{" "}
+            👀
           </p>
         )}
         {dataset.currentSnapshot?.reusesCount !== null && (
           <p>
             <strong>Réutilisations :</strong>{" "}
-            <Badge severity="new" noIcon small>
+            <Badge
+              severity="new"
+              noIcon
+              small
+            >
               {dataset.currentSnapshot?.reusesCount} 💡
             </Badge>
           </p>
         )}
         {dataset.currentSnapshot?.followersCount !== null && (
           <p>
-            <strong>Abonnés :</strong> {dataset.currentSnapshot?.followersCount ?? "—"} 👤
+            <strong>Abonnés :</strong>{" "}
+            {dataset.currentSnapshot?.followersCount ?? "—"} 👤
           </p>
         )}
         {dataset.currentSnapshot?.popularityScore !== null && (
           <p>
             <strong>Popularité :</strong>{" "}
-            <Badge noIcon small style={{ backgroundColor: "var(--background-contrast-info)", color: "var(--text-label-info)" }}>
-              {Math.round((dataset.currentSnapshot?.popularityScore ?? 0) * 100) / 100} ⭐
+            <Badge
+              noIcon
+              small
+              style={{
+                backgroundColor: "var(--background-contrast-info)",
+                color: "var(--text-label-info)",
+              }}
+            >
+              {Math.round(
+                (dataset.currentSnapshot?.popularityScore ?? 0) * 100
+              ) / 100}{" "}
+              ⭐
             </Badge>
           </p>
         )}
-
-
       </div>
       <div className="fr-mt-4w">
         <Button
@@ -685,7 +745,11 @@ function QualityTab({
             disabled={evaluating || syncing || !!dataset.isDeleted}
             title="Synchronise les données puis relance l'audit pour voir l'impact de vos modifications"
           >
-            {syncing ? "Synchro..." : evaluating ? "Audit..." : "Sync & Évaluer"}
+            {syncing
+              ? "Synchro..."
+              : evaluating
+                ? "Audit..."
+                : "Sync & Évaluer"}
           </Button>
           <Button
             priority="tertiary"
@@ -1001,7 +1065,7 @@ export function DatasetDetailsModal({
               >
                 {dataset.slug}
               </Badge>
-              {platformName && (
+              {(platformName && (
                 <Badge
                   noIcon
                   small
@@ -1009,7 +1073,7 @@ export function DatasetDetailsModal({
                 >
                   {platformName}
                 </Badge>
-              ) || (
+              )) || (
                 <Badge
                   noIcon
                   small
@@ -1021,7 +1085,9 @@ export function DatasetDetailsModal({
             </div>
           </div>
           <div className="fr-col--auto">
-            <QualityScoreBadge score={dataset.quality?.evaluation_results?.overall_score} />
+            <QualityScoreBadge
+              score={dataset.quality?.evaluation_results?.overall_score}
+            />
           </div>
         </div>
 

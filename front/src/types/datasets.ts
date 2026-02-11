@@ -18,38 +18,38 @@ type Publisher = string | null;
 type DatasetTitle = string | null;
 
 type QualityIndicators = {
-    has_description: boolean;
-    is_slug_valid: boolean;  // No underscores or special chars
-    evaluation_results: any | null;  // LLM evaluation results (JSON)
-}
+  has_description: boolean;
+  is_slug_valid: boolean; // No underscores or special chars
+  evaluation_results: any | null; // LLM evaluation results (JSON)
+};
 
 // ----------------------------------------------------------------------------
 // List View (Table Display)
 // ----------------------------------------------------------------------------
 
 export type DatasetSummary = {
-    id: UUID;
-    platformId: UUID;
-    platformName?: string;
-    platformType?: string;
-    publisher: Publisher;
-    title: DatasetTitle;
-    created: ISO8601Date;
-    modified: ISO8601Date;
-    downloadsCount?: number;
-    apiCallsCount?: number;
-    viewsCount?: number;
-    reusesCount?: number;
-    followersCount?: number;
-    popularityScore?: number;
-    versionsCount?: number;
-    page: URL;
-    restricted: boolean | null;
-    published: boolean | null;
-    lastSyncStatus: string;
-    hasDescription: boolean;
-    isDeleted: boolean | null;
-    quality?: QualityIndicators;
+  id: UUID;
+  platformId: UUID;
+  platformName?: string;
+  platformType?: string;
+  publisher: Publisher;
+  title: DatasetTitle;
+  created: ISO8601Date;
+  modified: ISO8601Date;
+  downloadsCount?: number;
+  apiCallsCount?: number;
+  viewsCount?: number;
+  reusesCount?: number;
+  followersCount?: number;
+  popularityScore?: number;
+  versionsCount?: number;
+  page: URL;
+  restricted: boolean | null;
+  published: boolean | null;
+  lastSyncStatus: string;
+  hasDescription: boolean;
+  isDeleted: boolean | null;
+  quality?: QualityIndicators;
 };
 
 // ----------------------------------------------------------------------------
@@ -61,18 +61,18 @@ export type DatasetSummary = {
  * Backend pre-calculates diffs for performance.
  */
 export type SnapshotVersion = {
-    id: UUID;
-    timestamp: ISO8601Date;
-    downloadsCount: number | null;
-    apiCallsCount: number | null;
-    viewsCount?: number | null;
-    reusesCount?: number | null;
-    followersCount?: number | null;
-    popularityScore?: number | null;
-    page: URL;
-    title?: DatasetTitle;
-    data?: unknown;  // Full snapshot (only when include_data=true)
-    diff?: any;  // Pre-calculated by backend
+  id: UUID;
+  timestamp: ISO8601Date;
+  downloadsCount: number | null;
+  apiCallsCount: number | null;
+  viewsCount?: number | null;
+  reusesCount?: number | null;
+  followersCount?: number | null;
+  popularityScore?: number | null;
+  page: URL;
+  title?: DatasetTitle;
+  data?: unknown; // Full snapshot (only when include_data=true)
+  diff?: any; // Pre-calculated by backend
 };
 
 // ----------------------------------------------------------------------------
@@ -80,22 +80,22 @@ export type SnapshotVersion = {
 // ----------------------------------------------------------------------------
 
 export type DatasetDetail = {
-    id: UUID;
-    platformId: UUID;
-    publisher: Publisher;
-    title: DatasetTitle;
-    buid: string;  // Business UID from source platform
-    slug: string;
-    page: URL;
-    created: ISO8601Date;
-    modified: ISO8601Date;
-    published: boolean | null;
-    restricted: boolean | null;
-    hasDescription: boolean;
-    isDeleted: boolean | null;
-    quality?: QualityIndicators;
-    currentSnapshot: SnapshotVersion | null;
-    snapshots?: SnapshotVersion[] | null;  // Only when include_snapshots=true
+  id: UUID;
+  platformId: UUID;
+  publisher: Publisher;
+  title: DatasetTitle;
+  buid: string; // Business UID from source platform
+  slug: string;
+  page: URL;
+  created: ISO8601Date;
+  modified: ISO8601Date;
+  published: boolean | null;
+  restricted: boolean | null;
+  hasDescription: boolean;
+  isDeleted: boolean | null;
+  quality?: QualityIndicators;
+  currentSnapshot: SnapshotVersion | null;
+  snapshots?: SnapshotVersion[] | null; // Only when include_snapshots=true
 };
 
 // ----------------------------------------------------------------------------
@@ -103,32 +103,42 @@ export type DatasetDetail = {
 // ----------------------------------------------------------------------------
 
 export type PaginatedResponse<T> = {
-    items: T[];
-    total: number;
-    page: number;  // 1-indexed
-    pageSize: number;
+  items: T[];
+  total: number;
+  page: number; // 1-indexed
+  pageSize: number;
 };
 
 export type DatasetListQuery = {
-    // Filters
-    platformId?: UUID;
-    publisher?: string;  // Partial match
-    q?: string;  // Searches slug only
-    isDeleted?: boolean;
+  // Filters
+  platformId?: UUID;
+  publisher?: string; // Partial match
+  q?: string; // Searches slug only
+  isDeleted?: boolean;
 
-    // Date ranges
-    createdFrom?: ISO8601Date;
-    createdTo?: ISO8601Date;
-    modifiedFrom?: ISO8601Date;
-    modifiedTo?: ISO8601Date;
+  // Date ranges
+  createdFrom?: ISO8601Date;
+  createdTo?: ISO8601Date;
+  modifiedFrom?: ISO8601Date;
+  modifiedTo?: ISO8601Date;
 
-    // Sorting
-    sortBy?: 'created' | 'modified' | 'publisher' | 'downloads_count' | 'api_calls_count' | 'title' | 'versions_count' | 'popularity_score' | 'views_count' | 'reuses_count';
-    order?: 'asc' | 'desc';
+  // Sorting
+  sortBy?:
+    | "created"
+    | "modified"
+    | "publisher"
+    | "downloads_count"
+    | "api_calls_count"
+    | "title"
+    | "versions_count"
+    | "popularity_score"
+    | "views_count"
+    | "reuses_count";
+  order?: "asc" | "desc";
 
-    // Pagination
-    page?: number;
-    pageSize?: number;
+  // Pagination
+  page?: number;
+  pageSize?: number;
 };
 
 // ----------------------------------------------------------------------------
@@ -145,4 +155,4 @@ export type PublishersRef = string[];
 // Re-exports
 // ----------------------------------------------------------------------------
 
-export type { PlatformRef, PlatformSync } from './platforms';
+export type { PlatformRef, PlatformSync } from "./platforms";

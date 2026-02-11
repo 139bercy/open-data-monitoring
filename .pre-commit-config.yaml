@@ -1,3 +1,4 @@
+fail_fast: true
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -22,12 +23,27 @@ repos:
       # Run the formatter (replaces isort)
       - id: ruff-format
 
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        types_or: [javascript, jsx, ts, tsx, json, css, scss, markdown]
+        files: ^front/
+
   - repo: local
     hooks:
       - id: pytest
-        name: pytest
+        name: pytest (backend)
         entry: venv/bin/pytest
         language: script
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      - id: vitest
+        name: vitest (frontend)
+        entry: bash -c "cd front && npm test -- --run"
+        language: system
         pass_filenames: false
         always_run: true
         stages: [pre-commit]

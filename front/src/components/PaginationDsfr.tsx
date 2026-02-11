@@ -104,7 +104,9 @@ export function PaginationDsfr(props: PaginationDsfrProps): JSX.Element {
               </a>
             ) : (
               <a
-                className={`fr-pagination__link${p === current ? " fr-pagination__link--current" : ""}`}
+                className={`fr-pagination__link${
+                  p === current ? " fr-pagination__link--current" : ""
+                }`}
                 href="#"
                 title={`Page ${p}`}
                 aria-current={p === current ? "page" : undefined}

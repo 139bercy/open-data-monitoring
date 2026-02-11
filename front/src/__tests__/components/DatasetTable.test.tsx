@@ -35,9 +35,11 @@ describe("DatasetTable - Basic Tests", () => {
         />
       );
 
-      mockDatasets.filter(d => d.title).forEach((dataset) => {
-        expect(screen.getByText(dataset.title!)).toBeInTheDocument();
-      });
+      mockDatasets
+        .filter((d) => d.title)
+        .forEach((dataset) => {
+          expect(screen.getByText(dataset.title!)).toBeInTheDocument();
+        });
     });
 
     it("should display platform names", () => {
@@ -49,7 +51,6 @@ describe("DatasetTable - Basic Tests", () => {
           pageSize={10}
         />
       );
-
 
       const dataGouv = screen.getAllByText("data.gouv.fr");
       expect(dataGouv.length).toBeGreaterThan(0);
@@ -70,7 +71,9 @@ describe("DatasetTable - Basic Tests", () => {
         />
       );
 
-      const expectedDate = new Date(mockDatasets[0].created).toLocaleDateString();
+      const expectedDate = new Date(
+        mockDatasets[0].created
+      ).toLocaleDateString();
       expect(screen.getByText(expectedDate)).toBeInTheDocument();
     });
 
@@ -170,7 +173,9 @@ describe("DatasetTable - Basic Tests", () => {
         />
       );
 
-      const titleButton = screen.getByRole("button", { name: /Trier par titre/i });
+      const titleButton = screen.getByRole("button", {
+        name: /Trier par titre/i,
+      });
       expect(titleButton.textContent).toContain("▲");
     });
 
@@ -186,7 +191,9 @@ describe("DatasetTable - Basic Tests", () => {
         />
       );
 
-      const modifiedButton = screen.getByRole("button", { name: /Trier par modifié le/i });
+      const modifiedButton = screen.getByRole("button", {
+        name: /Trier par modifié le/i,
+      });
       expect(modifiedButton.textContent).toContain("▼");
     });
   });
@@ -202,7 +209,9 @@ describe("DatasetTable - Basic Tests", () => {
         />
       );
 
-      const pagination = screen.getByRole("navigation", { name: /pagination/i });
+      const pagination = screen.getByRole("navigation", {
+        name: /pagination/i,
+      });
       expect(pagination).toBeInTheDocument();
     });
   });

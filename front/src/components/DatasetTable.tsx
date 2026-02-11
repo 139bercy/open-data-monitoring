@@ -236,7 +236,6 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
           </button>,
           <button
             key="h-api"
-
             className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
             type="button"
             disabled={!!loading}
@@ -311,7 +310,6 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
               : ""}
           </button>,
           "Action",
-
         ]}
         data={
           loading
@@ -387,7 +385,8 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                   className={`fr-badge ${
                     item.platformType === "opendatasoft"
                       ? "fr-badge--purple-glycine"
-                      : (item.platformType === "datagouv" || item.platformType === "datagouvfr")
+                      : item.platformType === "datagouv" ||
+                          item.platformType === "datagouvfr"
                         ? "fr-badge--blue-france"
                         : "fr-badge--info"
                   }`}
