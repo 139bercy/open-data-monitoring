@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS datasets (
     timestamp timestamptz NOT NULL DEFAULT NOW(),
     buid varchar(255) NOT NULL,
     slug varchar(255) NOT NULL,
+    title text,
     page text NOT NULL,
     publisher varchar(255),
     created timestamptz NOT NULL,
@@ -53,12 +54,14 @@ CREATE TABLE IF NOT EXISTS datasets (
     last_sync_status text CHECK (
         last_sync_status IN ('pending', 'success', 'failed')
     ),
-    deleted bool DEFAULT FALSE
+    deleted bool DEFAULT FALSE,
+    linked_dataset_id uuid REFERENCES datasets(id) ON DELETE SET NULL
 );
 COMMENT ON TABLE datasets IS 'Stockage central des métadonnées de datasets';
 COMMENT ON COLUMN datasets.buid IS 'Identifiant unique métier de la source';
 COMMENT ON COLUMN datasets.slug IS 'Identifiant lisible pour les URLs';
 COMMENT ON COLUMN datasets.last_sync IS 'Dernière synchronisation avec la source';
+COMMENT ON COLUMN datasets.linked_dataset_id IS 'Référence vers un autre dataset (ex: la source originale sur data.gouv.fr pour un dataset ODS)';
 CREATE INDEX IF NOT EXISTS idx_datasets_slug ON datasets (slug);
 CREATE INDEX IF NOT EXISTS idx_datasets_publisher ON datasets (publisher);
 CREATE INDEX IF NOT EXISTS idx_datasets_modified ON datasets (modified);
@@ -80,25 +83,28 @@ CREATE TABLE IF NOT EXISTS dataset_versions (
     snapshot jsonb,
     -- Temporairement gardé pour la migration
     checksum varchar(64) NOT NULL,
+    title text,
     downloads_count int,
     api_calls_count int,
     views_count int,
     reuses_count int,
     followers_count int,
     popularity_score float,
-    diff jsonb
+    diff jsonb,
+    metadata_volatile jsonb
 );
 CREATE INDEX IF NOT EXISTS idx_dataset_versions_blob_id ON dataset_versions (blob_id);
 COMMENT ON TABLE dataset_versions IS 'Historique des versions des métadonnées';
 COMMENT ON COLUMN dataset_versions.blob_id IS 'Référence vers le contenu lourd dédoublonné';
 COMMENT ON COLUMN dataset_versions.snapshot IS 'Ancien champ, sera supprimé après migration';
 COMMENT ON COLUMN dataset_versions.checksum IS 'Hash SHA-256 du snapshot pour détecter les changements';
+COMMENT ON COLUMN dataset_versions.diff IS 'Delta par rapport à la version précédente (Audit Log)';
 CREATE TABLE IF NOT EXISTS dataset_quality (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     timestamp timestamptz NOT NULL DEFAULT NOW(),
-    dataset_id uuid NOT NULL,
-    downloads_count int DEFAULT 0,
-    api_calls_count int DEFAULT 0,
+    dataset_id uuid NOT NULL UNIQUE,
+    downloads_count int,
+    api_calls_count int,
     has_description bool DEFAULT FALSE,
     is_slug_valid bool DEFAULT TRUE,
     evaluation_results jsonb

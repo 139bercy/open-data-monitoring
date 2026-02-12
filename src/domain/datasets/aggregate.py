@@ -44,6 +44,7 @@ class Dataset:
         popularity_score: float | None = None,
         last_version_timestamp: datetime | None = None,
         checksum: str | None = None,
+        linked_dataset_id: UUID | None = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -73,6 +74,7 @@ class Dataset:
         self.last_version_timestamp = last_version_timestamp
         self.quality = None
         self.is_deleted = is_deleted
+        self.linked_dataset_id = linked_dataset_id
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -238,6 +240,64 @@ class Dataset:
 
         return False
 
+    def extract_external_link_slug(self) -> str | None:
+        """
+        Attempts to find a reference to another dataset in the metadata.
+        Returns the first valid slug found from either ODS or DataGouv-style metadata.
+        """
+        return self._extract_slug_from_ods() or self._extract_slug_from_datagouv()
+
+    def _extract_slug_from_ods(self) -> str | None:
+        """Extracts DataGouv slug from ODS 'source' metadata fields."""
+        paths = [
+            ["metadata", "default", "source"],
+            ["metas", "default", "source"],
+            ["metadata", "default", "source", "value"],
+        ]
+
+        for path in paths:
+            val = self._get_raw_value(path)
+            if val and "data.gouv.fr" in val and "/datasets/" in val:
+                parts = val.split("/datasets/")
+                if len(parts) > 1:
+                    return parts[1].split("/")[0]
+        return None
+
+    def _extract_slug_from_datagouv(self) -> str | None:
+        """Extracts ODS slug from DataGouv 'harvest' metadata fields or description."""
+        # 1. Check harvest harvest fields
+        paths = [
+            ["harvest", "remote_url"],
+            ["harvest", "uri"],
+            ["harvest", "remote_id"],
+        ]
+
+        for path in paths:
+            val = self._get_raw_value(path)
+            if val and "/explore/dataset/" in val:
+                parts = val.split("/explore/dataset/")
+                if len(parts) > 1:
+                    return parts[1].strip("/").split("/")[0]
+
+        # 2. Fallback: Check description for ODS explore URLs
+        description = self.raw.get("description")
+        if description and "data.economie.gouv.fr/explore/dataset/" in description:
+            parts = description.split("data.economie.gouv.fr/explore/dataset/")
+            if len(parts) > 1:
+                # Basic cleaning of the extracted slug
+                return parts[1].split("/")[0].split(")")[0].split('"')[0].strip()
+
+        return None
+
+    def _get_raw_value(self, path: list[str]) -> str | None:
+        """Helper to safely traverse the raw metadata dictionary."""
+        current = self.raw
+        for key in path:
+            if not isinstance(current, dict):
+                return None
+            current = current.get(key, {})
+        return current if isinstance(current, str) else None
+
     @classmethod
     def from_dict(cls, data):
         return cls(
@@ -269,6 +329,11 @@ class Dataset:
             last_version_timestamp=data.get("last_version_timestamp"),
             checksum=data.get("checksum"),
             is_deleted=data.get("deleted", data.get("is_deleted", False)),
+            linked_dataset_id=(
+                UUID(data["linked_dataset_id"])
+                if data.get("linked_dataset_id") and not isinstance(data["linked_dataset_id"], UUID)
+                else data.get("linked_dataset_id")
+            ),
         )
 
     def to_dict(self) -> dict:
@@ -279,6 +344,7 @@ class Dataset:
         data["last_sync_status"] = self.last_sync_status.value if self.last_sync_status else None
         data["quality"] = asdict(self.quality) if self.quality else None
         data["versions"] = [asdict(v) for v in self.versions] if self.versions else []
+        data["linked_dataset_id"] = str(self.linked_dataset_id) if self.linked_dataset_id else None
         return data
 
     def __repr__(self) -> str:

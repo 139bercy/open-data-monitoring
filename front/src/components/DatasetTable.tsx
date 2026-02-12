@@ -379,6 +379,19 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                       🗑️
                     </span>
                   )}
+                  {item.linkedDatasetId && (
+                    <span
+                      className="fr-badge fr-badge--info"
+                      style={{
+                        minWidth: "4rem",
+                        textAlign: "center",
+                        alignItems: "center",
+                      }}
+                      title={`Lié à ${item.linkedPlatformName}: ${item.linkedDatasetSlug}`}
+                    >
+                      🔗
+                    </span>
+                  )}
                 </div>,
                 item.title ?? "—",
                 <span

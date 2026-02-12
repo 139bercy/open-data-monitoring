@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 from uuid import UUID
 
@@ -11,16 +13,11 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_version(self, params: "DatasetVersionParams") -> None:
-        """Add a new version of a dataset.
-
-        Args:
-            params: DatasetVersionParams containing all version data
-        """
+    def add_version(self, params: DatasetVersionParams) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, dataset_id: UUID) -> Dataset:
+    def get(self, dataset_id: UUID, include_versions: bool = True) -> Dataset:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -33,10 +30,18 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
 
     @abc.abstractmethod
     def get_publishers_stats(self) -> list[dict[str, any]]:
-        """Récupère les statistiques des publishers (nom et nombre de datasets)"""
         raise NotImplementedError
 
-    def get_id_by_slug(self, platform_id, slug):
+    @abc.abstractmethod
+    def get_id_by_slug(self, platform_id: UUID, slug: str) -> UUID | None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_id_by_slug_globally(self, slug: str) -> UUID | None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def update_linking(self, dataset: Dataset) -> None:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -63,7 +68,6 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         page: int = 1,
         page_size: int = 25,
     ) -> tuple[list[dict], int]:
-        """Search datasets with filters, sorting and pagination."""
         raise NotImplementedError
 
     @abc.abstractmethod

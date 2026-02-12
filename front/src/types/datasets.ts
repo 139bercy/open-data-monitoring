@@ -50,6 +50,9 @@ export type DatasetSummary = {
   hasDescription: boolean;
   isDeleted: boolean | null;
   quality?: QualityIndicators;
+  linkedDatasetId?: UUID;
+  linkedDatasetSlug?: string;
+  linkedPlatformName?: string;
 };
 
 // ----------------------------------------------------------------------------
@@ -93,6 +96,9 @@ export type DatasetDetail = {
   restricted: boolean | null;
   hasDescription: boolean;
   isDeleted: boolean | null;
+  linkedDatasetId?: UUID;
+  linkedDatasetSlug?: string;
+  linkedPlatformName?: string;
   quality?: QualityIndicators;
   currentSnapshot: SnapshotVersion | null;
   snapshots?: SnapshotVersion[] | null; // Only when include_snapshots=true

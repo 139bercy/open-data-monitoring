@@ -35,7 +35,14 @@ def test_strip_volatile_fields_datagouv():
     assert "last_modified" not in stripped
     assert "last_modified_internal" not in stripped["internal"]
     assert stripped["internal"]["created_at_internal"] == "2024-01-01T12:00:00Z"
-    assert "resources" not in stripped
+    assert stripped["internal"]["created_at_internal"] == "2024-01-01T12:00:00Z"
+
+    # Resources: granular stripping
+    assert "resources" in stripped
+    res = stripped["resources"][0]
+    assert "check:date" not in res["extras"]
+    assert "analysis:parsing:status" not in res["extras"]
+    assert res["extras"]["stable_field"] == "keep_me"
 
 
 def test_hashing_stability():
@@ -107,7 +114,7 @@ def test_postgresql_deduplication(pg_app, pg_datagouv_platform, datagouv_dataset
 
 def test_postgresql_reconstruction(pg_app, pg_datagouv_platform, datagouv_dataset):
     # Arrange: Add some volatile fields that should be stripped then reconstructed
-    datagouv_dataset["harvest"] = {"last_id": "123", "status": "ok"}
+    datagouv_dataset["harvest"] = {"last_id": "123", "status": "ok", "last_update": "2024-01-01T12:00:00Z"}
     datagouv_dataset["metrics"]["reuses_by_months"] = {"2024-01": 5}
     dataset_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
 
@@ -130,7 +137,7 @@ def test_postgresql_reconstruction(pg_app, pg_datagouv_platform, datagouv_datase
     # The blob stored in DB should NOT have these fields
     client = pg_app.uow.client
     blob = client.fetchone("SELECT data FROM dataset_blobs LIMIT 1")["data"]
-    assert "harvest" not in blob
+    assert "last_update" not in blob
     assert "reuses_by_months" not in blob["metrics"]
 
 

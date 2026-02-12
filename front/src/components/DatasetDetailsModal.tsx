@@ -31,6 +31,8 @@ export type DatasetDetailsModalProps = Readonly<{
   dataset?: DatasetDetail | null;
   platformName?: string | null;
   platformUrl?: string | null;
+  onNavigate?: (id: string) => void;
+  onClose?: () => void;
 }>;
 
 const copyToClipboard = async (text: string) => {
@@ -564,6 +566,7 @@ function InfoTab({
   versionsCount,
   onSync,
   syncing,
+  onNavigate,
 }: {
   dataset: DatasetDetail;
   platformName?: string | null;
@@ -572,9 +575,39 @@ function InfoTab({
   versionsCount: number;
   onSync: () => void;
   syncing: boolean;
+  onNavigate?: (id: string) => void;
 }) {
   return (
-    <div className="fr-py-4w">
+    <div className="fr-pt-1w fr-pb-4w">
+      {dataset.linkedDatasetSlug && (
+        <div
+          className="fr-mb-2w fr-p-2w"
+          style={{
+            backgroundColor: "var(--background-alt-blue-france)",
+            borderRadius: "4px",
+            border: "1px dashed var(--border-default-blue-france)",
+          }}
+        >
+          <p className="fr-text--xs fr-mb-0">
+            🔗 Ce jeu de données est lié avec{" "}
+            {dataset.linkedDatasetId ? (
+              <a
+                className="fr-link"
+                style={{ fontSize: "inherit", verticalAlign: "baseline" }}
+                href={`/datasets/${dataset.linkedDatasetId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <code>{dataset.linkedDatasetSlug}</code>
+              </a>
+            ) : (
+              <code>{dataset.linkedDatasetSlug}</code>
+            )}{" "}
+            sur <strong>{dataset.linkedPlatformName}</strong>.
+            <br />
+          </p>
+        </div>
+      )}
       <div
         className="fr-mb-3w"
         style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
@@ -609,20 +642,6 @@ function InfoTab({
         </Button>
       </div>
       <div className="fr-text--sm">
-        <p>
-          <strong>Plateforme:</strong>{" "}
-          {platformUrl ? (
-            <a
-              href={platformUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {platformName}
-            </a>
-          ) : (
-            platformName || dataset.platformId
-          )}
-        </p>
         <p>
           <strong>Producteur:</strong> {dataset.publisher ?? "—"}
         </p>
@@ -1002,6 +1021,8 @@ export function DatasetDetailsModal({
   dataset: initialDataset,
   platformName,
   platformUrl,
+  onNavigate,
+  onClose,
 }: DatasetDetailsModalProps): JSX.Element {
   const { dataset, refresh } = useDatasetManager(initialDataset || null);
   const {
@@ -1049,6 +1070,7 @@ export function DatasetDetailsModal({
         title={undefined}
         size="large"
         style={{ minWidth: "85%" }}
+        onConceal={onClose}
       >
         <style>{`#dataset-details-modal .fr-modal__dialog { max-width: 85vw !important; }`}</style>
 
@@ -1104,6 +1126,7 @@ export function DatasetDetailsModal({
                   versionsCount={versions?.length ?? 0}
                   onSync={sync}
                   syncing={syncing}
+                  onNavigate={onNavigate}
                 />
               ),
             },

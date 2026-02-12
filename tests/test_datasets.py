@@ -296,3 +296,19 @@ def test_ods_clean_slug_quality_check(app, ods_platform, ods_dataset):
 
     # Assert
     assert result.quality.is_slug_valid is True
+
+
+def test_link_datasets(app, ods_platform, ods_dataset, datagouv_platform, datagouv_dataset):
+    # Arrange
+    ods_dataset["metadata"] = {
+        "default": {"source": f"https://www.data.gouv.fr/fr/datasets/{datagouv_dataset['slug']}/"}
+    }
+    ods_dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    datagouv_dataset_id = upsert_dataset(app=app, platform=datagouv_platform, dataset=datagouv_dataset)
+    # 4. Trigger linking
+    app.dataset.link_datasets(dataset_or_id=ods_dataset_id)
+
+    # 5. Verify linking
+    result = app.dataset.repository.get(dataset_id=ods_dataset_id)
+    # Assert
+    assert result.linked_dataset_id == datagouv_dataset_id

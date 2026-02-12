@@ -66,6 +66,11 @@ class DatasetAPI(BaseModel):
     last_sync: datetime.datetime | None = None
     last_sync_status: SyncStatus | None = None
 
+    # Linked dataset
+    linked_dataset_id: UUID | None = None
+    linked_dataset_slug: str | None = None
+    linked_platform_name: str | None = None
+
 
 # ============================================================================
 # Dataset Creation

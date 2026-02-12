@@ -72,13 +72,22 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
             }
         )
 
-    def get(self, dataset_id) -> Dataset:
+    def get(self, dataset_id: UUID, include_versions: bool = True) -> Dataset:
         dataset = next((item for item in self.db if item.id == dataset_id), None)
         if dataset is not None:
-            dataset.versions = [item for item in self.versions if item["dataset_id"] == dataset_id]
-            if dataset.versions:
-                dataset.last_version_timestamp = dataset.versions[-1].get("timestamp")
-                dataset.checksum = dataset.versions[-1].get("checksum")
+            if include_versions:
+                dataset.versions = [item for item in self.versions if item["dataset_id"] == dataset_id]
+            else:
+                dataset.versions = []
+
+            # Even if not including full history, we still populate identifying metadata from the latest version if available
+            relevant_versions = [item for item in self.versions if item["dataset_id"] == dataset_id]
+            if relevant_versions:
+                latest = relevant_versions[-1]
+                dataset.last_version_timestamp = latest.get("timestamp")
+                dataset.checksum = latest.get("checksum")
+                # Ensure raw metadata is synced with latest version
+                dataset.raw = latest.get("snapshot") or {}
             return dataset
         return
 
@@ -110,11 +119,25 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
             {"publisher": publisher, "dataset_count": count} for publisher, count in sorted(publisher_counts.items())
         ]
 
-    def get_id_by_slug(self, platform_id, slug):
-        dataset = next((item for item in self.db if str(item.slug) == str(slug)), None)
+    def get_id_by_slug(self, platform_id: UUID, slug: str) -> UUID | None:
+        dataset = next(
+            (item for item in self.db if str(item.slug) == str(slug) and item.platform_id == platform_id), None
+        )
         if dataset is not None:
             return dataset.id
-        return
+        return None
+
+    def get_id_by_slug_globally(self, slug: str, exclude_id: UUID | None = None) -> UUID | None:
+        dataset = next(
+            (item for item in self.db if str(item.slug) == str(slug) and (not exclude_id or item.id != exclude_id)),
+            None,
+        )
+        if dataset is not None:
+            return dataset.id
+        return None
+
+    def update_linking(self, dataset: Dataset) -> None:
+        self.add(dataset)
 
     def update_dataset_sync_status(self, platform_id, dataset_id, status):
         instance = self.get(dataset_id=dataset_id)
@@ -194,6 +217,7 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
                     "last_sync": d.last_sync,
                     "last_sync_status": d.last_sync_status,
                     "deleted": d.is_deleted,
+                    "linked_dataset_id": d.linked_dataset_id,
                     "quality": {
                         "has_description": (
                             getattr(d.quality, "has_description", None) if hasattr(d, "quality") else None

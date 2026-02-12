@@ -199,3 +199,18 @@ def test_postgresql_check_deletions_isolation_between_platforms(pg_app, pg_ods_p
     # Assert: Platform B dataset should be UNTOUCHED
     result_b = pg_app.dataset.repository.get(dataset_id=dataset_b_id)
     assert result_b.is_deleted is False
+
+
+def test_postgresql_get_id_by_slug_globally_with_suffix(pg_app, pg_ods_platform, ods_dataset):
+    # Arrange
+    dataset_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    clean_slug = ods_dataset["dataset_id"]
+    suffix_slug = f"{clean_slug}-571796"
+
+    # Act
+    id_clean = pg_app.dataset.repository.get_id_by_slug_globally(clean_slug)
+    id_suffix = pg_app.dataset.repository.get_id_by_slug_globally(suffix_slug)
+
+    # Assert
+    assert id_clean == dataset_id
+    assert id_suffix == dataset_id

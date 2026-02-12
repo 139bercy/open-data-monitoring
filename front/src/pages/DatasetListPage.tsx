@@ -15,6 +15,7 @@ import type {
   PlatformRef,
   PublishersRef,
 } from "../types/datasets";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   getDatasets,
   getPlatforms,
@@ -23,6 +24,9 @@ import {
 } from "../api/datasets";
 
 export function DatasetListPage(): JSX.Element {
+  const { id: routeId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
   const [query, setQuery] = useState<DatasetListQuery>({
     page: 1,
     pageSize: 25,
@@ -42,6 +46,13 @@ export function DatasetListPage(): JSX.Element {
   const [publishers, setPublishers] = useState<PublishersRef>([]);
 
   const [selected, setSelected] = useState<DatasetDetail | null>(null);
+
+  // handle deep link
+  useEffect(() => {
+    if (routeId && (!selected || selected.id !== routeId)) {
+      handleOpenDetails(routeId);
+    }
+  }, [routeId]);
 
   // load ref data once (platforms)
   useEffect(() => {
@@ -223,6 +234,8 @@ export function DatasetListPage(): JSX.Element {
             : null
         }
         platformUrl={selected?.page ? new URL(selected.page).origin : null}
+        onNavigate={handleOpenDetails}
+        onClose={() => navigate("/datasets")}
       />
       <div className="fr-mt-6w">
         <Button

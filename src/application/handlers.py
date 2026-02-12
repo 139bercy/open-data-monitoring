@@ -100,6 +100,10 @@ def upsert_dataset(app: App, platform: Platform, dataset: dict) -> UUID:
             platform_id=platform.id, dataset_id=instance.id, status="success"
         )
 
+        # Attempt to establish link with other platform datasets
+        # We pass the full instance to utilize in-memory data (like harvest) before it's stripped
+        app.dataset.link_datasets(dataset_or_id=instance)
+
         return instance.id
 
 

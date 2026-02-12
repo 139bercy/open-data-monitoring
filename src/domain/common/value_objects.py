@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from uuid import UUID
 
 
 @dataclass(frozen=True)
@@ -17,6 +18,9 @@ class Slug(ValueObject):
     value: str
 
     def __post_init__(self):
+        if isinstance(self.value, UUID):
+            object.__setattr__(self, "value", str(self.value))
+
         if not self.value or not isinstance(self.value, str):
             raise InvalidDomainValueError("Slug must be a non-empty string")
         # Allow lowercase letters, numbers, hyphens, and underscores

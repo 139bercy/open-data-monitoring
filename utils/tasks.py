@@ -117,7 +117,7 @@ def merge_data_eco_datasets():
     logger.info("💾 Fichier final data-eco.json sauvegardé")
 
 
-def process_data_gouv():
+def get_data_gouv_datasets():
     organization = os.environ["DATA_GOUV_ORGANIZATION"]
     url = "http://www.data.gouv.fr/api/1/datasets/"
     params = {"organization": organization, "page_size": 1000}
@@ -128,6 +128,9 @@ def process_data_gouv():
         text = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
         file.write(text)
 
+
+def process_data_gouv():
+    get_data_gouv_datasets()
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         for dataset in data:

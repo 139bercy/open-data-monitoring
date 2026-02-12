@@ -50,6 +50,10 @@ function App(): JSX.Element {
           element={<DatasetListPage />}
         />
         <Route
+          path="/datasets/:id"
+          element={<DatasetListPage />}
+        />
+        <Route
           path="/platforms"
           element={<PlatformListPage />}
         />
@@ -65,6 +69,7 @@ function App(): JSX.Element {
       </Routes>
 
       <Footer
+        accessibility="fully compliant"
         bottomItems={[
           <a
             className="fr-footer__bottom-link"

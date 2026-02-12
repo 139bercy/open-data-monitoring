@@ -54,13 +54,15 @@ def platform(app):
 
 
 @pytest.fixture
-def ods_platform(platform):
+def ods_platform(app):
+    platform = Platform(id=uuid.uuid4(), **platform_1)
     platform.type = "opendatasoft"
     return platform
 
 
 @pytest.fixture
-def datagouv_platform(platform):
+def datagouv_platform(app):
+    platform = Platform(id=uuid.uuid4(), **platform_1)
     platform.type = "datagouv"
     return platform
 
@@ -84,7 +86,6 @@ def setup_test_database():
             migration_conn.cursor() as cur,
         ):
             cur.execute(open("db/init.sql").read())
-            cur.execute(open("db/patchs/2026-02-09-handle-dataset-blob-and-versions.sql").read())
             migration_conn.commit()
     finally:
         postgres.close()

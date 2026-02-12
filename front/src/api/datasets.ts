@@ -84,6 +84,9 @@ export async function getDatasets(query: DatasetListQuery = {}): Promise<{
     lastSyncStatus: it.last_sync_status,
     hasDescription: it.has_description,
     isDeleted: it.deleted ?? null,
+    linkedDatasetId: it.linked_dataset_id,
+    linkedDatasetSlug: it.linked_dataset_slug,
+    linkedPlatformName: it.linked_platform_name,
     quality: it.quality,
   }));
   return {
@@ -169,6 +172,9 @@ export async function getDatasetDetail(
       : undefined,
     hasDescription: data.has_description,
     isDeleted: data.deleted ?? null,
+    linkedDatasetId: data.linked_dataset_id,
+    linkedDatasetSlug: data.linked_dataset_slug,
+    linkedPlatformName: data.linked_platform_name,
     quality: data.quality,
   };
 }
