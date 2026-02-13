@@ -107,6 +107,25 @@ class ApiClient {
   delete<T>(path: string, init?: Omit<RequestOptions, "method">) {
     return this.request<T>(path, { ...init, method: "DELETE" });
   }
+
+  async getBlob(path: string, query?: Record<string, unknown>): Promise<Blob> {
+    const url = `${this.baseUrl}${path}${toQueryString(query)}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        ...this.defaultHeaders,
+        // Override Accept for blobs if needed, or keep default
+      },
+    });
+
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status} ${res.statusText}`);
+      (err as any).status = res.status;
+      throw err;
+    }
+
+    return await res.blob();
+  }
 }
 
 // Always use relative "/api" so Browser -> (Vite dev proxy ->) Express proxy -> FastAPI.

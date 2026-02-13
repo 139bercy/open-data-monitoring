@@ -570,7 +570,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         )
 
         # Count total
-        count_query = f"SELECT COUNT(*) AS cnt FROM datasets WHERE {where_sql}"
+        count_query = f"SELECT COUNT(*) AS cnt FROM datasets d WHERE {where_sql}"
         total_rows = self.client.fetchall(count_query, tuple(params))
         total = int(total_rows[0]["cnt"]) if total_rows else 0
 
@@ -702,28 +702,28 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         params: list = []
 
         if platform_id:
-            where_clauses.append("platform_id = %s")
+            where_clauses.append("d.platform_id = %s")
             params.append(platform_id)
         if publisher:
-            where_clauses.append("publisher = %s")
+            where_clauses.append("d.publisher = %s")
             params.append(publisher)
         if q:
-            where_clauses.append("slug ILIKE %s")
+            where_clauses.append("d.slug ILIKE %s")
             params.append(f"%{q}%")
         if created_from:
-            where_clauses.append("created >= %s")
+            where_clauses.append("d.created >= %s")
             params.append(created_from)
         if created_to:
-            where_clauses.append("created <= %s")
+            where_clauses.append("d.created <= %s")
             params.append(created_to)
         if modified_from:
-            where_clauses.append("modified >= %s")
+            where_clauses.append("d.modified >= %s")
             params.append(modified_from)
         if modified_to:
-            where_clauses.append("modified <= %s")
+            where_clauses.append("d.modified <= %s")
             params.append(modified_to)
         if is_deleted is not None:
-            where_clauses.append("deleted = %s")
+            where_clauses.append("d.deleted = %s")
             params.append(is_deleted)
 
         return " AND ".join(where_clauses), params

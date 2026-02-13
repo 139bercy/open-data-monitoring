@@ -11,6 +11,7 @@ import {
   evaluateDataset,
   getDatasetDetail,
   syncDatasetFromSource,
+  downloadAuditReport,
 } from "../api/datasets";
 import {
   CompareSnapshotsModal,
@@ -77,28 +78,6 @@ function useDatasetManager(initialDataset: DatasetDetail | null) {
   }, [dataset?.id]);
 
   return { dataset, setDataset, loading, setLoading, refresh };
-}
-
-/* Gère l'état de l'audit de qualité (appel LLM) */
-function useQualityAudit(datasetId?: string, onRefresh?: () => Promise<void>) {
-  const [evaluating, setEvaluating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const evaluate = useCallback(async () => {
-    if (!datasetId) return;
-    setEvaluating(true);
-    setError(null);
-    try {
-      await evaluateDataset(datasetId);
-      if (onRefresh) await onRefresh();
-    } catch (err: any) {
-      setError(err.message ?? "L'audit a échoué");
-    } finally {
-      setEvaluating(false);
-    }
-  }, [datasetId, onRefresh]);
-
-  return { evaluating, error, evaluate };
 }
 
 /* Gère l'état de synchronisation avec la source */
@@ -630,16 +609,17 @@ function InfoTab({
               : "Slug contient des caractères spéciaux"}
           </Badge>
         )}
-        <Button
-          priority="tertiary"
-          size="small"
-          iconId="ri-refresh-line"
-          onClick={onSync}
-          disabled={syncing || !!dataset.isDeleted}
-          className="fr-ml-auto"
-        >
-          {syncing ? "Synchro..." : "Synchroniser depuis la source"}
-        </Button>
+        <div className="fr-ml-auto">
+          <Button
+            priority="tertiary"
+            size="medium"
+            iconId="fr-icon-refresh-line"
+            onClick={onSync}
+            disabled={syncing || !!dataset.isDeleted}
+          >
+            {syncing ? "Synchro..." : "Synchroniser depuis la source"}
+          </Button>
+        </div>
       </div>
       <div className="fr-text--sm">
         <p>
@@ -705,7 +685,6 @@ function InfoTab({
       </div>
       <div className="fr-mt-4w">
         <Button
-          iconId="ri-external-link-line"
           priority="secondary"
           onClick={() => window.open(dataset.page, "_blank")}
         >
@@ -725,19 +704,63 @@ function InfoTab({
   );
 }
 
+/* Gère l'état de l'audit de qualité (appel LLM) */
+function useQualityAudit(
+  datasetId?: string,
+  datasetSlug?: string,
+  onRefresh?: () => Promise<void>
+) {
+  const [evaluating, setEvaluating] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const evaluate = useCallback(async () => {
+    if (!datasetId) return;
+    setEvaluating(true);
+    setError(null);
+    try {
+      await evaluateDataset(datasetId);
+      if (onRefresh) await onRefresh();
+    } catch (err: any) {
+      setError(err.message ?? "L'audit a échoué");
+    } finally {
+      setEvaluating(false);
+    }
+  }, [datasetId, onRefresh]);
+
+  const downloadReport = useCallback(async () => {
+    if (!datasetId || !datasetSlug) return;
+    setDownloading(true);
+    try {
+      await downloadAuditReport(datasetId, datasetSlug);
+    } catch (err: any) {
+      setError(err.message ?? "Le téléchargement a échoué");
+    } finally {
+      setDownloading(false);
+    }
+  }, [datasetId, datasetSlug]);
+
+  return { evaluating, downloading, error, evaluate, downloadReport };
+}
+
 /* Affiche l'onglet Qualité du jeu de données */
 function QualityTab({
   dataset,
   evaluating,
+  downloading,
   evalError,
+
   onEvaluate,
+  onDownloadReport,
   onSyncAndEvaluate,
   syncing,
 }: {
   dataset: DatasetDetail;
   evaluating: boolean;
+  downloading: boolean;
   evalError: string | null;
   onEvaluate: () => void;
+  onDownloadReport: () => void;
   onSyncAndEvaluate: () => void;
   syncing: boolean;
 }) {
@@ -758,27 +781,52 @@ function QualityTab({
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <Button
             priority="secondary"
-            size="small"
+            size="medium"
+            iconId="ri-robot-line"
+            onClick={onEvaluate}
+            disabled={evaluating || syncing || !!dataset.isDeleted}
+            title="Lancer l'audit seul (IA)"
+            className="fr-btn--icon-only"
+          />
+          <Button
+            priority="tertiary"
+            size="medium"
             iconId="ri-refresh-line"
             onClick={onSyncAndEvaluate}
             disabled={evaluating || syncing || !!dataset.isDeleted}
-            title="Synchronise les données puis relance l'audit pour voir l'impact de vos modifications"
-          >
-            {syncing
-              ? "Synchro..."
-              : evaluating
-                ? "Audit..."
-                : "Sync & Évaluer"}
-          </Button>
+            title={
+              syncing
+                ? "Synchronisation en cours..."
+                : evaluating
+                  ? "Audit en cours..."
+                  : "Synchroniser et relancer l'audit complet"
+            }
+            className="fr-btn--icon-only"
+          />
+          <Button
+            priority="secondary"
+            size="medium"
+            iconId="ri-external-link-line"
+            onClick={() =>
+              window.open(`/reports/audit/${dataset.id}`, "_blank")
+            }
+            disabled={
+              (!!dataset.id && !!dataset.isDeleted) || evaluating || syncing
+            }
+            title="Voir le rapport complet sur une page dédiée"
+            className="fr-btn--icon-only"
+          />
           <Button
             priority="tertiary"
-            size="small"
-            iconId="ri-ai-generate"
-            onClick={onEvaluate}
-            disabled={evaluating || syncing || !!dataset.isDeleted}
-          >
-            {evaluating ? "Audit en cours..." : "Audit seul"}
-          </Button>
+            size="medium"
+            iconId="ri-file-download-line"
+            onClick={onDownloadReport}
+            disabled={
+              downloading || !!dataset.isDeleted || evaluating || syncing
+            }
+            title="Télécharger le rapport d'audit (PDF)"
+            className="fr-btn--icon-only"
+          />
         </div>
       </div>
 
@@ -1027,9 +1075,11 @@ export function DatasetDetailsModal({
   const { dataset, refresh } = useDatasetManager(initialDataset || null);
   const {
     evaluating,
+    downloading,
     error: evalError,
     evaluate,
-  } = useQualityAudit(dataset?.id, refresh);
+    downloadReport,
+  } = useQualityAudit(dataset?.id, dataset?.slug, refresh);
   const { syncing, sync } = useSyncDataset(dataset?.page, refresh);
   const {
     versions,
@@ -1130,22 +1180,28 @@ export function DatasetDetailsModal({
                 />
               ),
             },
-            {
-              label: "Audit Qualité (IA)",
-              content: (
-                <QualityTab
-                  dataset={dataset}
-                  evaluating={evaluating}
-                  evalError={evalError}
-                  onEvaluate={evaluate}
-                  syncing={syncing}
-                  onSyncAndEvaluate={async () => {
-                    await sync();
-                    await evaluate();
-                  }}
-                />
-              ),
-            },
+            ...(!platformName?.toLowerCase().includes("data.gouv")
+              ? [
+                  {
+                    label: "Audit Qualité (IA)",
+                    content: (
+                      <QualityTab
+                        dataset={dataset}
+                        evaluating={evaluating}
+                        downloading={downloading}
+                        evalError={evalError}
+                        onEvaluate={evaluate}
+                        onDownloadReport={downloadReport}
+                        syncing={syncing}
+                        onSyncAndEvaluate={async () => {
+                          await sync();
+                          await evaluate();
+                        }}
+                      />
+                    ),
+                  },
+                ]
+              : []),
             {
               label: "Historique",
               content: (

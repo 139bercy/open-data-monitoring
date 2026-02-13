@@ -214,3 +214,31 @@ def test_postgresql_get_id_by_slug_globally_with_suffix(pg_app, pg_ods_platform,
     # Assert
     assert id_clean == dataset_id
     assert id_suffix == dataset_id
+
+
+def test_postgresql_search_by_platform_id(pg_app, pg_ods_platform, ods_dataset):
+    # Arrange
+    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+
+    # Act
+    items, total = pg_app.dataset.repository.search(platform_id=str(pg_ods_platform.id))
+
+    # Assert
+    assert total == 1
+    assert len(items) == 1
+    assert items[0]["slug"] == ods_dataset["dataset_id"]
+
+
+def test_postgresql_search_sorting(pg_app, pg_ods_platform, ods_dataset):
+    # Arrange
+    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+
+    # Act
+    # Sort by 'modified' which is present in multiple tables (datasets d, datasets ld)
+    # but selected as 'modified' in the main query.
+    items, total = pg_app.dataset.repository.search(sort_by="modified", order="desc")
+
+    # Assert
+    assert total == 1
+    assert len(items) == 1
+    assert items[0]["slug"] == ods_dataset["dataset_id"]

@@ -178,3 +178,26 @@ async def evaluate_dataset(dataset_id: UUID):
     from dataclasses import asdict
 
     return asdict(evaluation)
+
+
+@router.get("/{dataset_id}/audit-report")
+async def get_audit_report(dataset_id: UUID):
+    """
+    Génère et télécharge un rapport d'audit qualité au format PDF.
+    """
+    from fastapi.responses import StreamingResponse
+
+    from application.services.headless_report import PlaywrightReportGenerator
+
+    dataset = domain_app.dataset.repository.get(dataset_id)
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    generator = PlaywrightReportGenerator()
+    pdf_buffer = await generator.generate_audit_report(dataset)
+
+    filename = f"audit_report_{dataset.slug}.pdf"
+
+    return StreamingResponse(
+        pdf_buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

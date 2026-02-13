@@ -224,3 +224,20 @@ export async function evaluateDataset(id: string): Promise<any> {
 export async function syncDatasetFromSource(url: string): Promise<any> {
   return api.post<any>(`/datasets/add?url=${encodeURIComponent(url)}`, {});
 }
+
+export async function downloadAuditReport(
+  id: string,
+  slug: string
+): Promise<void> {
+  const blob = await api.getBlob(`/datasets/${id}/audit-report`);
+
+  // Trigger download in browser
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `audit_report_${slug}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}

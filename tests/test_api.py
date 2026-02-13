@@ -1,3 +1,4 @@
+from io import BytesIO
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -165,3 +166,31 @@ def test_api_list_datasets(mock_app):
     assert len(data["datasets"]) == 1
     assert data["datasets"][0]["title"] == "Test Title"
     mock_app.dataset.repository.search.assert_called_once()
+
+
+@patch("application.services.headless_report.PlaywrightReportGenerator")
+@patch("interfaces.api.routers.datasets.domain_app")
+def test_get_audit_report(mock_app, mock_generator_class):
+    # Arrange
+    dataset_id = uuid4()
+    mock_dataset = MagicMock()
+    mock_dataset.id = dataset_id
+    mock_dataset.slug = "test-dataset-pdf"
+
+    mock_app.dataset.repository.get.return_value = mock_dataset
+
+    # Mock generator instance and its async method
+    from unittest.mock import AsyncMock
+
+    mock_generator = mock_generator_class.return_value
+    mock_generator.generate_audit_report = AsyncMock(return_value=BytesIO(b"%PDF-1.4 mock content"))
+
+    # Act
+    # Note: the endpoint is async, but TestClient handles it
+    response = client.get(f"/api/v1/datasets/{dataset_id}/audit-report")
+
+    # Assert
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert "attachment; filename=audit_report_test-dataset-pdf.pdf" in response.headers["content-disposition"]
+    assert response.content.startswith(b"%PDF")
