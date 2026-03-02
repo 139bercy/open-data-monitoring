@@ -26,3 +26,20 @@ class EvaluationResponse(BaseModel):
     overall_score: float = Field(..., ge=0, le=100)
     criteria_scores: dict[str, CriterionScoreResponse]
     suggestions: list[SuggestionResponse]
+
+
+class LightIssueResponse(BaseModel):
+    """LLM response for a single issue in the light format."""
+
+    field: str
+    issue: str
+    fix: str
+    priority: str = Field(..., pattern="^(high|medium|low)$")
+
+
+class LightEvaluationResponse(BaseModel):
+    """Complete LLM response for metadata evaluation in the light format."""
+
+    overall_score: float = 0.0
+    scores: dict[str, float]
+    issues: list[LightIssueResponse]

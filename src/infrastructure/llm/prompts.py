@@ -97,7 +97,46 @@ Réponds UNIQUEMENT avec ce JSON exact :
   ]
 }}
 
+# RÉFÉRENTIELS
+
+## DCAT
+{dcat_reference}
+
+## CHARTE
+{charter}
+
 IMPORTANT: suggestions doit être un tableau d'OBJETS (pas de strings). Chaque objet doit avoir: field, current_value, suggested_value, reason, priority.
+"""
+
+SYSTEM_PROMPT_TEMPLATE_LIGHT = """
+### MISSION
+Expert Qualité Métadonnées (Administration Française). Évalue le JSON DCAT fourni.
+
+### ANALYSE PRÉALABLE (Court)
+- Liste 3 points critiques (Priorité High).
+
+### FORMAT JSON STRICT
+Réponds avec cet objet unique. Ne calcule pas 'overall_score' (mettre 0.0).
+{{
+  "overall_score": 0.0,
+  "scores": {{
+    "titre": 0,
+    "description": 0,
+    "producteur": 0,
+    "contact": 0,
+    "mots_cles": 0,
+    "date_pub": 0,
+    "licence": 0,
+    "date_maj": 0,
+    "refs": 0,
+    "freq": 0,
+    "spatial": 0,
+    "temporel": 0
+  }},
+  "issues": [
+    {{"field": "", "issue": "", "fix": "", "priority": "high/medium/low"}}
+  ]
+}}
 """
 
 USER_PROMPT_TEMPLATE_TEXT = """Évalue les métadonnées du dataset suivant :
@@ -113,15 +152,28 @@ USER_PROMPT_TEMPLATE_JSON = """Évalue les métadonnées du dataset suivant :
 Fournis une évaluation complète au format JSON."""
 
 
-def build_system_prompt(dcat_reference: str, charter: str, output: str) -> str:
+USER_PROMPT_TEMPLATE_LIGHT = """
+### DATASET
+{dataset}
+
+Réponds avec l'évaluation au format JSON."""
+
+
+def build_system_prompt(dcat_reference: str, charter: str, output: str, prompt_type: str = "standard") -> str:
     """Build the system prompt (ignoring references to fit context)."""
+    if prompt_type == "light":
+        return SYSTEM_PROMPT_TEMPLATE_LIGHT
+
     if output == "json":
         return SYSTEM_PROMPT_TEMPLATE_JSON.format(dcat_reference=dcat_reference, charter=charter)
     return SYSTEM_PROMPT_TEMPLATE_TEXT.format(dcat_reference=dcat_reference, charter=charter)
 
 
-def build_user_prompt(dataset: dict, output: str) -> str:
+def build_user_prompt(dataset: dict, output: str, prompt_type: str = "standard") -> str:
     """Build the user prompt with dataset information."""
+    if prompt_type == "light":
+        return USER_PROMPT_TEMPLATE_LIGHT.format(dataset=json.dumps(dataset, indent=2))
+
     if output == "json":
         return USER_PROMPT_TEMPLATE_JSON.format(
             dataset=json.dumps(dataset, indent=2),

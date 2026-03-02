@@ -235,7 +235,7 @@ export async function downloadAuditReport(
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `audit_report_${slug}.pdf`;
+  a.download = `audit-report-${slug}.pdf`;
   document.body.appendChild(a);
   a.click();
   window.URL.revokeObjectURL(url);

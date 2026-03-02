@@ -41,8 +41,21 @@ def cli_quality():
     is_flag=True,
     help="Export to md file",
 )
+@click.option(
+    "--prompt-type",
+    type=click.Choice(["standard", "light"]),
+    default="standard",
+    help="Prompt template to use (default: standard)",
+)
 def cli_evaluate_quality(
-    dataset_id: str, dcat: str, charter: str, provider: str, model: str | None, output: str, report: bool
+    dataset_id: str,
+    dcat: str,
+    charter: str,
+    provider: str,
+    model: str | None,
+    output: str,
+    report: bool,
+    prompt_type: str,
 ):
     """Evaluate metadata quality for a dataset."""
     console.print(f"\n[bold]Evaluating dataset {dataset_id}...[/bold]\n")
@@ -57,7 +70,11 @@ def cli_evaluate_quality(
 
         # Run evaluation
         evaluation = service.evaluate_dataset(
-            dataset_id=dataset_id, dcat_path=dcat, charter_path=charter, output=output
+            dataset_id=dataset_id,
+            dcat_path=dcat,
+            charter_path=charter,
+            output=output,
+            prompt_type=prompt_type,
         )
 
         # Display results

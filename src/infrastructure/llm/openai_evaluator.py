@@ -33,7 +33,9 @@ class OpenAIEvaluator(LLMEvaluator):
         self.client = OpenAI(api_key=self.api_key)
         self.model_name = model_name
 
-    def evaluate_metadata(self, dataset: Dataset, dcat_reference: str, charter: str, output: str) -> MetadataEvaluation:
+    def evaluate_metadata(
+        self, dataset: Dataset, dcat_reference: str, charter: str, output: str, prompt_type: str = "standard"
+    ) -> MetadataEvaluation:
         """
         Evaluate dataset metadata using OpenAI.
 
@@ -42,16 +44,20 @@ class OpenAIEvaluator(LLMEvaluator):
             dcat_reference: DCAT reference (Markdown)
             charter: Open Data charter (Markdown)
             output: Output format (text or json)
+            prompt_type: Type of prompt to use (standard or light)
 
         Returns:
             MetadataEvaluation with scores and suggestions
         """
-        logger.info(f"Evaluating metadata with OpenAI model {self.model_name}")
+        dataset_name = dataset.slug if hasattr(dataset, "slug") else dataset.get("title", "unknown")
+        logger.info(
+            f"Evaluating metadata for dataset {dataset_name} with OpenAI (model: {self.model_name}, prompt: {prompt_type})"
+        )
 
         # Build prompts
         try:
-            system_prompt = build_system_prompt(dcat_reference, charter, output)
-            user_prompt = build_user_prompt(dataset, output)
+            system_prompt = build_system_prompt(dcat_reference, charter, output, prompt_type=prompt_type)
+            user_prompt = build_user_prompt(dataset, output, prompt_type=prompt_type)
         except Exception as e:
             logger.error(f"Failed to build prompts for dataset evaluation: {e}")
             raise RuntimeError(f"Prompt builders failed: {e}")
@@ -88,12 +94,28 @@ class OpenAIEvaluator(LLMEvaluator):
                     raw_text=response_text,  # Store raw text evaluation
                 )
 
-            # For JSON output, validate with Pydantic
-            evaluation_data = json.loads(response_text)
-            validated = EvaluationResponse(**evaluation_data)
+            # JSON Parsing
+            try:
+                # Basic cleaning
+                json_content = response_text.replace("```json", "").replace("```", "").strip()
 
-            # Convert to domain model
-            return self._to_domain_model(dataset, validated)
+                if prompt_type == "light":
+                    from infrastructure.llm.models import LightEvaluationResponse
+
+                    parsed_light = LightEvaluationResponse.model_validate_json(json_content)
+                    return self._map_light_to_domain(dataset, parsed_light)
+
+                # Standard format
+                evaluation_data = json.loads(json_content)
+                validated = EvaluationResponse(**evaluation_data)
+
+                # Convert to domain model
+                return self._to_domain_model(dataset, validated)
+
+            except Exception as e:
+                logger.error(f"Failed to parse OpenAI JSON response: {e}")
+                logger.error(f"Response was: {response_text}")
+                raise ValueError(f"Invalid JSON from OpenAI: {e}")
 
         except ValidationError as e:
             logger.error(f"Failed to validate OpenAI response: {e}")
@@ -101,6 +123,95 @@ class OpenAIEvaluator(LLMEvaluator):
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
             raise RuntimeError(f"LLM evaluation failed: {e}")
+
+    def _map_light_to_domain(self, dataset: Dataset, light: any) -> MetadataEvaluation:
+        """Map the light prompt response format to domain MetadataEvaluation."""
+        # Map light keys to standard keys
+        key_map = {
+            "titre": "title",
+            "description": "description",
+            "producteur": "producer",
+            "contact": "contact",
+            "mots_cles": "keywords",
+            "date_pub": "publication_date",
+            "licence": "license",
+            "date_maj": "update_date",
+            "refs": "references",
+            "freq": "update_frequency",
+            "spatial": "spatial_coverage",
+            "temporel": "temporal_coverage",
+        }
+
+        # Standard weights
+        weights = {
+            "title": 0.10,
+            "description": 0.15,
+            "producer": 0.05,
+            "contact": 0.05,
+            "keywords": 0.05,
+            "publication_date": 0.05,
+            "license": 0.10,
+            "update_date": 0.05,
+            "references": 0.10,
+            "update_frequency": 0.10,
+            "spatial_coverage": 0.10,
+            "temporal_coverage": 0.10,
+        }
+
+        categories = {
+            "title": "descriptive",
+            "description": "descriptive",
+            "producer": "descriptive",
+            "contact": "descriptive",
+            "keywords": "descriptive",
+            "publication_date": "administrative",
+            "license": "administrative",
+            "update_date": "administrative",
+            "references": "administrative",
+            "update_frequency": "geotemporal",
+            "spatial_coverage": "geotemporal",
+            "temporal_coverage": "geotemporal",
+        }
+
+        criteria_scores = {}
+        overall_score = 0.0
+
+        for light_key, score in light.scores.items():
+            std_key = key_map.get(light_key, light_key)
+            weight = weights.get(std_key, 0.0)
+            category = categories.get(std_key, "unknown")
+
+            # Find issues related to this field
+            field_issues = [i.issue for i in light.issues if i.field == light_key]
+
+            criteria_scores[std_key] = CriterionScore(
+                criterion=std_key,
+                score=float(score),
+                issues=field_issues,
+                category=category,
+                weight=weight,
+            )
+            overall_score += float(score) * weight
+
+        suggestions = [
+            Suggestion(
+                field=key_map.get(i.field, i.field),
+                current_value=None,  # Not provided in light format
+                suggested_value=i.fix,
+                reason=i.issue,
+                priority=i.priority,
+            )
+            for i in light.issues
+        ]
+
+        return MetadataEvaluation(
+            dataset_id=None,
+            dataset_slug=None,
+            evaluated_at=datetime.now(),
+            overall_score=overall_score,
+            criteria_scores=criteria_scores,
+            suggestions=suggestions,
+        )
 
     def _to_domain_model(self, dataset: Dataset, response: EvaluationResponse) -> MetadataEvaluation:
         """Convert Pydantic response to domain model."""

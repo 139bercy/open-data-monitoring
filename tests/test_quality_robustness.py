@@ -14,7 +14,7 @@ class MockEvaluator(OpenAIEvaluator):
     def __init__(self):
         pass
 
-    def evaluate_metadata(self, dataset, dcat_reference, charter, output):
+    def evaluate_metadata(self, dataset, dcat_reference, charter, output, prompt_type="standard"):
         from domain.quality.evaluation import MetadataEvaluation
 
         return MetadataEvaluation(

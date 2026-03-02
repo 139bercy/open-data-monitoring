@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 
 import requests
-from pydantic import ValidationError
 
 from domain.datasets.aggregate import Dataset
 from domain.quality.evaluation import CriterionScore, MetadataEvaluation, Suggestion
@@ -36,7 +35,9 @@ class OllamaEvaluator(LLMEvaluator):
             logger.warning(f"Ollama not reachable at {base_url}: {e}")
             logger.warning("Make sure Ollama is running: 'ollama serve'")
 
-    def evaluate_metadata(self, dataset: Dataset, dcat_reference: str, charter: str) -> MetadataEvaluation:
+    def evaluate_metadata(
+        self, dataset: Dataset, dcat_reference: str, charter: str, output: str, prompt_type: str = "standard"
+    ) -> MetadataEvaluation:
         """
         Evaluate dataset metadata using Ollama.
 
@@ -44,34 +45,43 @@ class OllamaEvaluator(LLMEvaluator):
             dataset: Dataset to evaluate
             dcat_reference: DCAT reference (Markdown)
             charter: Open Data charter (Markdown)
+            output: Choose output format between text or json
+            prompt_type: Type of prompt to use (standard or light)
 
         Returns:
             MetadataEvaluation with scores and suggestions
         """
-        logger.info(f"Evaluating metadata for dataset {dataset.slug} with Ollama")
+        dataset_name = dataset.slug if hasattr(dataset, "slug") else dataset.get("title", "unknown")
+        logger.info(
+            f"Evaluating metadata for dataset {dataset_name} with Ollama (output: {output}, prompt: {prompt_type})"
+        )
 
         # Build prompts
-        system_prompt = build_system_prompt(dcat_reference, charter)
-        user_prompt = build_user_prompt(dataset)
+        system_prompt = build_system_prompt(dcat_reference, charter, output, prompt_type=prompt_type)
+        user_prompt = build_user_prompt(dataset, output, prompt_type=prompt_type)
 
         # Combine prompts for Ollama
         full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
         # Call Ollama
         try:
+            payload = {
+                "model": self.model_name,
+                "prompt": full_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,  # Low temperature for consistency
+                    "num_predict": 2048,  # Max tokens for response
+                    "num_ctx": 8192,  # Increase context window
+                },
+            }
+
+            if output == "json":
+                payload["format"] = "json"
+
             response = requests.post(
                 self.api_url,
-                json={
-                    "model": self.model_name,
-                    "prompt": full_prompt,
-                    "stream": False,
-                    "format": "json",  # Request JSON output
-                    "options": {
-                        "temperature": 0.1,  # Low temperature for consistency
-                        "num_predict": 2048,  # Max tokens for response
-                        "num_ctx": 8192,  # Increase context window
-                    },
-                },
+                json=payload,
                 timeout=300,  # 5 minutes timeout for local inference
             )
             response.raise_for_status()
@@ -82,12 +92,40 @@ class OllamaEvaluator(LLMEvaluator):
 
             logger.debug(f"Ollama response: {response_text[:500]}...")
 
-            # Validate with Pydantic
-            evaluation_data = json.loads(response_text)
-            validated = EvaluationResponse(**evaluation_data)
+            # For text output, return raw text wrapped in a simple evaluation object
+            if output == "text":
+                return MetadataEvaluation(
+                    dataset_id=None,  # Will be set by service
+                    dataset_slug=None,  # Will be set by service
+                    evaluated_at=datetime.now(),
+                    overall_score=0.0,
+                    criteria_scores=[],
+                    suggestions=[],
+                    raw_text=response_text,
+                )
 
-            # Convert to domain model
-            return self._to_domain_model(dataset, validated)
+            # JSON Parsing
+            try:
+                # Basic cleaning for some LLMs that might wrap JSON in markdown blocks
+                json_content = response_text.replace("```json", "").replace("```", "").strip()
+
+                if prompt_type == "light":
+                    from infrastructure.llm.models import LightEvaluationResponse
+
+                    parsed_light = LightEvaluationResponse.model_validate_json(json_content)
+                    return self._map_light_to_domain(dataset, parsed_light)
+
+                # Standard format
+                evaluation_data = json.loads(json_content)
+                validated = EvaluationResponse(**evaluation_data)
+
+                # Convert to domain model
+                return self._to_domain_model(dataset, validated)
+
+            except Exception as e:
+                logger.error(f"Failed to parse Ollama JSON response: {e}")
+                logger.error(f"Response was: {response_text}")
+                raise ValueError(f"Invalid JSON from Ollama: {e}")
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Ollama API error: {e}")
@@ -96,13 +134,95 @@ class OllamaEvaluator(LLMEvaluator):
                 "Make sure Ollama is running ('ollama serve') "
                 f"and model '{self.model_name}' is installed ('ollama pull {self.model_name}')"
             )
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse Ollama JSON response: {e}")
-            logger.error(f"Response was: {response_text}")
-            raise ValueError(f"Invalid JSON from Ollama: {e}")
-        except ValidationError as e:
-            logger.error(f"Failed to validate Ollama response: {e}")
-            raise ValueError(f"Invalid LLM response format: {e}")
+
+    def _map_light_to_domain(self, dataset: Dataset, light: any) -> MetadataEvaluation:
+        """Map the light prompt response format to domain MetadataEvaluation."""
+        # Map light keys to standard keys
+        key_map = {
+            "titre": "title",
+            "description": "description",
+            "producteur": "producer",
+            "contact": "contact",
+            "mots_cles": "keywords",
+            "date_pub": "publication_date",
+            "licence": "license",
+            "date_maj": "update_date",
+            "refs": "references",
+            "freq": "update_frequency",
+            "spatial": "spatial_coverage",
+            "temporel": "temporal_coverage",
+        }
+
+        # Standard weights
+        weights = {
+            "title": 0.10,
+            "description": 0.15,
+            "producer": 0.05,
+            "contact": 0.05,
+            "keywords": 0.05,
+            "publication_date": 0.05,
+            "license": 0.10,
+            "update_date": 0.05,
+            "references": 0.10,
+            "update_frequency": 0.10,
+            "spatial_coverage": 0.10,
+            "temporal_coverage": 0.10,
+        }
+
+        categories = {
+            "title": "descriptive",
+            "description": "descriptive",
+            "producer": "descriptive",
+            "contact": "descriptive",
+            "keywords": "descriptive",
+            "publication_date": "administrative",
+            "license": "administrative",
+            "update_date": "administrative",
+            "references": "administrative",
+            "update_frequency": "geotemporal",
+            "spatial_coverage": "geotemporal",
+            "temporal_coverage": "geotemporal",
+        }
+
+        criteria_scores = {}
+        overall_score = 0.0
+
+        for light_key, score in light.scores.items():
+            std_key = key_map.get(light_key, light_key)
+            weight = weights.get(std_key, 0.0)
+            category = categories.get(std_key, "unknown")
+
+            # Find issues related to this field
+            field_issues = [i.issue for i in light.issues if i.field == light_key]
+
+            criteria_scores[std_key] = CriterionScore(
+                criterion=std_key,
+                score=float(score),
+                issues=field_issues,
+                category=category,
+                weight=weight,
+            )
+            overall_score += float(score) * weight
+
+        suggestions = [
+            Suggestion(
+                field=key_map.get(i.field, i.field),
+                current_value=None,  # Not provided in light format
+                suggested_value=i.fix,
+                reason=i.issue,
+                priority=i.priority,
+            )
+            for i in light.issues
+        ]
+
+        return MetadataEvaluation(
+            dataset_id=None,
+            dataset_slug=None,
+            evaluated_at=datetime.now(),
+            overall_score=overall_score,
+            criteria_scores=criteria_scores,
+            suggestions=suggestions,
+        )
 
     def _to_domain_model(self, dataset: Dataset, response: EvaluationResponse) -> MetadataEvaluation:
         """Convert Pydantic response to domain model."""
@@ -125,8 +245,8 @@ class OllamaEvaluator(LLMEvaluator):
         ]
 
         return MetadataEvaluation(
-            dataset_id=dataset.id,
-            dataset_slug=dataset.slug,
+            dataset_id=None,  # Will be set by service
+            dataset_slug=None,  # Will be set by service
             evaluated_at=datetime.now(),
             overall_score=response.overall_score,
             criteria_scores=criteria_scores,
