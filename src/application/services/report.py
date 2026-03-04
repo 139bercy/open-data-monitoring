@@ -230,7 +230,11 @@ class ReportGenerator:
         if results.get("suggestions"):
             self._add_improvement_suggestions(story, results["suggestions"], styles)
 
-        # 5. Miscellaneous
+        # 5. Business KPIs (Discoverability & Impact)
+        if dataset.quality and dataset.quality.discoverability:
+            self._add_business_kpis(story, dataset.quality, styles)
+
+        # 6. Miscellaneous
         self._add_additional_indicators(story, results, styles)
 
         doc.build(story)
@@ -426,6 +430,57 @@ class ReportGenerator:
             )
             story.append(KeepTogether(card))
             story.append(Spacer(1, 0.4 * cm))
+
+    def _add_business_kpis(self, story: list, quality: Any, styles: Any):
+        """Adds visual represention of Business KPIs."""
+        story.append(Paragraph("Indicateurs Business & Gouvernance", styles["SectionHeader"]))
+
+        # Discoverability
+        disc = quality.discoverability
+        story.append(Paragraph("DÉCOUVRABILITÉ", styles["SubSectionHeader"]))
+        disc_data = [
+            ["SEO (Titre)", f"{round(disc.seo_score)}/100"],
+            ["Complétude DCAT", f"{round(disc.dcat_completeness_score)}/100"],
+            ["Fraîcheur", f"{round(disc.freshness_score)}/100"],
+            [
+                "Qualité Sémantique",
+                f"{round(disc.semantic_quality_score or 0)}/100" if disc.semantic_quality_score else "N/A",
+            ],
+        ]
+        dt = Table(disc_data, colWidths=[8 * cm, 8 * cm])
+        dt.setStyle(
+            TableStyle(
+                [
+                    ("GRID", (0, 0), (-1, -1), 0.5, DSFR_GREY_900),
+                    ("PADDING", (0, 0), (-1, -1), 6),
+                    ("BACKGROUND", (1, 0), (1, -1), DSFR_BLUE_LIGHT),
+                ]
+            )
+        )
+        story.append(dt)
+        story.append(Spacer(1, 0.5 * cm))
+
+        # Impact
+        imp = quality.impact
+        story.append(Paragraph("IMPACT & ENGAGEMENT", styles["SubSectionHeader"]))
+        imp_data = [
+            ["Taux d'engagement", f"{imp.engagement_rate:.2%}"],
+            ["Intensité d'usage (API)", f"{imp.usage_intensity:.2%}"],
+            ["Score de popularité", f"{round(imp.popularity_score)}/100"],
+            ["Score Global Impact", f"<b>{round(imp.overall_impact_score)}/100</b>"],
+        ]
+        it = Table(imp_data, colWidths=[8 * cm, 8 * cm])
+        it.setStyle(
+            TableStyle(
+                [
+                    ("GRID", (0, 0), (-1, -1), 0.5, DSFR_GREY_900),
+                    ("PADDING", (0, 0), (-1, -1), 6),
+                    ("BACKGROUND", (1, 3), (1, 3), DSFR_BLUE_LIGHT),
+                ]
+            )
+        )
+        story.append(it)
+        story.append(Spacer(1, 1 * cm))
 
     def _add_additional_indicators(self, story: list, results: dict, styles: Any):
         """Adds other indicators at the end."""

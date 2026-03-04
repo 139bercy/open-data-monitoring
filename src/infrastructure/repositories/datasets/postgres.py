@@ -215,14 +215,15 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             ),
         )
         self.client.execute(
-            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results) "
-            "VALUES (%s, %s, %s, %s, %s, %s)"
+            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results, syntax_change_score) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)"
             "ON CONFLICT (dataset_id) DO UPDATE SET "
             "downloads_count = EXCLUDED.downloads_count, "
             "api_calls_count = EXCLUDED.api_calls_count, "
             "has_description = EXCLUDED.has_description, "
             "evaluation_results = EXCLUDED.evaluation_results, "
-            "is_slug_valid = EXCLUDED.is_slug_valid",
+            "is_slug_valid = EXCLUDED.is_slug_valid, "
+            "syntax_change_score = EXCLUDED.syntax_change_score",
             (
                 str(dataset.id),
                 dataset.quality.downloads_count,
@@ -230,6 +231,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 dataset.quality.has_description,
                 dataset.quality.is_slug_valid,
                 Json(dataset.quality.evaluation_results) if dataset.quality.evaluation_results else None,
+                dataset.quality.syntax_change_score,
             ),
         )
 
@@ -402,6 +404,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 has_description=data.get("has_description"),
                 is_slug_valid=data.get("is_slug_valid", True),
                 evaluation_results=data.get("evaluation_results"),
+                syntax_change_score=data.get("syntax_change_score"),
             )
 
         if not include_versions:
@@ -595,7 +598,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 GROUP BY dataset_id
             ),
             latest_quality AS (
-                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, syntax_change_score
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
             )
@@ -631,7 +634,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                    lp.name AS linked_platform_name,
                    dq.has_description as has_description,
                    dq.is_slug_valid as is_slug_valid,
-                   dq.evaluation_results as evaluation_results
+                   dq.evaluation_results as evaluation_results,
+                   dq.syntax_change_score as syntax_change_score
 
             FROM datasets d
             LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
@@ -679,6 +683,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "has_description": r.get("has_description"),
                     "is_slug_valid": r.get("is_slug_valid"),
                     "evaluation_results": r.get("evaluation_results"),
+                    "syntax_change_score": r.get("syntax_change_score"),
                 },
             }
             for r in rows
@@ -806,12 +811,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         # Base dataset
         ds_query = """
             SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.deleted, d.last_sync, d.last_sync_status, d.linked_dataset_id,
-                   dq.has_description, dq.is_slug_valid, dq.evaluation_results,
+                   dq.has_description, dq.is_slug_valid, dq.evaluation_results, dq.syntax_change_score,
                    ld.slug AS linked_dataset_slug,
                    lp.name AS linked_platform_name
             FROM datasets d
             LEFT JOIN (
-                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, syntax_change_score
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
             ) dq ON d.id = dq.dataset_id
@@ -901,6 +906,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 "has_description": d.get("has_description"),
                 "is_slug_valid": d.get("is_slug_valid"),
                 "evaluation_results": d.get("evaluation_results"),
+                "syntax_change_score": d.get("syntax_change_score"),
             },
             "current_snapshot": current_snapshot,
             "snapshots": snapshots,

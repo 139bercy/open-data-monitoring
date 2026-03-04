@@ -16,7 +16,8 @@ from domain.datasets.exceptions import (
     DatasetNotDeletedError,
     InvalidMetricValueError,
 )
-from domain.datasets.value_objects import DatasetQuality
+from domain.datasets.services.syntax_analyzer import SyntaxAnalyzer
+from domain.datasets.value_objects import DatasetQuality, DiscoverabilityKPI, ImpactKPI
 
 
 class Dataset:
@@ -132,15 +133,109 @@ class Dataset:
         self.versions.append(version)
 
     def add_quality(
-        self, downloads_count, api_calls_count, has_description, is_slug_valid=True, evaluation_results=None
+        self,
+        downloads_count,
+        api_calls_count,
+        has_description,
+        is_slug_valid=True,
+        evaluation_results=None,
+        previous_raw=None,
+        **kwargs,
     ):
+        syntax_score = None
+        if previous_raw:
+            analysis = SyntaxAnalyzer.analyze_change(previous_raw, self.raw)
+            syntax_score = analysis.get("syntax_score")
+
         self.quality = DatasetQuality(
             downloads_count=downloads_count,
             api_calls_count=api_calls_count,
             has_description=has_description,
             is_slug_valid=is_slug_valid,
             evaluation_results=evaluation_results,
+            discoverability=self.calculate_discoverability_kpi(evaluation_results),
+            impact=self.calculate_impact_kpi(),
+            syntax_change_score=syntax_score,
         )
+
+    def calculate_discoverability_kpi(self, evaluation_results: dict | None = None) -> DiscoverabilityKPI:
+        """
+        Calculates the discoverability KPI based on metadata and charter rules.
+        """
+        # 1. SEO Score (Title 5-10 words)
+        words = self.title.split() if self.title else []
+        word_count = len(words)
+        if 5 <= word_count <= 10:
+            seo_score = 100.0
+        else:
+            # Degressive score: 100% at boundaries, dropping to 0% at +/- 5 words
+            distance = min(abs(word_count - 5), abs(word_count - 10))
+            seo_score = max(0.0, 100.0 - (distance * 20.0))
+
+        # 2. DCAT Completeness
+        # We look into evaluation_results if present, or basic presence
+        dcat_score = 0.0
+        if evaluation_results and "criteria_scores" in evaluation_results:
+            dcat_criteria = [
+                s for s in evaluation_results["criteria_scores"].values() if s.get("category") == "administrative"
+            ]
+            if dcat_criteria:
+                dcat_score = sum(s.get("score", 0) for s in dcat_criteria) / len(dcat_criteria)
+        else:
+            # Fallback algorithmic check
+            mandatory_fields = ["publisher", "created", "modified", "page"]
+            present = sum(1 for field in mandatory_fields if getattr(self, field, None))
+            if self.has_description():
+                present += 1
+                mandatory_fields.append("description")
+            dcat_score = (present / len(mandatory_fields)) * 100.0
+
+        # 3. Freshness
+        # Ensure modified is a datetime object (can be str if from some DTOs)
+        modified_dt = self.modified
+        if isinstance(modified_dt, str):
+            modified_dt = datetime.fromisoformat(modified_dt.replace("Z", "+00:00"))
+
+        if modified_dt.tzinfo is None:
+            modified_dt = modified_dt.replace(tzinfo=timezone.utc)
+
+        freshness_score = 100.0 if (datetime.now(timezone.utc) - modified_dt) < timedelta(days=30) else 50.0
+
+        # 4. Semantic Quality (from IA if available)
+        semantic_score = None
+        if evaluation_results and "criteria_scores" in evaluation_results:
+            desc_criteria = [
+                s for s in evaluation_results["criteria_scores"].values() if s.get("category") == "descriptive"
+            ]
+            if desc_criteria:
+                semantic_score = sum(s.get("score", 0) for s in desc_criteria) / len(desc_criteria)
+
+        return DiscoverabilityKPI(
+            seo_score=seo_score,
+            dcat_completeness_score=dcat_score,
+            freshness_score=freshness_score,
+            semantic_quality_score=semantic_score,
+        )
+
+    def calculate_impact_kpi(self) -> ImpactKPI:
+        """
+        Calculates the impact KPI based on usage metrics.
+        """
+        # 1. Engagement Rate (reuses / views)
+        engagement = 0.0
+        if self.views_count and self.views_count > 0:
+            engagement = (self.reuses_count or 0) / self.views_count
+
+        # 2. Usage Intensity (API calls vs Downloads)
+        intensity = 0.0
+        total_usage = (self.api_calls_count or 0) + (self.downloads_count or 0)
+        if total_usage > 0:
+            intensity = (self.api_calls_count or 0) / total_usage
+
+        # 3. Popularity score (already normalized by platform usually)
+        popularity = self.popularity_score or 0.0
+
+        return ImpactKPI(engagement_rate=engagement, usage_intensity=intensity, popularity_score=popularity)
 
     def mark_as_deleted(self) -> None:
         """Mark this dataset as deleted from the platform."""
@@ -297,6 +392,28 @@ class Dataset:
                 return None
             current = current.get(key, {})
         return current if isinstance(current, str) else None
+
+    def has_description(self) -> bool:
+        """Determine if description is missing (handling nested structures for ODS/DataGouv)."""
+
+        def get_nested(d, *keys):
+            for k in keys:
+                if not isinstance(d, dict):
+                    return None
+                d = d.get(k)
+            return d
+
+        raw_dataset = self.raw
+        if raw_dataset.get("description"):
+            return True
+        if get_nested(raw_dataset, "metas", "default", "description"):
+            return True
+        if get_nested(raw_dataset, "metadata", "default", "description"):
+            return True
+        if get_nested(raw_dataset, "metadata", "default", "description", "value"):
+            # Handle ODS V2 value-wrapped strings if present
+            return True
+        return False
 
     @classmethod
     def from_dict(cls, data):

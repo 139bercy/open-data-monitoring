@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
 
+from domain.datasets.kpis import DiscoverabilityKPI, ImpactKPI
+
 
 @dataclass
 class DatasetQuality:
@@ -10,6 +12,9 @@ class DatasetQuality:
     has_description: bool
     is_slug_valid: bool
     evaluation_results: Optional[dict] = None
+    discoverability: Optional[DiscoverabilityKPI] = None
+    impact: Optional[ImpactKPI] = None
+    syntax_change_score: Optional[float] = None
 
 
 @dataclass(frozen=True)
