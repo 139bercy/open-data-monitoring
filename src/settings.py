@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
+from infrastructure.llm.openai_evaluator import OpenAIEvaluator
 from domain.unit_of_work import UnitOfWork
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
@@ -22,6 +23,7 @@ class App:
         self.uow = uow
         self.platform = PlatformMonitoring(repository=uow.platforms)
         self.dataset = DatasetMonitoring(repository=uow.datasets)
+        self.evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
 
 
 if ENV == "PROD":  # pragma: no cover

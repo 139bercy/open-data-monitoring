@@ -32,60 +32,60 @@ class QualityAssessmentService:
         prompt_type: str = "standard",
     ) -> MetadataEvaluation:
         """
-        Evaluate metadata quality for a specific dataset using reference documents.
-        Persists the evaluation results and updates the dataset's quality status.
+        Orchestrate the quality evaluation of a dataset.
         """
         with self.uow:
             dataset_uuid = self._resolve_dataset_uuid(dataset_id)
-            logger.info(f"Starting quality evaluation for dataset {dataset_uuid}")
-
             dataset_obj = self.uow.datasets.get(dataset_uuid)
-            if dataset_obj is None:
-                raise ValueError(f"Dataset not found for UUID: {dataset_uuid}")
+            if not dataset_obj:
+                raise ValueError(f"Dataset not found: {dataset_uuid}")
 
-            dcat_reference = self._load_markdown(dcat_path)
-            charter = self._load_markdown(charter_path)
+            dcat_ref, charter = self._load_references(dcat_path, charter_path)
+            llm_context = self._get_llm_context(dataset_obj)
 
-            raw_dataset = dataset_obj.raw
-            if dataset_obj.versions:
-                raw_dataset = dataset_obj.versions[-1].snapshot
-
-            llm_context = self._prepare_llm_context(dataset_obj, raw_dataset)
-
-            # Execute evaluation
-            evaluation = self.evaluator.evaluate_metadata(
-                dataset=llm_context,
-                dcat_reference=dcat_reference,
-                charter=charter,
-                output=output,
-                prompt_type=prompt_type,
+            evaluation = self._run_llm_evaluation(
+                llm_context, dcat_ref, charter, output, prompt_type
             )
 
-            evaluation.dataset_id = dataset_obj.id
-            evaluation.dataset_slug = str(dataset_obj.slug)
+            return self._persist_results(dataset_obj, evaluation)
 
-            # Persist results
-            from dataclasses import asdict
+    def _load_references(self, dcat_path: str, charter_path: str) -> tuple[str, str]:
+        return self._load_markdown(dcat_path), self._load_markdown(charter_path)
 
-            evaluation_data = asdict(evaluation)
-            evaluation_data["dataset_id"] = str(evaluation_data["dataset_id"])
-            evaluation_data["evaluated_at"] = evaluation_data["evaluated_at"].isoformat()
+    def _get_llm_context(self, dataset_obj: any) -> dict:
+        raw_dataset = dataset_obj.raw
+        if dataset_obj.versions:
+            raw_dataset = dataset_obj.versions[-1].snapshot
+        return self._prepare_llm_context(dataset_obj, raw_dataset)
 
-            # Update quality metrics on the aggregate
-            dataset_obj.add_quality(
-                downloads_count=dataset_obj.downloads_count,
-                api_calls_count=dataset_obj.api_calls_count,
-                has_description=self._check_has_description(raw_dataset),
-                is_slug_valid=dataset_obj.slug.is_valid(),
-                evaluation_results=evaluation_data,
-            )
+    def _run_llm_evaluation(self, context, dcat, charter, out, p_type) -> MetadataEvaluation:
+        return self.evaluator.evaluate_metadata(
+            dataset=context, dcat_reference=dcat, charter=charter, output=out, prompt_type=p_type
+        )
 
-            self.uow.datasets.add(dataset_obj)
-            self.uow.commit()
+    def _persist_results(self, dataset: any, evaluation: MetadataEvaluation) -> MetadataEvaluation:
+        evaluation.dataset_id = dataset.id
+        evaluation.dataset_slug = str(dataset.slug)
 
-            logger.info(f"Evaluation complete for {dataset_obj.slug}: score={evaluation.overall_score:.1f}")
+        from dataclasses import asdict
+        eval_data = asdict(evaluation)
+        eval_data["dataset_id"] = str(eval_data["dataset_id"])
+        eval_data["evaluated_at"] = eval_data["evaluated_at"].isoformat()
 
-            return evaluation
+        previous_raw = dataset.versions[-1].snapshot if dataset.versions else None
+        dataset.add_quality(
+            downloads_count=dataset.downloads_count,
+            api_calls_count=dataset.api_calls_count,
+            has_description=dataset.has_description(),
+            is_slug_valid=dataset.slug.is_valid(),
+            evaluation_results=eval_data,
+            previous_raw=previous_raw,
+        )
+
+        self.uow.datasets.add(dataset)
+        self.uow.commit()
+        logger.info(f"Evaluation complete for {dataset.slug}: score={evaluation.overall_score:.1f}")
+        return evaluation
 
     def _resolve_dataset_uuid(self, dataset_id: str | UUID) -> UUID:
         """Resolve dataset_id (might be a UUID or a slug) to a UUID."""
@@ -121,26 +121,6 @@ class QualityAssessmentService:
         # Remove empty dicts/None values to further clean up
         return {k: v for k, v in llm_context.items() if v and (not isinstance(v, dict) or any(v.values()))}
 
-    def _check_has_description(self, raw_dataset: dict) -> bool:
-        """Determine if description is missing (handling nested structures for ODS/DataGouv)."""
-
-        def get_nested(d, *keys):
-            for k in keys:
-                if not isinstance(d, dict):
-                    return None
-                d = d.get(k)
-            return d
-
-        if raw_dataset.get("description"):
-            return True
-        if get_nested(raw_dataset, "metas", "default", "description"):
-            return True
-        if get_nested(raw_dataset, "metadata", "default", "description"):
-            return True
-        if get_nested(raw_dataset, "metadata", "default", "description", "value"):
-            # Handle ODS V2 value-wrapped strings if present
-            return True
-        return False
 
     def _load_markdown(self, path: str) -> str:
         """Load markdown file content."""
