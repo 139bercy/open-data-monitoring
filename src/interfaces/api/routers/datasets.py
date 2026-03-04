@@ -2,9 +2,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query
 
-from application.handlers import fetch_dataset, find_dataset_id_from_url, find_platform_from_url, upsert_dataset
-from application.services.quality_assessment import QualityAssessmentService
-from infrastructure.llm.openai_evaluator import OpenAIEvaluator
+from application.handlers import find_dataset_id_from_url, find_platform_from_url
+from application.use_cases.sync_dataset import SyncDatasetUseCase, SyncDatasetCommand
+from application.use_cases.evaluate_dataset import EvaluateDatasetUseCase, EvaluateDatasetCommand
 from interfaces.api.schemas.datasets import (
     DatasetAPI,
     DatasetCreateResponse,
@@ -31,19 +31,18 @@ async def add_dataset(url: str):
     if not dataset_id:
         raise HTTPException(status_code=404, detail=f"Could not extract dataset ID from URL: {url}")
 
-    dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-    if not dataset or dataset.get("sync_status") == "failed":
-        raise HTTPException(status_code=400, detail=f"Failed to fetch dataset metadata from {platform.type}")
+    # Pattern Strict Command: InputDTO -> Handle
+    use_case = SyncDatasetUseCase(repository=domain_app.dataset.repository, uow=domain_app.uow)
+    command = SyncDatasetCommand(platform=platform, platform_dataset_id=dataset_id)
+    output = use_case.handle(command)
 
-    dataset_uuid = upsert_dataset(app=domain_app, platform=platform, dataset=dataset)
-    if not dataset_uuid:
-        raise HTTPException(status_code=500, detail="Internal error during dataset persistence")
+    if output.status == "failed":
+        raise HTTPException(status_code=400, detail=output.message)
 
     return {
         "status": "success",
-        "id": dataset_uuid,
+        "id": output.dataset_id,
         "platform_id": platform.id,
-        "buid": dataset.get("uid") or dataset.get("id") or dataset.get("dataset_id"),
         "slug": dataset_id,
     }
 
@@ -160,24 +159,14 @@ async def evaluate_dataset(dataset_id: UUID):
     """
     Déclenche une évaluation de qualité par LLM pour un dataset.
     """
-    # Initialize service (OpenAI by default for now)
-    evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
-    service = QualityAssessmentService(evaluator=evaluator, uow=domain_app.uow)
+    use_case = EvaluateDatasetUseCase(uow=domain_app.uow, evaluator=domain_app.evaluator)
+    command = EvaluateDatasetCommand(dataset_id=dataset_id)
+    output = use_case.handle(command)
 
-    # Paths to reference docs (should be configurable or standard)
-    dcat_path = "docs/quality/dcat_reference.md"
-    charter_path = "docs/quality/charter_opendata.md"
+    if output.status == "failed":
+        raise HTTPException(status_code=400, detail=output.error)
 
-    try:
-        evaluation = service.evaluate_dataset(
-            dataset_id=str(dataset_id), dcat_path=dcat_path, charter_path=charter_path, output="json"
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-    from dataclasses import asdict
-
-    return asdict(evaluation)
+    return output.evaluation
 
 
 @router.get("/{dataset_id}/audit-report")

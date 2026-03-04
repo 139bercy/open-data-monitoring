@@ -2,7 +2,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 
-from application.handlers import create_platform
+from application.use_cases.create_platform import CreatePlatformUseCase, CreatePlatformCommand
+from application.use_cases.sync_platform import SyncPlatformUseCase, SyncPlatformCommand
 from interfaces.api.schemas.platforms import (
     PlatformCreateDTO,
     PlatformCreateResponse,
@@ -35,11 +36,21 @@ async def create_platform_endpoint(platform: PlatformCreateDTO):
     Register a new open data platform in the system.
     Requires a unique slug and valid base URL.
     """
-    platform_id = create_platform(app=domain_app, data=platform.model_dump())
-    if not isinstance(platform_id, UUID):
+    use_case = CreatePlatformUseCase(repository=domain_app.platform.repository, uow=domain_app.uow)
+    command = CreatePlatformCommand(
+        name=platform.name,
+        slug=platform.slug,
+        organization_id=platform.organization_id,
+        type=platform.type,
+        url=platform.url,
+        key=platform.key
+    )
+    output = use_case.handle(command)
+    
+    if output.status == "failed":
         raise HTTPException(status_code=500, detail="Failed to create platform")
 
-    platform_raw = domain_app.platform.get(platform_id)
+    platform_raw = domain_app.platform.get(output.platform_id)
     if not platform_raw:
         raise HTTPException(status_code=404, detail="Platform created but not found")
 
@@ -52,9 +63,11 @@ async def sync_platform_endpoint(id: UUID):
     Trigger a manual synchronization for a specific platform.
     This process will discover new datasets and update existing ones.
     """
-    try:
-        domain_app.platform.sync_platform(platform_id=id)
-        return {"status": "success", "message": f"Platform {id} sync started"}
-    except Exception as e:
-        logger.error(f"Sync failed for platform {id}: {e}")
-        raise HTTPException(status_code=404, detail=f"Platform {id} not found or sync failed")
+    use_case = SyncPlatformUseCase(repository=domain_app.platform.repository, uow=domain_app.uow)
+    command = SyncPlatformCommand(platform_id=id)
+    output = use_case.handle(command)
+    
+    if output.status == "failed":
+        raise HTTPException(status_code=404, detail=output.message)
+
+    return {"status": "success", "message": output.message}

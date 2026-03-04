@@ -9,13 +9,12 @@ import click
 import requests
 
 from application.handlers import (
-    create_platform,
-    fetch_dataset,
     find_dataset_id_from_url,
     find_platform_from_url,
-    sync_platform,
-    upsert_dataset,
 )
+from application.use_cases.create_platform import CreatePlatformUseCase, CreatePlatformCommand
+from application.use_cases.sync_platform import SyncPlatformUseCase, SyncPlatformCommand
+from application.use_cases.sync_dataset import SyncDatasetUseCase, SyncDatasetCommand
 from domain.datasets.exceptions import DatasetUnreachableError
 from interfaces.cli_quality import cli_quality
 from logger import logger
@@ -58,8 +57,17 @@ def cli_create_platform(name, slug, organization_id, type, url, key):
         "url": url,
         "key": key,
     }
-    platform_id = create_platform(app=app, data=data)
-    logger.info(f"{type} - {name} - Platform created with id {platform_id}")
+    use_case = CreatePlatformUseCase(repository=app.platform.repository, uow=app.uow)
+    command = CreatePlatformCommand(
+        name=name,
+        slug=slug,
+        organization_id=organization_id,
+        type=type,
+        url=url,
+        key=key
+    )
+    output = use_case.handle(command)
+    logger.info(f"{type} - {name} - Platform created with id {output.platform_id}")
 
 
 @cli_platform.command("all")
@@ -74,7 +82,9 @@ def cli_get_all_platforms():
 def cli_sync_platform(id):
     """Sync platform and project stats"""
     platform_id = UUID(id)
-    sync_platform(app=app, platform_id=platform_id)
+    use_case = SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow)
+    command = SyncPlatformCommand(platform_id=platform_id)
+    use_case.handle(command)
     result = app.platform.get(platform_id=platform_id)
     pprint(result.__dict__)
 
@@ -95,10 +105,11 @@ def cli_add_dataset(url, output):
         logger.warning(f"Dataset not found for url: {url}")
         return
     try:
-        dataset = fetch_dataset(platform=platform, dataset_id=dataset_id)
-        if output:
-            pprint(dataset)
-        upsert_dataset(app=app, platform=platform, dataset=dataset)
+        use_case = SyncDatasetUseCase(repository=app.dataset.repository, uow=app.uow)
+        command = SyncDatasetCommand(platform=platform, platform_dataset_id=dataset_id)
+        output = use_case.handle(command)
+        if output.status == "failed":
+            logger.error(f"Failed to add dataset: {output.message}")
     except DatasetUnreachableError:
         pass
 
