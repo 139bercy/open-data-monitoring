@@ -190,3 +190,8 @@ tmp.py
 *.json
 *.db*
 *.csv
+
+## Ia Powered tools
+_bmad-output/*
+.agent/*
+_bmad/*
