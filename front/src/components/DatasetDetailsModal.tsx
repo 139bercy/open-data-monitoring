@@ -226,6 +226,82 @@ function QualityScoreBadge({ score }: { score?: number | null }) {
   );
 }
 
+/* Affiche une jauge de changement syntaxique */
+function SyntaxScoreGauge({ score }: { score?: number | null }) {
+  if (score === undefined || score === null) return null;
+  const rounded = Math.round(score);
+
+  let severity: "success" | "info" | "warning" | "error" = "error" as const;
+  if (rounded >= 95) severity = "success";
+  else if (rounded >= 80) severity = "info";
+  else if (rounded >= 60) severity = "warning";
+
+  return (
+    <div
+      className="fr-p-2w fr-mb-4w"
+      style={{
+        border: "1px solid var(--border-default-grey)",
+        borderRadius: "8px",
+        backgroundColor: "var(--background-alt-grey)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <span
+            className="fr-text--sm fr-text--bold fr-mb-1v"
+            style={{ display: "block" }}
+          >
+            Indice de Stabilité Syntaxique
+          </span>
+          <p
+            className="fr-text--xs fr-mb-0"
+            style={{ opacity: 0.7 }}
+          >
+            Mesure la similarité textuelle et structurelle avec la version
+            précédente.
+          </p>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <span
+            className="fr-h4 fr-mb-0"
+            style={{ color: `var(--text-default-${severity})` }}
+          >
+            {rounded}%
+          </span>
+          <br />
+          <Badge
+            severity={severity}
+            noIcon
+            small
+          >
+            {rounded >= 95
+              ? "Stable"
+              : rounded >= 80
+                ? "Mineur"
+                : rounded >= 60
+                  ? "Significatif"
+                  : "Structurel"}
+          </Badge>
+        </div>
+      </div>
+      {rounded < 80 && (
+        <Alert
+          severity="info"
+          small
+          className="fr-mt-2w"
+          description="Changements importants détectés : une ré-évaluation IA est recommandée."
+        />
+      )}
+    </div>
+  );
+}
+
 /* Affiche un snapshot */
 function SnapshotItem({
   snap,
@@ -829,6 +905,8 @@ function QualityTab({
           />
         </div>
       </div>
+
+      <SyntaxScoreGauge score={dataset.quality?.syntax_change_score} />
 
       {evalError && (
         <Alert
