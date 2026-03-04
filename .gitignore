@@ -193,5 +193,6 @@ tmp.py
 
 ## Ia Powered tools
 _bmad-output/*
-.agent/*
+.agent/**/bmad*
+.agent/**/dev*
 _bmad/*
