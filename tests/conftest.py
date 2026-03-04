@@ -75,20 +75,31 @@ def setup_test_database():
     postgres.execute(f"CREATE DATABASE {TEST_DB};")
 
     try:
-        with (
-            psycopg2.connect(
-                dbname=TEST_DB,
-                user=TEST_USER,
-                password=TEST_PASSWORD,
-                host=HOST,
-                port=PORT,
-            ) as migration_conn,
-            migration_conn.cursor() as cur,
-        ):
-            cur.execute(open("db/init.sql").read())
-            migration_conn.commit()
+        migration_conn = psycopg2.connect(
+            dbname=TEST_DB,
+            user=TEST_USER,
+            password=TEST_PASSWORD,
+            host=HOST,
+            port=PORT,
+        )
+        with migration_conn:
+            with migration_conn.cursor() as cur:
+                # Apply base schema
+                cur.execute(open("db/init.sql").read())
+
+                # Apply all patches in chronological order
+                patch_dir = "db/patchs"
+                if os.path.exists(patch_dir):
+                    patches = sorted([f for f in os.listdir(patch_dir) if f.endswith(".sql")])
+                    for patch in patches:
+                        with open(os.path.join(patch_dir, patch)) as f:
+                            cur.execute(f.read())
+
+                migration_conn.commit()
     finally:
         postgres.close()
+        if "migration_conn" in locals():
+            migration_conn.close()
 
     yield
 

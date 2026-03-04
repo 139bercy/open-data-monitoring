@@ -1,16 +1,16 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from application.use_cases.create_platform import CreatePlatformUseCase, CreatePlatformCommand
-from application.use_cases.sync_platform import SyncPlatformUseCase, SyncPlatformCommand
+from application.use_cases.create_platform import CreatePlatformCommand, CreatePlatformUseCase
+from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
+from domain.platform.exceptions import PlatformNotFoundError
 from interfaces.api.schemas.platforms import (
     PlatformCreateDTO,
     PlatformCreateResponse,
     PlatformDTO,
     PlatformsResponse,
 )
-from logger import logger
 from settings import app as domain_app
 
 router = APIRouter(prefix="/platforms", tags=["platforms"])
@@ -43,16 +43,16 @@ async def create_platform_endpoint(platform: PlatformCreateDTO):
         organization_id=platform.organization_id,
         type=platform.type,
         url=platform.url,
-        key=platform.key
+        key=platform.key,
     )
     output = use_case.handle(command)
-    
+
     if output.status == "failed":
-        raise HTTPException(status_code=500, detail="Failed to create platform")
+        raise RuntimeError(f"Failed to create platform: {output.message}")
 
     platform_raw = domain_app.platform.get(output.platform_id)
     if not platform_raw:
-        raise HTTPException(status_code=404, detail="Platform created but not found")
+        raise PlatformNotFoundError(f"Platform created but not found: {output.platform_id}")
 
     return PlatformCreateResponse.model_validate(platform_raw)
 
@@ -66,8 +66,8 @@ async def sync_platform_endpoint(id: UUID):
     use_case = SyncPlatformUseCase(repository=domain_app.platform.repository, uow=domain_app.uow)
     command = SyncPlatformCommand(platform_id=id)
     output = use_case.handle(command)
-    
+
     if output.status == "failed":
-        raise HTTPException(status_code=404, detail=output.message)
+        raise PlatformNotFoundError(output.message)
 
     return {"status": "success", "message": output.message}

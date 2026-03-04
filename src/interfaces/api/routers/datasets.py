@@ -1,10 +1,12 @@
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 
 from application.handlers import find_dataset_id_from_url, find_platform_from_url
-from application.use_cases.sync_dataset import SyncDatasetUseCase, SyncDatasetCommand
-from application.use_cases.evaluate_dataset import EvaluateDatasetUseCase, EvaluateDatasetCommand
+from application.use_cases.evaluate_dataset import EvaluateDatasetCommand, EvaluateDatasetUseCase
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
+from domain.datasets.exceptions import DatasetNotFoundError
+from domain.platform.exceptions import PlatformNotFoundError
 from interfaces.api.schemas.datasets import (
     DatasetAPI,
     DatasetCreateResponse,
@@ -25,11 +27,11 @@ async def add_dataset(url: str):
     """
     platform = find_platform_from_url(app=domain_app, url=url)
     if not platform:
-        raise HTTPException(status_code=404, detail=f"No platform found for URL: {url}")
+        raise PlatformNotFoundError(f"No platform found for URL: {url}")
 
     dataset_id = find_dataset_id_from_url(app=domain_app, url=url)
     if not dataset_id:
-        raise HTTPException(status_code=404, detail=f"Could not extract dataset ID from URL: {url}")
+        raise DatasetNotFoundError(f"Could not extract dataset ID from URL: {url}")
 
     # Pattern Strict Command: InputDTO -> Handle
     use_case = SyncDatasetUseCase(repository=domain_app.dataset.repository, uow=domain_app.uow)
@@ -37,7 +39,8 @@ async def add_dataset(url: str):
     output = use_case.handle(command)
 
     if output.status == "failed":
-        raise HTTPException(status_code=400, detail=output.message)
+        # For now we keep ValueError for business failures if no specific exception exists
+        raise ValueError(output.message)
 
     return {
         "status": "success",
@@ -132,7 +135,7 @@ async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
     """
     detail = domain_app.dataset.repository.get_detail(dataset_id, include_snapshots)
     if not detail:
-        raise HTTPException(status_code=404, detail="Dataset not found")
+        raise DatasetNotFoundError(f"Dataset not found: {dataset_id}")
     return detail
 
 
@@ -164,7 +167,7 @@ async def evaluate_dataset(dataset_id: UUID):
     output = use_case.handle(command)
 
     if output.status == "failed":
-        raise HTTPException(status_code=400, detail=output.error)
+        raise ValueError(output.error)
 
     return output.evaluation
 
@@ -180,7 +183,7 @@ async def get_audit_report(dataset_id: UUID):
 
     dataset = domain_app.dataset.repository.get(dataset_id)
     if not dataset:
-        raise HTTPException(status_code=404, detail="Dataset not found")
+        raise DatasetNotFoundError(f"Dataset not found: {dataset_id}")
 
     generator = PlaywrightReportGenerator()
     pdf_buffer = await generator.generate_audit_report(dataset)
