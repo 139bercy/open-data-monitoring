@@ -123,10 +123,15 @@ class ApiClient {
 
   async getBlob(path: string, query?: Record<string, unknown>): Promise<Blob> {
     const url = `${this.baseUrl}${path}${toQueryString(query)}`;
+    // Handle token
+    const token = localStorage.getItem("odm_token");
+    const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
     const res = await fetch(url, {
       method: "GET",
       headers: {
         ...this.defaultHeaders,
+        ...authHeader,
         // Override Accept for blobs if needed, or keep default
       },
     });
