@@ -2,6 +2,8 @@ from domain.datasets.ports import AbstractDatasetRepository
 from domain.platform.ports import PlatformRepository
 from domain.unit_of_work import UnitOfWork
 from infrastructure.database.postgres import PostgresClient
+from infrastructure.repositories.auth.in_memory import InMemoryUserRepository
+from infrastructure.repositories.auth.postgres import PostgresUserRepository
 from infrastructure.repositories.datasets.in_memory import InMemoryDatasetRepository
 from infrastructure.repositories.datasets.postgres import PostgresDatasetRepository
 from infrastructure.repositories.platforms.in_memory import InMemoryPlatformRepository
@@ -13,6 +15,7 @@ class PostgresUnitOfWork(UnitOfWork):
         self.client = client
         self._platforms = None
         self._datasets = None
+        self._users = None
         self._in_transaction = False
 
     def __enter__(self):
@@ -38,6 +41,7 @@ class PostgresUnitOfWork(UnitOfWork):
             # Réinitialiser les repositories après un rollback
             self._platforms = None
             self._datasets = None
+            self._users = None
 
     @property
     def platforms(self) -> PlatformRepository:
@@ -51,11 +55,18 @@ class PostgresUnitOfWork(UnitOfWork):
             self._datasets = PostgresDatasetRepository(self.client)
         return self._datasets
 
+    @property
+    def users(self) -> PostgresUserRepository:
+        if self._users is None:
+            self._users = PostgresUserRepository(self.client)
+        return self._users
+
 
 class InMemoryUnitOfWork(UnitOfWork):
     def __init__(self):
         self._platforms = InMemoryPlatformRepository([])
         self._datasets = InMemoryDatasetRepository([])
+        self._users = InMemoryUserRepository([])
         self._in_transaction = False
         self._pending_changes = []
 
@@ -85,3 +96,7 @@ class InMemoryUnitOfWork(UnitOfWork):
     @property
     def datasets(self) -> AbstractDatasetRepository:
         return self._datasets
+
+    @property
+    def users(self) -> InMemoryUserRepository:
+        return self._users

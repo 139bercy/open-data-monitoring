@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from interfaces.api.errors import register_error_handlers
-from interfaces.api.routers import common, datasets, platforms, publishers
+from interfaces.api.routers import auth, common, datasets, platforms, publishers
 from settings import ENV
 
 # Configuration de l'application FastAPI
@@ -40,6 +40,7 @@ if ENV in ["DEV", "TEST"]:
 # Enregistrement des routers
 api_app.include_router(common.router, prefix="/api/v1")
 api_app.include_router(platforms.router, prefix="/api/v1")
+api_app.include_router(auth.router, prefix="/api/v1")
 api_app.include_router(datasets.router, prefix="/api/v1")
 api_app.include_router(publishers.router, prefix="/api/v1")
 

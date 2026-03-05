@@ -1,8 +1,7 @@
-import pytest
+from datetime import datetime, timezone
 from uuid import uuid4
-from datetime import datetime, timedelta, timezone
+
 from domain.datasets.aggregate import Dataset
-from domain.datasets.kpis import DiscoverabilityKPI, ImpactKPI
 
 
 def test_discoverability_kpi_seo_score():
@@ -20,9 +19,9 @@ def test_discoverability_kpi_seo_score():
         restricted=False,
         downloads_count=0,
         api_calls_count=0,
-        raw={}
+        raw={},
     )
-    
+
     kpi = dataset.calculate_discoverability_kpi()
     assert kpi.seo_score == 100.0
 
@@ -42,9 +41,9 @@ def test_discoverability_kpi_seo_score_short():
         restricted=False,
         downloads_count=0,
         api_calls_count=0,
-        raw={}
+        raw={},
     )
-    
+
     kpi = dataset.calculate_discoverability_kpi()
     # distance = abs(2-5) = 3. Score = 100 - (3 * 20) = 40.
     assert kpi.seo_score == 40.0
@@ -66,9 +65,9 @@ def test_impact_kpi_engagement_rate():
         api_calls_count=500,
         views_count=1000,
         reuses_count=50,
-        raw={}
+        raw={},
     )
-    
+
     kpi = dataset.calculate_impact_kpi()
     assert kpi.engagement_rate == 0.05  # 50 / 1000
     assert kpi.usage_intensity == 0.8333333333333334  # 500 / 600

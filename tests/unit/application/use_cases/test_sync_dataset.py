@@ -1,20 +1,27 @@
-import pytest
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from application.use_cases.sync_dataset import SyncDatasetUseCase, SyncDatasetCommand
+
+import pytest
+
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
+
 
 @pytest.fixture
 def sync_dependencies():
-    with patch("application.use_cases.sync_dataset.DatasetAdapterFactory") as af, \
-         patch("domain.datasets.factory.DatasetFactory.create_from_adapter") as df:
+    with (
+        patch("application.use_cases.sync_dataset.DatasetAdapterFactory") as af,
+        patch("domain.datasets.factory.DatasetFactory.create_from_adapter") as df,
+    ):
         repo, uow = MagicMock(), MagicMock()
         adapter = af.return_value.create.return_value
         yield repo, uow, adapter, df
+
 
 @pytest.fixture
 def use_case(sync_dependencies):
     repo, uow, _, _ = sync_dependencies
     return SyncDatasetUseCase(repository=repo, uow=uow)
+
 
 def test_sync_success(use_case, sync_dependencies, ods_platform, ods_dataset):
     # Arrange
@@ -26,6 +33,7 @@ def test_sync_success(use_case, sync_dependencies, ods_platform, ods_dataset):
     # Assert
     assert result.status == "success"
     repo.add.assert_called_once()
+
 
 def test_sync_failure(use_case, sync_dependencies, ods_platform):
     # Arrange

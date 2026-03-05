@@ -6,6 +6,7 @@ Maps Domain exceptions to appropriate HTTP status codes.
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from domain.auth.exceptions import ForbiddenError, UnauthorizedError, UserNotFoundError
 from domain.datasets.exceptions import (
     DatasetAlreadyDeletedError,
     DatasetNotDeletedError,
@@ -46,6 +47,19 @@ def register_error_handlers(app: FastAPI):
             detail=str(exc),
             type_str="not-found",
             instance=str(request.url),
+        )
+
+    @app.exception_handler(UnauthorizedError)
+    @app.exception_handler(UserNotFoundError)
+    async def unauthorized_handler(request: Request, exc: Exception):
+        return create_problem_response(
+            status_code=401, title="Unauthorized", detail=str(exc), type_str="unauthorized", instance=str(request.url)
+        )
+
+    @app.exception_handler(ForbiddenError)
+    async def forbidden_handler(request: Request, exc: Exception):
+        return create_problem_response(
+            status_code=403, title="Forbidden", detail=str(exc), type_str="forbidden", instance=str(request.url)
         )
 
     @app.exception_handler(DatasetAlreadyDeletedError)

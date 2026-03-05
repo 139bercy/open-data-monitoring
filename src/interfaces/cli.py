@@ -12,10 +12,12 @@ from application.handlers import (
     find_dataset_id_from_url,
     find_platform_from_url,
 )
-from application.use_cases.create_platform import CreatePlatformUseCase, CreatePlatformCommand
-from application.use_cases.sync_platform import SyncPlatformUseCase, SyncPlatformCommand
-from application.use_cases.sync_dataset import SyncDatasetUseCase, SyncDatasetCommand
+from application.use_cases.create_platform import CreatePlatformCommand, CreatePlatformUseCase
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
+from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
+from domain.auth.aggregate import User
 from domain.datasets.exceptions import DatasetUnreachableError
+from infrastructure.security import get_password_hash
 from interfaces.cli_quality import cli_quality
 from logger import logger
 from settings import app
@@ -49,23 +51,8 @@ def cli_platform():
 @click.option("-k", "--key", required=False, help="API Key")
 def cli_create_platform(name, slug, organization_id, type, url, key):
     """Create new platform"""
-    data = {
-        "name": name,
-        "slug": slug,
-        "organization_id": organization_id,
-        "type": type,
-        "url": url,
-        "key": key,
-    }
     use_case = CreatePlatformUseCase(repository=app.platform.repository, uow=app.uow)
-    command = CreatePlatformCommand(
-        name=name,
-        slug=slug,
-        organization_id=organization_id,
-        type=type,
-        url=url,
-        key=key
-    )
+    command = CreatePlatformCommand(name=name, slug=slug, organization_id=organization_id, type=type, url=url, key=key)
     output = use_case.handle(command)
     logger.info(f"{type} - {name} - Platform created with id {output.platform_id}")
 
@@ -200,3 +187,43 @@ def cli_get_by_publisher(name):
         writer.writerows(datasets)
 
     click.echo(f"-> {filename}")
+
+
+@cli.group("user")
+def cli_user():
+    """User management"""
+
+
+@cli_user.command("create")
+@click.option("-e", "--email", required=True, help="User email")
+@click.option("-p", "--password", required=True, help="User password")
+@click.option("-n", "--full-name", required=False, help="User full name")
+@click.option("-r", "--role", required=False, default="user", help="User role")
+def cli_create_user(email, password, full_name, role):
+    """Create a new local user"""
+    with app.uow:
+        existing = app.uow.users.get_by_email(email)
+        if existing:
+            click.echo(f"Erreur: L'utilisateur {email} existe déjà.")
+            return
+
+        hashed_password = get_password_hash(password)
+        new_user = User(email=email, hashed_password=hashed_password, full_name=full_name, role=role)
+        app.uow.users.save(new_user)
+        click.echo(f"Utilisateur {email} créé avec succès (ID: {new_user.id}).")
+
+
+@cli_user.command("update-password")
+@click.argument("email")
+@click.option("-p", "--password", required=True, help="New password")
+def cli_user_update_password(email, password):
+    """Update user password"""
+    with app.uow:
+        user = app.uow.users.get_by_email(email)
+        if not user:
+            click.echo(f"Erreur: Utilisateur {email} non trouvé.")
+            return
+
+        user.hashed_password = get_password_hash(password)
+        app.uow.users.save(user)
+        click.echo(f"Mot de passe de {email} mis à jour avec succès.")

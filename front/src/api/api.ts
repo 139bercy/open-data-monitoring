@@ -40,10 +40,15 @@ class ApiClient {
     const { method = "GET", query, body, signal, headers } = options;
     const url = `${this.baseUrl}${path}${toQueryString(query)}`;
 
+    // Handle token
+    const token = localStorage.getItem("odm_token");
+    const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
     const init: RequestInit = {
       method,
       headers: {
         ...this.defaultHeaders,
+        ...authHeader,
         ...(body ? { "Content-Type": "application/json" } : {}),
         ...(headers ?? {}),
       },

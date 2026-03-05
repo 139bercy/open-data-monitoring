@@ -1,19 +1,23 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from uuid import UUID
 
-from domain.common.enums import SyncStatus
+from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
 from infrastructure.factories.platform import PlatformAdapterFactory
+
 
 @dataclass(frozen=True)
 class SyncPlatformCommand:
     platform_id: UUID
 
+
 @dataclass(frozen=True)
 class SyncPlatformOutput:
     status: str
     message: str = ""
+
 
 class SyncPlatformUseCase:
     def __init__(self, repository: PlatformRepository, uow):

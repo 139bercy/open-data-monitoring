@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from uuid import UUID, uuid4
 from typing import Optional
+from uuid import UUID, uuid4
 
 from domain.platform.aggregate import Platform
 from domain.platform.ports import PlatformRepository
+
 
 @dataclass(frozen=True)
 class CreatePlatformCommand:
@@ -15,10 +17,12 @@ class CreatePlatformCommand:
     url: str
     key: Optional[str] = None
 
+
 @dataclass(frozen=True)
 class CreatePlatformOutput:
     platform_id: UUID
     status: str
+
 
 class CreatePlatformUseCase:
     def __init__(self, repository: PlatformRepository, uow):

@@ -9,29 +9,62 @@ import "@codegouvfr/react-dsfr/dsfr/dsfr.min.css";
 import { DatasetListPage } from "./pages/DatasetListPage";
 import { PlatformListPage } from "./pages/PlatformListPage";
 import { AuditReportPage } from "./pages/AuditReportPage";
+import { LoginPage } from "./pages/LoginPage";
 import { Home } from "./pages/Home";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import authService from "./api/auth";
 // ...existing code...
 
 startReactDsfr({ defaultColorScheme: "system" });
 
+import { useEffect } from "react";
+
 function App(): JSX.Element {
   const { isDark, setIsDark } = useIsDark();
+
+  // Handle token in URL hash (from OIDC callback)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token=")) {
+      const token = hash.split("access_token=")[1]?.split("&")[0];
+      if (token) {
+        localStorage.setItem("odm_token", token);
+        // Clear hash and redirect to clean URL
+        window.history.replaceState(null, "", window.location.pathname);
+        window.location.reload(); // Reload to refresh auth state in all components
+      }
+    }
+  }, []);
+
   return (
     <>
       <Header
         brandTop={<span>Bercy Hub</span>}
         serviceTitle="Open Data Monitoring"
         homeLinkProps={{ href: "/", title: "Accueil - Open Data Monitoring" }}
-        quickAccessItems={[
-          <Button
-            priority="tertiary no outline"
-            size="small"
-            onClick={() => setIsDark(!isDark)}
-            key="theme-toggle"
-          >
-            {isDark ? "Thème clair" : "Thème sombre"}
-          </Button>,
-        ]}
+        quickAccessItems={
+          [
+            <Button
+              priority="tertiary no outline"
+              size="small"
+              onClick={() => setIsDark(!isDark)}
+              key="theme-toggle"
+            >
+              {isDark ? "Thème clair" : "Thème sombre"}
+            </Button>,
+            authService.isAuthenticated() && (
+              <Button
+                priority="tertiary no outline"
+                size="small"
+                onClick={() => authService.logout()}
+                key="logout"
+                iconId="fr-icon-logout-box-r-line"
+              >
+                Déconnexion
+              </Button>
+            ),
+          ].filter(Boolean) as any
+        }
       />
       {/* Global hover polish (kept subtle, DSFR-friendly) */}
       <style>{`
@@ -43,30 +76,54 @@ function App(): JSX.Element {
       {/* Routes */}
       <Routes>
         <Route
+          path="/login"
+          element={<LoginPage />}
+        />
+        <Route
           path="/"
-          element={<Home />}
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/datasets"
-          element={<DatasetListPage />}
+          element={
+            <ProtectedRoute>
+              <DatasetListPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/datasets/:id"
-          element={<DatasetListPage />}
+          element={
+            <ProtectedRoute>
+              <DatasetListPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/platforms"
-          element={<PlatformListPage />}
+          element={
+            <ProtectedRoute>
+              <PlatformListPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/reports/audit/:id"
-          element={<AuditReportPage />}
+          element={
+            <ProtectedRoute>
+              <AuditReportPage />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="*"
           element={
             <Navigate
-              to="/datasets"
+              to="/"
               replace
             />
           }

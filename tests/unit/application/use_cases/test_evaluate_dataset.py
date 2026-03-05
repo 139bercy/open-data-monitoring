@@ -1,13 +1,17 @@
-import pytest
+from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from dataclasses import dataclass
-from application.use_cases.evaluate_dataset import EvaluateDatasetUseCase, EvaluateDatasetCommand
+
+import pytest
+
+from application.use_cases.evaluate_dataset import EvaluateDatasetCommand, EvaluateDatasetUseCase
+
 
 @dataclass
 class MockEvalResult:
     score: int = 100
     overall_score: float = 100.0
+
 
 @pytest.fixture
 def eval_deps():
@@ -17,10 +21,12 @@ def eval_deps():
         service = qas.return_value
         yield uow, evaluator, service
 
+
 @pytest.fixture
 def use_case(eval_deps):
     uow, evaluator, _ = eval_deps
     return EvaluateDatasetUseCase(uow=uow, evaluator=evaluator)
+
 
 def test_evaluate_success(use_case, eval_deps):
     # Arrange
@@ -32,6 +38,7 @@ def test_evaluate_success(use_case, eval_deps):
     assert result.status == "success"
     assert result.evaluation["score"] == 100
 
+
 def test_evaluate_failure(use_case, eval_deps):
     # Arrange
     _, _, service = eval_deps
@@ -39,5 +46,5 @@ def test_evaluate_failure(use_case, eval_deps):
     # Act
     result = use_case.handle(EvaluateDatasetCommand(uuid4()))
     # Assert
-    assert result.status =="failed"
+    assert result.status == "failed"
     assert "error" in result.error

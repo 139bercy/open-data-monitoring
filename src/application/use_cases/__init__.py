@@ -1,7 +1,8 @@
-from typing import Protocol, TypeVar, Generic
+from typing import Generic, Protocol, TypeVar
 
 Request = TypeVar("Request", contravariant=True)
 Response = TypeVar("Response", covariant=True)
+
 
 class UseCase(Protocol, Generic[Request, Response]):
     def handle(self, command: Request) -> Response:

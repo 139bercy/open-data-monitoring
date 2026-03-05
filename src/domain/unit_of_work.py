@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from domain.auth.ports import UserRepository
 from domain.datasets.ports import AbstractDatasetRepository
 from domain.platform.ports import PlatformRepository
 
@@ -27,4 +28,9 @@ class UnitOfWork(ABC):  # pragma: no cover
     @property
     @abstractmethod
     def datasets(self) -> AbstractDatasetRepository:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def users(self) -> UserRepository:
         raise NotImplementedError

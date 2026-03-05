@@ -1,7 +1,10 @@
-import pytest
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from application.use_cases.sync_platform import SyncPlatformUseCase, SyncPlatformCommand
+
+import pytest
+
+from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
+
 
 @pytest.fixture
 def sync_p_deps():
@@ -10,10 +13,12 @@ def sync_p_deps():
         adapter = af.return_value.create.return_value
         yield repo, uow, adapter
 
+
 @pytest.fixture
 def use_case(sync_p_deps):
     repo, uow, _ = sync_p_deps
     return SyncPlatformUseCase(repository=repo, uow=uow)
+
 
 def test_sync_platform_success(use_case, sync_p_deps):
     # Arrange
@@ -25,6 +30,7 @@ def test_sync_platform_success(use_case, sync_p_deps):
     # Assert
     assert result.status == "success"
     repo.save_sync.assert_called_once()
+
 
 def test_sync_platform_not_found(use_case, sync_p_deps):
     # Arrange

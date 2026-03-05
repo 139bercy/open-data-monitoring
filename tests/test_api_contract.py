@@ -3,9 +3,24 @@ from __future__ import annotations
 import uuid
 from unittest.mock import MagicMock
 
+import pytest
 from fastapi.testclient import TestClient
 
+from interfaces.api.dependencies import get_current_user
 from interfaces.api.main import api_app
+
+
+@pytest.fixture(autouse=True)
+def skip_auth_dependency():
+    """Bypass authentication for all tests in this module."""
+
+    def skip_auth():
+        return None
+
+    api_app.dependency_overrides[get_current_user] = skip_auth
+    yield
+    api_app.dependency_overrides.pop(get_current_user, None)
+
 
 client = TestClient(api_app)
 

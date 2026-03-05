@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from application.use_cases.create_platform import CreatePlatformCommand, CreatePlatformUseCase
 from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
 from domain.platform.exceptions import PlatformNotFoundError
+from interfaces.api.dependencies import get_current_user
 from interfaces.api.schemas.platforms import (
     PlatformCreateDTO,
     PlatformCreateResponse,
@@ -13,7 +14,7 @@ from interfaces.api.schemas.platforms import (
 )
 from settings import app as domain_app
 
-router = APIRouter(prefix="/platforms", tags=["platforms"])
+router = APIRouter(prefix="/platforms", tags=["platforms"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/", response_model=PlatformsResponse)

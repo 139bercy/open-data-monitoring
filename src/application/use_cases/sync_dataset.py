@@ -1,26 +1,30 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
 from domain.datasets.aggregate import Dataset
+from domain.datasets.exceptions import DatasetUnreachableError
 from domain.datasets.ports import AbstractDatasetRepository
 from domain.datasets.value_objects import DatasetVersionParams
 from domain.platform.aggregate import Platform
 from infrastructure.factories.dataset import DatasetAdapterFactory
-from domain.datasets.exceptions import DatasetUnreachableError
 from logger import logger
+
 
 @dataclass(frozen=True)
 class SyncDatasetCommand:
     platform: Platform
     platform_dataset_id: str
 
+
 @dataclass(frozen=True)
 class SyncDatasetOutput:
     dataset_id: Optional[UUID]
     status: str
     message: str = ""
+
 
 class SyncDatasetUseCase:
     def __init__(self, repository: AbstractDatasetRepository, uow):
@@ -54,6 +58,7 @@ class SyncDatasetUseCase:
 
     def _create_dataset_instance(self, platform: Platform, raw_data: dict) -> Dataset | SyncDatasetOutput:
         from domain.datasets.factory import DatasetFactory
+
         try:
             adapter = self.adapter_factory.create(platform_type=platform.type)
             instance = DatasetFactory.create_from_adapter(adapter=adapter, platform=platform, raw_data=raw_data)
@@ -69,13 +74,13 @@ class SyncDatasetUseCase:
                 instance.merge_with_existing(existing)
 
             self.repository.add(dataset=instance)
-            
+
             if not existing or existing.should_version(instance):
                 self._add_version(instance)
 
             self.repository.update_dataset_sync_status(platform.id, instance.id, "success")
             self._link_datasets(instance)
-            
+
             return SyncDatasetOutput(dataset_id=instance.id, status="success")
 
     def _add_version(self, instance: Dataset) -> None:
@@ -99,7 +104,7 @@ class SyncDatasetUseCase:
         """
         linked_slug = dataset.extract_external_link_slug() or str(dataset.slug)
         linked_id = self.repository.get_id_by_slug_globally(slug=linked_slug, exclude_id=dataset.id)
-        
+
         if not linked_id:
             return
 
@@ -107,8 +112,11 @@ class SyncDatasetUseCase:
         if not linked_dataset:
             return
 
-        is_ods = lambda d: str(d.page).startswith("https://data.economie.gouv.fr")
-        is_dg = lambda d: "data.gouv.fr" in str(d.page)
+        def is_ods(d: Dataset) -> bool:
+            return str(d.page).startswith("https://data.economie.gouv.fr")
+
+        def is_dg(d: Dataset) -> bool:
+            return "data.gouv.fr" in str(d.page)
 
         # Establish link if it's an ODS <-> DG pair
         if (is_ods(dataset) and is_dg(linked_dataset)) or (is_dg(dataset) and is_ods(linked_dataset)):

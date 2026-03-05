@@ -20,7 +20,7 @@ class SyntaxAnalyzer:
             return 100.0
         if not text1 or not text2:
             return 0.0
-        
+
         matcher = SequenceMatcher(None, text1, text2)
         return matcher.ratio() * 100.0
 
@@ -30,6 +30,7 @@ class SyntaxAnalyzer:
         Generates a SHA-256 hash of the dictionary keys (recursive).
         A change in keys represents a structural change (e.g., new field in ODS).
         """
+
         def extract_keys(d: Any) -> list[str]:
             keys = []
             if isinstance(d, dict):
@@ -52,28 +53,28 @@ class SyntaxAnalyzer:
         """
         old_hash = cls.get_structure_hash(old_raw)
         new_hash = cls.get_structure_hash(new_raw)
-        
+
         # Textual similarity on main fields
         old_title = old_raw.get("title", "") or ""
         new_title = new_raw.get("title", "") or ""
         title_similarity = cls.calculate_text_similarity(old_title, new_title)
-        
+
         old_desc = old_raw.get("description", "") or ""
         new_desc = new_raw.get("description", "") or ""
         desc_similarity = cls.calculate_text_similarity(old_desc, new_desc)
-        
+
         # Global Syntax Score (weighted average)
         # Structure change is heavy: if hash changes, we penalize
         structure_penalty = 0 if old_hash == new_hash else 30
-        
+
         # Score = (TitleSim * 0.4 + DescSim * 0.6) - structure_penalty
         base_score = (title_similarity * 0.4) + (desc_similarity * 0.6)
         syntax_score = max(0, base_score - structure_penalty)
-        
+
         return {
             "syntax_score": round(syntax_score, 2),
             "title_similarity": round(title_similarity, 2),
             "description_similarity": round(desc_similarity, 2),
             "structure_changed": old_hash != new_hash,
-            "new_structure_hash": new_hash
+            "new_structure_hash": new_hash,
         }

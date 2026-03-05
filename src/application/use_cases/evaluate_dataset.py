@@ -1,11 +1,13 @@
 from __future__ import annotations
-from dataclasses import dataclass, asdict
-from uuid import UUID
+
+from dataclasses import asdict, dataclass
 from typing import Optional
+from uuid import UUID
 
 from application.services.quality_assessment import QualityAssessmentService
 from domain.quality.ports import LLMEvaluator
 from logger import logger
+
 
 @dataclass(frozen=True)
 class EvaluateDatasetCommand:
@@ -13,11 +15,13 @@ class EvaluateDatasetCommand:
     dcat_path: str = "docs/quality/dcat_reference.md"
     charter_path: str = "docs/quality/charter_opendata.md"
 
+
 @dataclass(frozen=True)
 class EvaluateDatasetOutput:
     status: str
     evaluation: Optional[dict] = None
     error: Optional[str] = None
+
 
 class EvaluateDatasetUseCase:
     def __init__(self, uow, evaluator: LLMEvaluator):
@@ -41,5 +45,5 @@ class EvaluateDatasetUseCase:
             dataset_id=str(command.dataset_id),
             dcat_path=command.dcat_path,
             charter_path=command.charter_path,
-            output="json"
+            output="json",
         )

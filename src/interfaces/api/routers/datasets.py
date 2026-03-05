@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from application.handlers import find_dataset_id_from_url, find_platform_from_url
 from application.use_cases.evaluate_dataset import EvaluateDatasetCommand, EvaluateDatasetUseCase
 from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from domain.datasets.exceptions import DatasetNotFoundError
 from domain.platform.exceptions import PlatformNotFoundError
+from interfaces.api.dependencies import get_current_user
 from interfaces.api.schemas.datasets import (
     DatasetAPI,
     DatasetCreateResponse,
@@ -16,7 +17,7 @@ from interfaces.api.schemas.datasets import (
 )
 from settings import app as domain_app
 
-router = APIRouter(prefix="/datasets", tags=["datasets"])
+router = APIRouter(prefix="/datasets", tags=["datasets"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/add", response_model=DatasetCreateResponse)
