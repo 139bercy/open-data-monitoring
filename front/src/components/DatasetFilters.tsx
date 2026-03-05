@@ -29,10 +29,7 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
             : p.type === "datagouv"
               ? "DataGouv"
               : p.type;
-        return {
-          value: p.id,
-          label: `${typeLabel} - ${p.name ?? p.slug}`,
-        };
+        return { value: p.id, label: `${typeLabel} - ${p.name ?? p.slug}` };
       }),
     ],
     [platforms]

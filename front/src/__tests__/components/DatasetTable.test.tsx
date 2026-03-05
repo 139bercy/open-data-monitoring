@@ -92,10 +92,7 @@ describe("DatasetTable - Basic Tests", () => {
     });
 
     it("should display em-dash for null/undefined values", () => {
-      const datasetWithNull = {
-        ...mockDatasets[1],
-        publisher: null,
-      };
+      const datasetWithNull = { ...mockDatasets[1], publisher: null };
 
       render(
         <DatasetTable

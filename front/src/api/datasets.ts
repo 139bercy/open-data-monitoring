@@ -16,7 +16,9 @@ type PaginatedSnake<T> = {
   page_size: number;
 };
 
-export async function getDatasets(query: DatasetListQuery = {}): Promise<{
+export async function getDatasets(
+  query: DatasetListQuery = {}
+): Promise<{
   total: number;
   pageSize: number;
   page: number;

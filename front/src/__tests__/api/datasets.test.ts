@@ -100,10 +100,7 @@ describe("API Client - Characterization Tests", () => {
       server.use(
         http.get("/api/datasets", ({ request }) => {
           capturedUrl = request.url;
-          return HttpResponse.json({
-            datasets: [],
-            total_datasets: 0,
-          });
+          return HttpResponse.json({ datasets: [], total_datasets: 0 });
         })
       );
 
@@ -125,10 +122,7 @@ describe("API Client - Characterization Tests", () => {
       server.use(
         http.get("/api/datasets", ({ request }) => {
           capturedUrl = request.url;
-          return HttpResponse.json({
-            datasets: [],
-            total_datasets: 0,
-          });
+          return HttpResponse.json({ datasets: [], total_datasets: 0 });
         })
       );
 

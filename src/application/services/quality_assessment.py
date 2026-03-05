@@ -43,9 +43,7 @@ class QualityAssessmentService:
             dcat_ref, charter = self._load_references(dcat_path, charter_path)
             llm_context = self._get_llm_context(dataset_obj)
 
-            evaluation = self._run_llm_evaluation(
-                llm_context, dcat_ref, charter, output, prompt_type
-            )
+            evaluation = self._run_llm_evaluation(llm_context, dcat_ref, charter, output, prompt_type)
 
             return self._persist_results(dataset_obj, evaluation)
 
@@ -68,6 +66,7 @@ class QualityAssessmentService:
         evaluation.dataset_slug = str(dataset.slug)
 
         from dataclasses import asdict
+
         eval_data = asdict(evaluation)
         eval_data["dataset_id"] = str(eval_data["dataset_id"])
         eval_data["evaluated_at"] = eval_data["evaluated_at"].isoformat()
@@ -120,7 +119,6 @@ class QualityAssessmentService:
         }
         # Remove empty dicts/None values to further clean up
         return {k: v for k, v in llm_context.items() if v and (not isinstance(v, dict) or any(v.values()))}
-
 
     def _load_markdown(self, path: str) -> str:
         """Load markdown file content."""

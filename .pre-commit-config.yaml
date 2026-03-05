@@ -23,15 +23,16 @@ repos:
       # Run the formatter (replaces isort)
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
-    hooks:
-      - id: prettier
-        types_or: [javascript, jsx, ts, tsx, json, css, scss, markdown]
-        files: ^front/
-
   - repo: local
     hooks:
+      - id: prettier
+        name: prettier (frontend)
+        entry: bash -c "cd front && npx prettier --write \"src/**/*.{ts,tsx,json,css,scss,md}\""
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
       - id: pytest
         name: pytest (backend)
         entry: venv/bin/pytest

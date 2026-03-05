@@ -1,4 +1,4 @@
-.PHONY: help install test coverage export-es clean clean-db docker-up docker-down dump load exec-db stats
+.PHONY: help install test coverage export-es clean clean-db docker-up docker-down dump load exec-db stats lint
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -44,3 +44,9 @@ exec-db: ## Connect to database container via psql
 
 stats: ## Run and push statistics
 	./stats/run-stats.sh
+
+lint: ## Run all linters and formatters
+	ruff check . --fix
+	ruff format .
+	black .
+	cd front && npx prettier --write "src/**/*.{ts,tsx,json,css,scss,md}"

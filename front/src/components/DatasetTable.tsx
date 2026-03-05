@@ -403,10 +403,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                         ? "fr-badge--blue-france"
                         : "fr-badge--info"
                   }`}
-                  style={{
-                    fontSize: "0.7rem",
-                    fontWeight: 600,
-                  }}
+                  style={{ fontSize: "0.7rem", fontWeight: 600 }}
                 >
                   {item.platformName ?? item.platformId}
                 </span>,

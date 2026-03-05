@@ -131,16 +131,16 @@ export type DatasetListQuery = {
 
   // Sorting
   sortBy?:
-  | "created"
-  | "modified"
-  | "publisher"
-  | "downloads_count"
-  | "api_calls_count"
-  | "title"
-  | "versions_count"
-  | "popularity_score"
-  | "views_count"
-  | "reuses_count";
+    | "created"
+    | "modified"
+    | "publisher"
+    | "downloads_count"
+    | "api_calls_count"
+    | "title"
+    | "versions_count"
+    | "popularity_score"
+    | "views_count"
+    | "reuses_count";
   order?: "asc" | "desc";
 
   // Pagination

@@ -23,11 +23,7 @@ export const authService = {
     const res = await api.post<TokenResponse>(
       "/auth/login",
       formData.toString(),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
 
     localStorage.setItem(TOKEN_KEY, res.access_token);
