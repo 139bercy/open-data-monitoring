@@ -1,3 +1,5 @@
+import { isFeatureEnabled } from "../utils/featureFlags";
+
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type ApiClientOptions = {
@@ -44,11 +46,17 @@ class ApiClient {
     const token = localStorage.getItem("odm_token");
     const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
+    // Handle Beta Features
+    const betaHeader = isFeatureEnabled("proconnect")
+      ? { "X-Beta-Feature": "proconnect" }
+      : {};
+
     const init: RequestInit = {
       method,
       headers: {
         ...this.defaultHeaders,
         ...authHeader,
+        ...betaHeader,
         ...(body ? { "Content-Type": "application/json" } : {}),
         ...(headers ?? {}),
       },

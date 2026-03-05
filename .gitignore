@@ -184,6 +184,11 @@ pyrightconfig.json
 
 *.dump
 
+## Deployment
+
+deployment/*
+deploy.sh
+
 ##
 dev/*
 tmp.py

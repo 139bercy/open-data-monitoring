@@ -6,9 +6,18 @@ from fastapi import APIRouter
 
 from application.handlers import get_publishers_stats
 from interfaces.api.schemas.publishers import PublishersResponse, PublisherStats
+from settings import PROCONNECT_FEATURE_LEVEL
 from settings import app as domain_app
 
 router = APIRouter(prefix="/common", tags=["common"])
+
+
+@router.get("/features")
+async def get_features():
+    """
+    Retourne l'état des feature flags globaux configurés sur le serveur.
+    """
+    return {"proconnect": PROCONNECT_FEATURE_LEVEL}
 
 
 @router.get("/publishers", response_model=PublishersResponse)

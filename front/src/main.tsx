@@ -13,6 +13,8 @@ import { LoginPage } from "./pages/LoginPage";
 import { Home } from "./pages/Home";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import authService from "./api/auth";
+import api from "./api/api";
+import { loadGlobalFeatures } from "./utils/featureFlags";
 // ...existing code...
 
 startReactDsfr({ defaultColorScheme: "system" });
@@ -21,6 +23,10 @@ import { useEffect } from "react";
 
 function App(): JSX.Element {
   const { isDark, setIsDark } = useIsDark();
+
+  useEffect(() => {
+    loadGlobalFeatures(api);
+  }, []);
 
   // Handle token in URL hash (from OIDC callback)
   useEffect(() => {

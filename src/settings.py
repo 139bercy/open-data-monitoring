@@ -29,6 +29,8 @@ OIDC_AUTHORITY = os.environ.get(
 OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID", "")
 OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET", "")
 OIDC_REDIRECT_URI = os.environ.get("OIDC_REDIRECT_URI", "http://localhost:5173/auth/callback")
+# Possible values: "off", "beta", "on"
+PROCONNECT_FEATURE_LEVEL = os.environ.get("PROCONNECT_FEATURE_LEVEL", "off").lower()
 
 
 class App:

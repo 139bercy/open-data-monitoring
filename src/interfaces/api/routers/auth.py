@@ -2,7 +2,7 @@ import logging
 import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -13,6 +13,7 @@ from infrastructure.security import create_access_token, verify_password
 from infrastructure.security.oidc import oidc_client
 from interfaces.api.dependencies import get_current_user
 from interfaces.api.schemas.auth import Token, UserOut
+from settings import PROCONNECT_FEATURE_LEVEL
 from settings import app as domain_app
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -33,10 +34,16 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
 
 
 @router.get("/login/proconnect")
-async def login_proconnect():
+async def login_proconnect(x_beta_feature: Annotated[str | None, Header()] = None):
     """
     Redirect the user to ProConnect authorization endpoint.
     """
+    # Master Switch Logic
+    if PROCONNECT_FEATURE_LEVEL == "off":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Feature disabled")
+
+    if PROCONNECT_FEATURE_LEVEL == "beta" and x_beta_feature != "proconnect":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ProConnect restricted to beta users")
     state = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(32)
     # Note: In a real app, state and nonce should be stored in a secure cookie or session
@@ -45,10 +52,17 @@ async def login_proconnect():
 
 
 @router.get("/callback")
-async def auth_callback(code: str, state: str):
+async def auth_callback(code: str, state: str, x_beta_feature: Annotated[str | None, Header()] = None):
     """
     OIDC callback endpoint. Exchanges code for token and logs in the user.
     """
+    # Master Switch Logic
+    if PROCONNECT_FEATURE_LEVEL == "off":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Feature disabled")
+
+    if PROCONNECT_FEATURE_LEVEL == "beta" and x_beta_feature != "proconnect":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="ProConnect restricted to beta users")
+
     try:
         # 1. Exchange code for tokens
         tokens = oidc_client.exchange_code(code)

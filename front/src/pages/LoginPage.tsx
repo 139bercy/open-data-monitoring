@@ -4,6 +4,7 @@ import { Input } from "@codegouvfr/react-dsfr/Input";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import { Alert } from "@codegouvfr/react-dsfr/Alert";
 import authService from "../api/auth";
+import { isFeatureEnabled } from "../utils/featureFlags";
 
 export function LoginPage(): JSX.Element {
   const [email, setEmail] = useState("");
@@ -13,6 +14,8 @@ export function LoginPage(): JSX.Element {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  const showProConnect = isFeatureEnabled("proconnect");
 
   // @ts-ignore - 'from' exists in state if redirected from ProtectedRoute
   const from = location.state?.from?.pathname || "/";
@@ -54,44 +57,48 @@ export function LoginPage(): JSX.Element {
               />
             )}
 
-            <div className="fr-mt-4w">
-              <Button
-                priority="secondary"
-                style={{ width: "100%", justifyContent: "center" }}
-                onClick={() =>
-                  (window.location.href = "/api/v1/auth/login/proconnect")
-                }
-                iconId="fr-icon-account-line"
-              >
-                S'identifier avec ProConnect
-              </Button>
-            </div>
+            {showProConnect && (
+              <div className="fr-mt-4w">
+                <Button
+                  priority="secondary"
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() =>
+                    (window.location.href = "/api/v1/auth/login/proconnect")
+                  }
+                  iconId="fr-icon-account-line"
+                >
+                  S'identifier avec ProConnect
+                </Button>
+              </div>
+            )}
 
-            <div
-              className="fr-mt-2w fr-mb-2w"
-              style={{ textAlign: "center", position: "relative" }}
-            >
-              <hr
-                style={{
-                  border: "0",
-                  borderTop: "1px solid var(--border-default-grey)",
-                }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  background: "white",
-                  padding: "0 10px",
-                  fontSize: "0.8rem",
-                  color: "var(--text-mention-grey)",
-                }}
+            {showProConnect && (
+              <div
+                className="fr-mt-2w fr-mb-2w"
+                style={{ textAlign: "center", position: "relative" }}
               >
-                ou
-              </span>
-            </div>
+                <hr
+                  style={{
+                    border: "0",
+                    borderTop: "1px solid var(--border-default-grey)",
+                  }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    background: "white",
+                    padding: "0 10px",
+                    fontSize: "0.8rem",
+                    color: "var(--text-mention-grey)",
+                  }}
+                >
+                  ou
+                </span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               <Input
