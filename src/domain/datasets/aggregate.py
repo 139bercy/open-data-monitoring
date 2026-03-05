@@ -158,7 +158,7 @@ class Dataset:
             syntax_change_score=syntax_score,
         )
 
-    def calculate_discoverability_kpi(self, evaluation_results: dict | None = None) -> DiscoverabilityKPI:
+    def calculate_discoverability_kpi(self, evaluation_results: dict | None = None) -> DiscoverabilityKPI:  # noqa: C901
         """
         Calculates the discoverability KPI based on metadata and charter rules.
         """
@@ -190,7 +190,7 @@ class Dataset:
                 mandatory_fields.append("description")
             dcat_score = (present / len(mandatory_fields)) * 100.0
 
-        # 3. Freshness
+        # 3. Freshness (Relative to expected frequency)
         # Ensure modified is a datetime object (can be str if from some DTOs)
         modified_dt = self.modified
         if isinstance(modified_dt, str):
@@ -199,7 +199,35 @@ class Dataset:
         if modified_dt.tzinfo is None:
             modified_dt = modified_dt.replace(tzinfo=timezone.utc)
 
-        freshness_score = 100.0 if (datetime.now(timezone.utc) - modified_dt) < timedelta(days=30) else 50.0
+        frequency = self.raw.get("frequency")
+        if not frequency:
+            # Safe traversal addressing ODS null metas anomaly
+            metas = self.raw.get("metas") or {}
+            default_meta = metas.get("default") or {} if metas else {}
+            frequency = default_meta.get("accrual_periodicity")
+
+        # Mapping to days (including grace period)
+        frequency_thresholds = {
+            "daily": 2,
+            "continuous": 2,
+            "weekly": 9,
+            "monthly": 37,
+            "quarterly": 105,
+            "semiannual": 210,
+            "annual": 395,
+            "punctual": 3650,  # 10 years for punctual
+        }
+
+        default_threshold = 90  # Penalty for unknown frequency
+        threshold_days = frequency_thresholds.get(str(frequency).lower(), default_threshold)
+
+        delta_days = (datetime.now(timezone.utc) - modified_dt).days
+        if delta_days <= threshold_days:
+            freshness_score = 100.0
+        elif delta_days <= threshold_days * 2:
+            freshness_score = 50.0
+        else:
+            freshness_score = 0.0
 
         # 4. Semantic Quality (from IA if available)
         semantic_score = None

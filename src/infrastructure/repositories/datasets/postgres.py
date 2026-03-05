@@ -427,7 +427,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                    dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.timestamp
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
-            WHERE dv.dataset_id = %s;
+            WHERE dv.dataset_id = %s
+            ORDER BY dv.timestamp ASC;
             """,
             (str(dataset_id),),
         )

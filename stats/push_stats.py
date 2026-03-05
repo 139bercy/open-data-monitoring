@@ -85,7 +85,11 @@ def publish_dataset(dataset_uid):
     logger.info("STATS - 🚀 Dataset published successfully!")
 
 
-def execute(file, dataset_uid):
+def execute(file, dataset_uid, no_push=False):
+    if no_push:
+        logger.info(f"STATS - [DRY RUN] Skipping upload for '{file}' (dataset: {dataset_uid})")
+        return
+
     if not file_is_not_empty(file):
         logger.error(f"STATS - ❌ File '{file}' is empty or does not exist. Aborting.")
         sys.exit(1)
@@ -103,7 +107,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload a CSV file to a data.gouv.fr dataset")
     parser.add_argument("--file", required=True, help="Path to the CSV file to upload")
     parser.add_argument("--dataset_uid", required=True, help="Target dataset UID")
+    parser.add_argument("--no-push", action="store_true", help="Skip the actual upload")
 
     args = parser.parse_args()
 
-    execute(file=args.file, dataset_uid=args.dataset_uid)
+    execute(file=args.file, dataset_uid=args.dataset_uid, no_push=args.no_push)
+
