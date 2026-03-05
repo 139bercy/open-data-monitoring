@@ -54,7 +54,9 @@ class PlatformMonitoring:
     def mark_as_failed(self, platform_id: uuid.UUID, message: str = ""):
         """Mark platform sync as failed."""
         from datetime import datetime
+
         from domain.common.enums import SyncStatus
+
         platform = self.repository.get(platform_id=platform_id)
         if platform:
             payload = {

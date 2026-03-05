@@ -174,5 +174,5 @@ def process_data_eco():
 
 
 if __name__ == "__main__":
-    process_data_eco()
     process_data_gouv()
+    process_data_eco()
