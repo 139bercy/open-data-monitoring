@@ -38,7 +38,9 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
   const publisherOptions = useMemo(
     () => [
       { value: "", label: "Tous les producteurs" },
-      ...publishers.map((p) => ({ value: p, label: p })),
+      ...[...publishers]
+        .sort((a, b) => a.localeCompare(b))
+        .map((p) => ({ value: p, label: p })),
     ],
     [publishers]
   );

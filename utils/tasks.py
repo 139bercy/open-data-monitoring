@@ -13,6 +13,7 @@ import requests
 from dotenv import load_dotenv
 
 from application.handlers import check_deleted_datasets, find_platform_from_url, upsert_dataset
+from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
 from domain.datasets.exceptions import DatasetUnreachableError
 from logger import logger
 from settings import BASE_DIR, ENV_PATH, app
@@ -143,6 +144,11 @@ def process_data_gouv():
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
+        if platform:
+            logger.info(f"🔄 Syncing platform: {platform.slug}")
+            SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow).handle(
+                SyncPlatformCommand(platform_id=platform.id)
+            )
         check_deleted_datasets(app=app, platform=platform, datasets=data)
 
 
@@ -151,6 +157,11 @@ def process_data_eco():
     with open(os.path.join(OUTPUT_DIR, "data-eco.json")) as file:
         data = json.load(file)
         platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
+        if platform:
+            logger.info(f"🔄 Syncing platform: {platform.slug}")
+            SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow).handle(
+                SyncPlatformCommand(platform_id=platform.id)
+            )
         check_deleted_datasets(app=app, platform=platform, datasets=data)
         for dataset in data:
             try:

@@ -50,3 +50,17 @@ class PlatformMonitoring:
         payload = adapter.fetch()
         platform.sync(**payload)
         self.repository.save_sync(platform_id=platform_id, payload=payload)
+
+    def mark_as_failed(self, platform_id: uuid.UUID, message: str = ""):
+        """Mark platform sync as failed."""
+        from datetime import datetime
+        from domain.common.enums import SyncStatus
+        platform = self.repository.get(platform_id=platform_id)
+        if platform:
+            payload = {
+                "datasets_count": platform.datasets_count,
+                "timestamp": datetime.now(),
+                "status": SyncStatus.FAILED,
+            }
+            platform.sync(**payload)
+            self.repository.save_sync(platform_id=platform_id, payload=payload)
