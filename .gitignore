@@ -185,9 +185,7 @@ pyrightconfig.json
 *.dump
 
 ## Deployment
-
-deployment/*
-deploy.sh
+*.service
 
 ##
 dev/*

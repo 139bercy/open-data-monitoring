@@ -196,7 +196,14 @@ def cli_user():
 
 @cli_user.command("create")
 @click.option("-e", "--email", required=True, help="User email")
-@click.option("-p", "--password", required=True, help="User password")
+@click.option(
+    "-p",
+    "--password",
+    prompt=True,
+    hide_input=True,
+    confirmation_prompt=True,
+    help="User password",
+)
 @click.option("-n", "--full-name", required=False, help="User full name")
 @click.option("-r", "--role", required=False, default="user", help="User role")
 def cli_create_user(email, password, full_name, role):
@@ -215,7 +222,14 @@ def cli_create_user(email, password, full_name, role):
 
 @cli_user.command("update-password")
 @click.argument("email")
-@click.option("-p", "--password", required=True, help="New password")
+@click.option(
+    "-p",
+    "--password",
+    prompt=True,
+    hide_input=True,
+    confirmation_prompt=True,
+    help="New password",
+)
 def cli_user_update_password(email, password):
     """Update user password"""
     with app.uow:

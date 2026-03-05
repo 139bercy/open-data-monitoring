@@ -1,0 +1,17 @@
+[Unit]
+Description=Open Data Monitoring API
+After=network.target postgresql.service
+
+[Service]
+WorkingDirectory={{APP_PATH}}
+EnvironmentFile={{APP_PATH}}/.env
+ExecStart={{APP_PATH}}/venv/bin/python {{APP_PATH}}/src/run_api.py
+Restart=always
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=odm-api
+
+[Install]
+WantedBy=default.target

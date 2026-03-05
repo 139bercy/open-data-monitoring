@@ -1,4 +1,4 @@
-.PHONY: help install test coverage export-es clean clean-db docker-up docker-down dump load exec-db stats lint
+.PHONY: help install test coverage export-es clean clean-db docker-up docker-down dump load exec-db stats lint generate-service install-service deploy
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -50,3 +50,28 @@ lint: ## Run all linters and formatters
 	ruff format .
 	black .
 	cd front && npx prettier --write "src/**/*.{ts,tsx,json,css,scss,md}"
+
+generate-service: ## Generate systemd user service (params: PATH=/abs/path)
+	bash ./deployment/generate_service.sh -p $(PATH)
+
+install-service: ## Install and enable the systemd user service locally
+	mkdir -p ~/.config/systemd/user/
+	cp deployment/odm-api.service ~/.config/systemd/user/
+	systemctl --user unmask odm-api
+	systemctl --user daemon-reload
+	systemctl --user enable --now odm-api
+	@echo "✅ Service installé. Utilisez 'loginctl enable-linger $$(whoami)' pour le faire persister."
+
+restart-service:
+	systemctl --user unmask odm-api
+	systemctl --user daemon-reload
+	systemctl --user restart odm-api
+
+status-service:
+	systemctl --user status odm-api
+
+logs-service:
+	journalctl --user -u odm-api -f
+
+deploy: ## Run deployment script (usage: make deploy REMOTE_PATH=/path SSH_HOST=ds)
+	bash ./deploy.sh $(REMOTE_PATH) $(SSH_HOST)
