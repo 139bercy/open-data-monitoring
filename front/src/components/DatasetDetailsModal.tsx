@@ -69,11 +69,14 @@ function useDatasetManager(initialDataset: DatasetDetail | null) {
 
   const refresh = useCallback(async () => {
     if (!dataset?.id) return;
+    setLoading(true);
     try {
       const updated = await getDatasetDetail(dataset.id, false);
       setDataset(updated);
     } catch (e) {
       console.error("Erreur refresh:", e);
+    } finally {
+      setLoading(false);
     }
   }, [dataset?.id]);
 
@@ -1150,7 +1153,9 @@ export function DatasetDetailsModal({
   onNavigate,
   onClose,
 }: DatasetDetailsModalProps): JSX.Element {
-  const { dataset, refresh } = useDatasetManager(initialDataset || null);
+  const { dataset, loading, refresh } = useDatasetManager(
+    initialDataset || null
+  );
   const {
     evaluating,
     downloading,
@@ -1200,103 +1205,140 @@ export function DatasetDetailsModal({
         style={{ minWidth: "85%" }}
         onConceal={onClose}
       >
-        <style>{`#dataset-details-modal .fr-modal__dialog { max-width: 85vw !important; }`}</style>
+        <style>{`
+          #dataset-details-modal .fr-modal__dialog { max-width: 85vw !important; }
+          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          .ri-spin { animation: spin 1s linear infinite; display: inline-block; }
+        `}</style>
 
-        <div
-          className="fr-grid-row fr-grid-row--middle fr-mb-4w"
-          style={{ marginTop: "-1rem" }}
-        >
-          <div className="fr-col">
-            <h1 className="fr-h3 fr-mb-1w">{dataset.title ?? dataset.slug}</h1>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              <Badge
-                noIcon
-                small
-              >
-                {dataset.slug}
-              </Badge>
-              {(platformName && (
+        <div style={{ position: "relative" }}>
+          {(syncing || loading) && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(255,255,255,0.7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1000,
+                flexDirection: "column",
+                gap: "1rem",
+                borderRadius: "8px",
+              }}
+            >
+              <i
+                className="ri-loader-4-line ri-spin"
+                style={{
+                  fontSize: "3rem",
+                  color: "var(--background-flat-blue-france)",
+                }}
+              ></i>
+              <p className="fr-text--bold fr-mb-0">Mise à jour en cours...</p>
+            </div>
+          )}
+
+          <div
+            className="fr-grid-row fr-grid-row--middle fr-mb-4w"
+            style={{ marginTop: "-1rem" }}
+          >
+            <div className="fr-col">
+              <h1 className="fr-h3 fr-mb-1w">
+                {dataset.title ?? dataset.slug}
+              </h1>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                 <Badge
                   noIcon
                   small
-                  severity="info"
                 >
-                  {platformName}
+                  {dataset.slug}
                 </Badge>
-              )) || (
-                <Badge
-                  noIcon
-                  small
-                  severity="info"
-                >
-                  {dataset.platformId}
-                </Badge>
-              )}
+                {(platformName && (
+                  <Badge
+                    noIcon
+                    small
+                    severity="info"
+                  >
+                    {platformName}
+                  </Badge>
+                )) || (
+                  <Badge
+                    noIcon
+                    small
+                    severity="info"
+                  >
+                    {dataset.platformId}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="fr-col--auto">
+              <QualityScoreBadge
+                score={dataset.quality?.evaluation_results?.overall_score}
+              />
             </div>
           </div>
-          <div className="fr-col--auto">
-            <QualityScoreBadge
-              score={dataset.quality?.evaluation_results?.overall_score}
-            />
-          </div>
-        </div>
 
-        <Tabs
-          tabs={[
-            {
-              label: "Informations",
-              content: (
-                <InfoTab
-                  dataset={dataset}
-                  platformName={platformName}
-                  platformUrl={platformUrl}
-                  downloadsPerDay={downloadsPerDay}
-                  versionsCount={versions?.length ?? 0}
-                  onSync={sync}
-                  syncing={syncing}
-                  onNavigate={onNavigate}
-                />
-              ),
-            },
-            ...(!platformName?.toLowerCase().includes("data.gouv")
-              ? [
-                  {
-                    label: "Audit Qualité (IA)",
-                    content: (
-                      <QualityTab
-                        dataset={dataset}
-                        evaluating={evaluating}
-                        downloading={downloading}
-                        evalError={evalError}
-                        onEvaluate={evaluate}
-                        onDownloadReport={downloadReport}
-                        syncing={syncing}
-                        onSyncAndEvaluate={async () => {
-                          await sync();
-                          await evaluate();
-                        }}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-            {
-              label: "Historique",
-              content: (
-                <HistoryTab
-                  versions={versions}
-                  loading={loadingVersions}
-                  error={historyError}
-                  refresh={fetchVersions}
-                  selectedSnapshots={selectedSnapshots}
-                  toggleSelection={toggleSelection}
-                  onCompare={compareSnapshotsModal.open}
-                  baseline={dataset.currentSnapshot}
-                />
-              ),
-            },
-          ]}
-        />
+          <Tabs
+            tabs={[
+              {
+                label: "Informations",
+                content: (
+                  <InfoTab
+                    dataset={dataset}
+                    platformName={platformName}
+                    platformUrl={platformUrl}
+                    downloadsPerDay={downloadsPerDay}
+                    versionsCount={versions?.length ?? 0}
+                    onSync={sync}
+                    syncing={syncing}
+                    onNavigate={onNavigate}
+                  />
+                ),
+              },
+              ...(!platformName?.toLowerCase().includes("data.gouv")
+                ? [
+                    {
+                      label: "Audit Qualité (IA)",
+                      content: (
+                        <QualityTab
+                          dataset={dataset}
+                          evaluating={evaluating}
+                          downloading={downloading}
+                          evalError={evalError}
+                          onEvaluate={evaluate}
+                          onDownloadReport={downloadReport}
+                          syncing={syncing}
+                          onSyncAndEvaluate={async () => {
+                            await sync();
+                            await evaluate();
+                          }}
+                        />
+                      ),
+                    },
+                  ]
+                : []),
+              {
+                label: "Historique",
+                content: (
+                  <HistoryTab
+                    versions={versions}
+                    loading={loadingVersions}
+                    error={historyError}
+                    refresh={fetchVersions}
+                    selectedSnapshots={selectedSnapshots}
+                    toggleSelection={toggleSelection}
+                    onCompare={compareSnapshotsModal.open}
+                    baseline={dataset.currentSnapshot}
+                  />
+                ),
+              },
+            ]}
+          />
+        </div>
       </datasetDetailsModal.Component>
 
       {selectedSnapshotObjects && (

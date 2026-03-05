@@ -47,6 +47,7 @@ async def add_dataset(url: str):
         "status": "success",
         "id": output.dataset_id,
         "platform_id": platform.id,
+        "buid": dataset_id,
         "slug": dataset_id,
     }
 

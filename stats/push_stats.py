@@ -112,4 +112,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     execute(file=args.file, dataset_uid=args.dataset_uid, no_push=args.no_push)
-
