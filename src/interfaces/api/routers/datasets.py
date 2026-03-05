@@ -130,13 +130,24 @@ async def list_datasets(
 
 
 @router.get("/{dataset_id}", response_model=DatasetDetailAPI)
-async def get_dataset_detail(dataset_id: UUID, include_snapshots: bool = False):
+async def get_dataset_detail(dataset_id: str, include_snapshots: bool = False):
     """
-    Détail d'un dataset avec snapshot courant. Optionnellement inclut la liste des snapshots.
+    Détail d'un dataset avec snapshot courant.
+    dataset_id peut être un UUID ou un slug.
     """
-    detail = domain_app.dataset.repository.get_detail(dataset_id, include_snapshots)
-    if not detail:
+    uid = None
+    try:
+        uid = UUID(dataset_id)
+    except ValueError:
+        # Fallback to slug lookup
+        uid = domain_app.dataset.repository.get_id_by_slug_globally(dataset_id)
+
+    if not uid:
         raise DatasetNotFoundError(f"Dataset not found: {dataset_id}")
+
+    detail = domain_app.dataset.repository.get_detail(uid, include_snapshots)
+    if not detail:
+        raise DatasetNotFoundError(f"Dataset not found (repo): {uid}")
     return detail
 
 

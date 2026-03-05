@@ -121,8 +121,10 @@ export function DatasetListPage(): JSX.Element {
       const detail = await getDatasetDetail(datasetId, false);
       setSelected(detail);
       datasetDetailsModal.open();
-    } catch {
-      // ignore for now
+    } catch (err: any) {
+      setError(
+        `Impossible de charger le détail du jeu de données: ${err.message}`
+      );
     }
   };
 
@@ -233,7 +235,14 @@ export function DatasetListPage(): JSX.Element {
             ? (platformInfoById.get(selected.platformId)?.name ?? null)
             : null
         }
-        platformUrl={selected?.page ? new URL(selected.page).origin : null}
+        platformUrl={(() => {
+          if (!selected?.page) return null;
+          try {
+            return new URL(selected.page).origin;
+          } catch {
+            return null;
+          }
+        })()}
         onNavigate={handleOpenDetails}
         onClose={() => navigate("/datasets")}
       />

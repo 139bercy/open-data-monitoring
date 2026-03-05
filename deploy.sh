@@ -9,7 +9,7 @@ UPDATE_DB=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --update-db) UPDATE_DB=true ;;
-        *) 
+        *)
             if [ -z "$REMOTE_PATH" ]; then REMOTE_PATH="$1";
             elif [ -z "$SSH_HOST" ]; then SSH_HOST="$1";
             fi
@@ -25,7 +25,7 @@ fi
 
 # Configuration
 BACKUP_PATH="$REMOTE_PATH/backups"
-LOCAL_FRONT_DIST="front/dist" 
+LOCAL_FRONT_DIST="front/dist"
 
 echo "🚀 Starting deployment to $SSH_HOST..."
 
