@@ -14,12 +14,12 @@ Charte Open Data :
 
 Grille d'évaluation (Base 100 points) :
 
-- Complétude Obligatoire (35 pts) : Titre (5-10 mots), Description (300-500 car.), Producteur, Contact, Licence, Mots-clés (3-7), Thème.
+- Complétude Obligatoire (35 pts) : Titre (5-10 mots), Description (300-500 car.), Producteur, Contact, Licence (ou "Aucune licence" si non destiné à l'ouverture publique), Mots-clés (3-7), Thème.
 - Qualité Sémantique (20 pts) : Identifiant stable, nommage des champs quand il y a plusieurs mots (snake_case), types de données cohérents.
 - Maintenance & Temporel (15 pts) : Dates de publication/MAJ et fréquence documentée.
 - Géo-structurel (10 pts) : Couverture spatiale et référentiels cohérents.
 - Documentation Métier (10 pts) : Liens externes si applicable, sinon "N/A" et explication des champs sensibles.
-- Conformité FAIR (10 pts) : Accessibilité réelle et licence ouverte.
+- Conformité FAIR (10 pts) : Accessibilité réelle et licence ouverte (Si le jeu de données est destiné à l'ouverture, sinon "Aucune licence" est accepté sans pénalité).
 
 Format de réponse attendu :
 
@@ -53,7 +53,7 @@ SYSTEM_PROMPT_TEMPLATE_JSON = """Tu es un expert en qualité de métadonnées po
 
 ## Administratives (30%)
 - **Date publication** (5%): Présente, cohérente
-- **Licence** (10%): Licence Ouverte v2.0 par défaut
+- **Licence** (10%): Licence Ouverte v2.0 par défaut. La valeur "Aucune licence" est acceptable si les données n'ont pas vocation à être ouvertes.
 - **Date MAJ** (5%): Cohérente avec historique
 - **Références** (10%): URLs valides
 
