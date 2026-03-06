@@ -9,9 +9,11 @@ UPDATE_DB=false
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --update-db) UPDATE_DB=true ;;
+        -*) echo "Unknown option: $1"; exit 1 ;;
         *)
             if [ -z "$REMOTE_PATH" ]; then REMOTE_PATH="$1";
             elif [ -z "$SSH_HOST" ]; then SSH_HOST="$1";
+            else echo "Too many arguments: $1"; exit 1;
             fi
             ;;
     esac
@@ -19,6 +21,14 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if [ -z "$REMOTE_PATH" ] || [ -z "$SSH_HOST" ]; then
+    echo "Usage: $0 [--update-db] <REMOTE_PATH> <SSH_HOST>"
+    echo "Example: $0 /home/paul/open-data-monitoring my-server"
+    exit 1
+fi
+
+# Basic validation for SSH_HOST
+if [[ "$SSH_HOST" == /* ]]; then
+    echo "❌ Error: SSH_HOST ('$SSH_HOST') looks like a path. Check your arguments."
     echo "Usage: $0 [--update-db] <REMOTE_PATH> <SSH_HOST>"
     exit 1
 fi
@@ -59,20 +69,7 @@ rsync -avz --delete $LOCAL_FRONT_DIST/ $SSH_HOST:$REMOTE_PATH/front/dist/
 # 4. Run Migrations (Optional)
 if [ "$UPDATE_DB" = true ]; then
     echo "🗄️ Running migrations..."
-    ssh $SSH_HOST "cd $REMOTE_PATH &&
-    psql -h localhost -U postgres -d odm -c 'CREATE TABLE IF NOT EXISTS applied_patches (patch_name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT NOW());' > /dev/null
-    for f in db/patchs/*.sql; do
-        patch_name=\$(basename \$f)
-        is_applied=\$(psql -h localhost -U postgres -d odm -tAc \"SELECT 1 FROM applied_patches WHERE patch_name='\$patch_name'\")
-
-        if [ \"\$is_applied\" != \"1\" ]; then
-            echo \"  🚀 Applying \$patch_name...\"
-            psql -h localhost -U postgres -d odm -f \$f && \
-            psql -h localhost -U postgres -d odm -c \"INSERT INTO applied_patches (patch_name) VALUES ('\$patch_name')\"
-        else
-            echo \"  ✅ \$patch_name already applied.\"
-        fi
-    done"
+    ssh $SSH_HOST "cd $REMOTE_PATH && ./utils/migrate.sh"
 else
     echo "⏭️ Skipping database migrations (use --update-db to enable)."
 fi

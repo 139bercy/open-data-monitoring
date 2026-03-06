@@ -75,3 +75,6 @@ logs-service:
 
 deploy: ## Run deployment script (usage: make deploy REMOTE_PATH=/path SSH_HOST=ds [UPDATE_DB=true])
 	bash ./deploy.sh $(if $(UPDATE_DB),--update-db) $(REMOTE_PATH) $(SSH_HOST)
+
+logs: ## View logs
+	journalctl --user -u odm-api -f

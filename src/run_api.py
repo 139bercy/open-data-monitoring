@@ -18,6 +18,8 @@ if __name__ == "__main__":
 
     if ENV == "DEV":
         config.update({"reload": True, "log_level": "debug"})
+    else:
+        config.update({"log_level": "info"})
 
     print(f"🚀 Lancement de l'API Open Data Monitoring ({ENV})")
     print(f"📍 URL: http://localhost:{os.environ['API_PORT']}")
