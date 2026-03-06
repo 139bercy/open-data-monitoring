@@ -28,7 +28,7 @@ class PlatformType(str, Enum):
     """
 
     OPENDATASOFT = "opendatasoft"
-    DATAGOUV = "datagouv"
+    DATAGOUV = "datagouvfr"
 
     def __str__(self) -> str:
         """Return the string value for database storage and serialization."""

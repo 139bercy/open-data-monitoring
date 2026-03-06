@@ -64,7 +64,7 @@ def test_factory_should_return_data_gouv_fr():
     # Arrange & Act
     factory = PlatformAdapterFactory()
     adapter = factory.create(
-        platform_type="datagouv",
+        platform_type="datagouvfr",
         url="http://test.com",
         key="key",
         slug="slug",

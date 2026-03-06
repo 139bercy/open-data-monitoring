@@ -26,8 +26,8 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
         const typeLabel =
           p.type === "opendatasoft"
             ? "ODS"
-            : p.type === "datagouv"
-              ? "DataGouv"
+            : p.type === "datagouvfr"
+              ? "datagouvfr"
               : p.type;
         return { value: p.id, label: `${typeLabel} - ${p.name ?? p.slug}` };
       }),

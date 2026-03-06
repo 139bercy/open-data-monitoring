@@ -45,7 +45,7 @@ def cli_platform():
     "-t",
     "--type",
     required=True,
-    type=click.Choice(["opendatasoft", "datagouv", "test"]),
+    type=click.Choice(["opendatasoft", "datagouvfr", "test"]),
 )
 @click.option("-u", "--url", required=True, help="Base URL")
 @click.option("-k", "--key", required=False, help="API Key")

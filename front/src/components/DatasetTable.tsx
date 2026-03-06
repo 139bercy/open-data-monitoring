@@ -398,7 +398,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                   className={`fr-badge ${
                     item.platformType === "opendatasoft"
                       ? "fr-badge--purple-glycine"
-                      : item.platformType === "datagouv" ||
+                      : item.platformType === "datagouvfr" ||
                           item.platformType === "datagouvfr"
                         ? "fr-badge--blue-france"
                         : "fr-badge--info"

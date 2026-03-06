@@ -20,7 +20,7 @@ type APIKey = string;
  * Platform type determines which adapter to use for data extraction.
  * Each type has its own API contract and data structure.
  */
-type PlatformType = "opendatasoft" | "datagouv" | string;
+type PlatformType = "opendatasoft" | "datagouvfr" | string;
 
 type SyncStatus = "pending" | "success" | "failed";
 

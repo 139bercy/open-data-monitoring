@@ -132,10 +132,10 @@ def get_data_gouv_datasets():
 
 def process_data_gouv():
     get_data_gouv_datasets()
+    platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         for dataset in data:
-            platform = find_platform_from_url(app=app, url=dataset["page"])
             try:
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
             except DatasetUnreachableError:
@@ -143,7 +143,6 @@ def process_data_gouv():
 
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
-        platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
         if platform:
             logger.info(f"🔄 Syncing platform: {platform.slug}")
             SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow).handle(
