@@ -101,9 +101,9 @@ def cli_add_dataset(url, output):
         pass
 
 
-@cli_dataset.command("get")
+@cli_dataset.command("fetch")
 @click.argument("dataset_id")
-def cli_get_dataset(dataset_id):
+def cli_fetch_dataset(dataset_id):
     """Retrieve dataset on Opendatasoft"""
     catalog = requests.get(
         f"https://{os.environ.get('ODS_DOMAIN')}/api/explore/v2.1/catalog/datasets/{dataset_id}/",

@@ -14,12 +14,12 @@ Charte Open Data :
 
 Grille d'évaluation (Base 100 points) :
 
-- Complétude Obligatoire (35 pts) : Titre (5-10 mots), Description (300-500 car.), Producteur, Contact, Licence (ou "Aucune licence" si non destiné à l'ouverture publique), Mots-clés (3-7), Thème.
+- Complétude Obligatoire (35 pts) : Titre (5-10 mots), Description (300-500 car.), Producteur, Contact, Licence (la valeur "Aucune licence" est 100% VALIDE et ne doit déclencher AUCUNE pénalité), Mots-clés (3-7), Thème.
 - Qualité Sémantique (20 pts) : Identifiant stable, nommage des champs quand il y a plusieurs mots (snake_case), types de données cohérents.
 - Maintenance & Temporel (15 pts) : Dates de publication/MAJ et fréquence documentée.
 - Géo-structurel (10 pts) : Couverture spatiale et référentiels cohérents.
 - Documentation Métier (10 pts) : Liens externes si applicable, sinon "N/A" et explication des champs sensibles.
-- Conformité FAIR (10 pts) : Accessibilité réelle et licence ouverte (Si le jeu de données est destiné à l'ouverture, sinon "Aucune licence" est accepté sans pénalité).
+- Conformité FAIR (10 pts) : Accessibilité réelle et licence renseignée. ATTENTION : La présence de la valeur "Aucune licence" accorde la totalité des points pour le critère de licence, ne JAMAIS la pénaliser.
 
 Format de réponse attendu :
 
@@ -28,7 +28,7 @@ Format de réponse attendu :
 - Plan d'Action : Liste les corrections prioritaires sous forme de recommandations concrètes.
 - Préconisations ACTIONNABLES : Pour chaque manquement identifié, propose du CONTENU CONCRET prêt à l'emploi :
   * Si la description est manquante/insuffisante → Rédige une description complète (300-500 caractères) adaptée au jeu de données
-  * Si les mots-clés sont absents/inadaptés → Propose 5-7 mots-clés pertinents et spécifiques
+  * Si les mots-clés sont absents/inadaptés → Propose 5-7 mots-clés pertinents et spécifiques, impérativement séparés par des virgules (ex: "mot1, mot2, mot3")
   * Si le contact est manquant → Suggère un format de contact type (ex: "opendata@ministere.gouv.fr")
   * Si des champs nécessitent une explication → Rédige la documentation manquante
   * Pour tout autre manquement → Fournis le contenu exact à ajouter/modifier
@@ -49,11 +49,11 @@ SYSTEM_PROMPT_TEMPLATE_JSON = """Tu es un expert en qualité de métadonnées po
 - **Description** (15%): 300-500 chars, objectif mentionné
 - **Producteur** (5%): Direction responsable
 - **Contact** (5%): Email valide (BALF préféré)
-- **Mots-clés** (5%): 3-7 mots, pertinents
+- **Mots-clés** (5%): 3-7 mots, pertinents. S'ils sont suggérés, ils DOIVENT être séparés par des virgules (ex: "mot1, mot2, mot3").
 
 ## Administratives (30%)
 - **Date publication** (5%): Présente, cohérente
-- **Licence** (10%): Licence Ouverte v2.0 par défaut. La valeur "Aucune licence" est acceptable si les données n'ont pas vocation à être ouvertes.
+- **Licence** (10%): Licence Ouverte v2.0 par défaut. ATTENTION: La valeur "Aucune licence" est 100% VALIDE. Si le champ contient "Aucune licence", le score DOIT être de 100/100 pour ce critère, sans aucune pénalité ni avertissement.
 - **Date MAJ** (5%): Cohérente avec historique
 - **Références** (10%): URLs valides
 

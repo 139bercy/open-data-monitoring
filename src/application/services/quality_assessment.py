@@ -61,13 +61,23 @@ class QualityAssessmentService:
             dataset=context, dcat_reference=dcat, charter=charter, output=out, prompt_type=p_type
         )
 
+    def _sanitize_evaluation_data(self, obj: any) -> any:
+        """Recursively remove Postgres-incompatible null bytes '\x00' from strings."""
+        if isinstance(obj, str):
+            return obj.replace("\x00", "")
+        elif isinstance(obj, dict):
+            return {k: self._sanitize_evaluation_data(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._sanitize_evaluation_data(item) for item in obj]
+        return obj
+
     def _persist_results(self, dataset: any, evaluation: MetadataEvaluation) -> MetadataEvaluation:
         evaluation.dataset_id = dataset.id
         evaluation.dataset_slug = str(dataset.slug)
 
         from dataclasses import asdict
 
-        eval_data = asdict(evaluation)
+        eval_data = self._sanitize_evaluation_data(asdict(evaluation))
         eval_data["dataset_id"] = str(eval_data["dataset_id"])
         eval_data["evaluated_at"] = eval_data["evaluated_at"].isoformat()
 
