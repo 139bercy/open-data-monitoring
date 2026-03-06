@@ -49,10 +49,19 @@ export function DatasetListPage(): JSX.Element {
 
   // handle deep link
   useEffect(() => {
-    if (routeId && (!selected || selected.id !== routeId)) {
-      handleOpenDetails(routeId);
+    if (routeId) {
+      if (!selected || selected.id !== routeId) {
+        handleOpenDetails(routeId);
+      }
+    } else {
+      if (selected) {
+        setSelected(null);
+      }
+      try {
+        datasetDetailsModal.close();
+      } catch {}
     }
-  }, [routeId]);
+  }, [routeId, selected?.id]);
 
   // load ref data once (platforms)
   useEffect(() => {
@@ -225,7 +234,7 @@ export function DatasetListPage(): JSX.Element {
         onPageSizeChange={(size) =>
           setQuery((q) => ({ ...q, page: 1, pageSize: size }))
         }
-        onRowClick={handleOpenDetails}
+        onRowClick={(id) => navigate(`/datasets/${id}`)}
       />
 
       <DatasetDetailsModal
@@ -243,7 +252,10 @@ export function DatasetListPage(): JSX.Element {
             return null;
           }
         })()}
-        onNavigate={handleOpenDetails}
+        onNavigate={(id) => {
+          datasetDetailsModal.close(); // Close before navigating
+          setTimeout(() => navigate(`/datasets/${id}`), 100);
+        }}
         onClose={() => navigate("/datasets")}
       />
       <div className="fr-mt-6w">
