@@ -54,6 +54,7 @@ export function DatasetListPage(): JSX.Element {
         handleOpenDetails(routeId);
       }
     } else {
+      // No ID in URL -> modal should be closed
       if (selected) {
         setSelected(null);
       }
@@ -252,11 +253,8 @@ export function DatasetListPage(): JSX.Element {
             return null;
           }
         })()}
-        onNavigate={(id) => {
-          datasetDetailsModal.close(); // Close before navigating
-          setTimeout(() => navigate(`/datasets/${id}`), 100);
-        }}
-        onClose={() => navigate("/datasets")}
+        onNavigate={(id) => navigate(`/datasets/${id}`)}
+        onClose={() => navigate("/datasets/")}
       />
       <div className="fr-mt-6w">
         <Button
