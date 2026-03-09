@@ -205,7 +205,6 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
           <Button
             priority="tertiary"
             onClick={() => onReset?.()}
-            iconId="ri-refresh-line"
           >
             Réinitialiser
           </Button>

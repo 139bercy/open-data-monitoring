@@ -5,6 +5,7 @@ import { useIsModalOpen } from "@codegouvfr/react-dsfr/Modal/useIsModalOpen";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import { Alert } from "@codegouvfr/react-dsfr/Alert";
 import { Badge } from "@codegouvfr/react-dsfr/Badge";
+import { Tooltip } from "@codegouvfr/react-dsfr/Tooltip";
 import type { DatasetDetail, SnapshotVersion } from "../types/datasets";
 import {
   getDatasetVersions,
@@ -194,9 +195,20 @@ function QualityScoreBadge({ score }: { score?: number | null }) {
       <span
         className="fr-text--xs fr-mb-1v"
         style={{ textTransform: "uppercase", fontWeight: "bold", opacity: 0.8 }}
-        title="Analyse sémantique approfondie par IA (Complétude, clarté, pertinence des métadonnées)"
       >
-        Score Qualité IA ⓘ
+        Score Qualité IA{" "}
+        <Tooltip
+          kind="hover"
+          title="Analyse sémantique approfondie par IA (Complétude, clarté, pertinence des métadonnées)"
+        >
+          <Button
+            priority="tertiary no outline"
+            iconId="fr-icon-info-line"
+            size="small"
+            title="Plus d'informations sur la qualité IA"
+            style={{ padding: "0.25rem", verticalAlign: "middle" }}
+          />
+        </Tooltip>
       </span>
       <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
         <span
@@ -293,7 +305,6 @@ function HealthDetail({
           <div
             className="fr-col-4"
             key={item.label}
-            title={item.desc}
           >
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "1.2rem", marginBottom: "0.25rem" }}>
@@ -303,7 +314,19 @@ function HealthDetail({
                 className="fr-text--xs fr-mb-1v"
                 style={{ fontWeight: "bold" }}
               >
-                {item.label} ⓘ
+                {item.label}{" "}
+                <Tooltip
+                  kind="hover"
+                  title={item.desc}
+                >
+                  <Button
+                    priority="tertiary no outline"
+                    iconId="fr-icon-info-line"
+                    size="small"
+                    title={`Plus d'informations sur ${item.label}`}
+                    style={{ padding: "0.25rem", verticalAlign: "middle" }}
+                  />
+                </Tooltip>
               </div>
               <Badge
                 severity={getSeverity(item.val)}
@@ -793,15 +816,20 @@ function InfoTab({
           </Badge>
         )}
         <div className="fr-ml-auto">
-          <Button
-            priority="tertiary"
-            size="medium"
-            iconId="fr-icon-refresh-line"
-            onClick={onSync}
-            disabled={syncing || !!dataset.isDeleted}
+          <Tooltip
+            kind="hover"
+            title="Met à jour les métadonnées et statistiques (vues, téléchargements) en interrogeant directement la plateforme source"
           >
-            {syncing ? "Synchro..." : "Synchroniser depuis la source"}
-          </Button>
+            <Button
+              priority="tertiary"
+              size="medium"
+              iconId="fr-icon-refresh-line"
+              onClick={onSync}
+              disabled={syncing || !!dataset.isDeleted}
+            >
+              {syncing ? "Synchro..." : "Synchroniser depuis la source"}
+            </Button>
+          </Tooltip>
         </div>
       </div>
       <div className="fr-text--sm">

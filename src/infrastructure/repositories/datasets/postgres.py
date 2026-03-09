@@ -768,23 +768,28 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "syntax_change_score": r.get("syntax_change_score"),
                 },
                 "health_score": (
-                    _calculate_health_scores(
-                        {
-                            "quality": {
-                                "has_description": r.get("has_description"),
-                                "is_slug_valid": r.get("is_slug_valid"),
-                                "syntax_change_score": r.get("syntax_change_score"),
-                            },
-                            "modified": r.get("modified"),
-                            "views_count": r.get("views_count"),
-                            "api_calls_count": r.get("api_calls_count"),
-                            "reuses_count": r.get("reuses_count"),
-                            "data": r.get("data") or {},  # Assuming data is merged/extracted if needed
-                        }
+                    (
+                        scores := _calculate_health_scores(
+                            {
+                                "quality": {
+                                    "has_description": r.get("has_description"),
+                                    "is_slug_valid": r.get("is_slug_valid"),
+                                    "syntax_change_score": r.get("syntax_change_score"),
+                                },
+                                "modified": r.get("modified"),
+                                "views_count": r.get("views_count"),
+                                "api_calls_count": r.get("api_calls_count"),
+                                "reuses_count": r.get("reuses_count"),
+                                "data": r.get("data") or {},
+                            }
+                        )
                     )["global"]
                     if r.get("modified")
                     else None
                 ),
+                "health_quality_score": scores["quality"] if r.get("modified") and scores else None,
+                "health_freshness_score": scores["freshness"] if r.get("modified") and scores else None,
+                "health_engagement_score": scores["engagement"] if r.get("modified") and scores else None,
             }
             for r in rows
         ]

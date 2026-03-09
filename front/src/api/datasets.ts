@@ -91,6 +91,9 @@ export async function getDatasets(
     linkedPlatformName: it.linked_platform_name,
     quality: it.quality,
     healthScore: it.health_score,
+    healthQualityScore: it.health_quality_score,
+    healthFreshnessScore: it.health_freshness_score,
+    healthEngagementScore: it.health_engagement_score,
   }));
   return {
     items,

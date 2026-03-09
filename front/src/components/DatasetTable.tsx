@@ -3,6 +3,9 @@ import { Table } from "@codegouvfr/react-dsfr/Table";
 import { Select } from "@codegouvfr/react-dsfr/Select";
 import { PaginationDsfr } from "./PaginationDsfr";
 import { Alert } from "@codegouvfr/react-dsfr/Alert";
+import { Tooltip } from "@codegouvfr/react-dsfr/Tooltip";
+import { Button } from "@codegouvfr/react-dsfr/Button";
+import { Badge } from "@codegouvfr/react-dsfr/Badge";
 import type { DatasetSummary, DatasetListQuery } from "../types/datasets";
 
 export type DatasetTableProps = Readonly<{
@@ -165,7 +168,24 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 : "▼"
               : ""}
           </button>,
-          "Santé",
+          <div
+            key="h-health"
+            style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+          >
+            Santé
+            <Tooltip
+              kind="hover"
+              title="Moyenne pondérée : Qualité (50%), Fraîcheur (30%), Engagement (20%)"
+            >
+              <Button
+                priority="tertiary no outline"
+                iconId="fr-icon-info-line"
+                size="small"
+                title="Détails du calcul du score de santé"
+                style={{ padding: "0.25rem" }}
+              />
+            </Tooltip>
+          </div>,
           <div
             className="fr-grid-row fr-grid-row--middle"
             style={{ display: "flex", gap: "1rem" }}
@@ -352,26 +372,43 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                     alignItems: "flex-start",
                   }}
                 >
-                  <div style={{ display: "flex", gap: "0.25rem" }}>
-                    <span
-                      className={`fr-badge ${
-                        !item.healthScore
-                          ? "fr-badge--no-status"
-                          : item.healthScore >= 85
-                            ? "fr-badge--success"
-                            : item.healthScore >= 70
-                              ? "fr-badge--info"
-                              : item.healthScore >= 50
-                                ? "fr-badge--warning"
-                                : "fr-badge--error"
-                      }`}
-                      style={{ fontWeight: "bold", padding: "0 8px" }}
-                      title={`Score global: ${item.healthScore?.toFixed(1) ?? "N/A"}/100`}
-                    >
-                      {item.healthScore
-                        ? `${Math.round(item.healthScore)}%`
-                        : "—"}
-                    </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.25rem",
+                      alignItems: "center",
+                    }}
+                  >
+                    {item.healthScore ? (
+                      <Tooltip
+                        kind="hover"
+                        title={`Score global: ${item.healthScore.toFixed(1)}/100 (Qualité: ${Math.round(item.healthQualityScore ?? 0)}%, Fraîcheur: ${Math.round(item.healthFreshnessScore ?? 0)}%, Engagement: ${Math.round(item.healthEngagementScore ?? 0)}%)`}
+                      >
+                        <Badge
+                          severity={
+                            item.healthScore >= 85
+                              ? "success"
+                              : item.healthScore >= 70
+                                ? "info"
+                                : item.healthScore >= 50
+                                  ? "warning"
+                                  : "error"
+                          }
+                          noIcon
+                          small
+                          style={{ cursor: "help" }}
+                        >
+                          {Math.round(item.healthScore)}%
+                        </Badge>
+                      </Tooltip>
+                    ) : (
+                      <span
+                        className="fr-badge fr-badge--no-status"
+                        style={{ fontWeight: "bold", padding: "0 8px" }}
+                      >
+                        —
+                      </span>
+                    )}
                   </div>
                   <div
                     style={{

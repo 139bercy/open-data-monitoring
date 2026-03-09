@@ -6,6 +6,7 @@ import { Footer } from "@codegouvfr/react-dsfr/Footer";
 import { useIsDark } from "@codegouvfr/react-dsfr/useIsDark";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import "@codegouvfr/react-dsfr/dsfr/dsfr.min.css";
+import "@codegouvfr/react-dsfr/dsfr/utility/icons/icons.min.css";
 import { DatasetListPage } from "./pages/DatasetListPage";
 import { PlatformListPage } from "./pages/PlatformListPage";
 import { AuditReportPage } from "./pages/AuditReportPage";

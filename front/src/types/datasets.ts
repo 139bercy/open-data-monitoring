@@ -52,6 +52,9 @@ export type DatasetSummary = {
   isDeleted: boolean | null;
   quality?: QualityIndicators;
   healthScore?: number;
+  healthQualityScore?: number;
+  healthFreshnessScore?: number;
+  healthEngagementScore?: number;
   linkedDatasetId?: UUID;
   linkedDatasetSlug?: string;
   linkedPlatformName?: string;

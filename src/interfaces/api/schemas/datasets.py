@@ -68,6 +68,9 @@ class DatasetAPI(BaseModel):
 
     # Quality & Health
     health_score: Score | None = None
+    health_quality_score: Score | None = None
+    health_freshness_score: Score | None = None
+    health_engagement_score: Score | None = None
 
     # Linked dataset
     linked_dataset_id: UUID | None = None
