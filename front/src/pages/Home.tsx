@@ -26,6 +26,14 @@ export function Home(): JSX.Element {
             Radar de Santé
           </Link>
         </div>
+        <div className="fr-col-12 fr-col-md-4">
+          <Link
+            to="/platforms"
+            className="fr-btn fr-btn--secondary"
+          >
+            Gérer les plateformes
+          </Link>
+        </div>
       </div>
     </div>
   );
