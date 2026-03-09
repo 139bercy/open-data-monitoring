@@ -11,12 +11,12 @@ class ProblemDetails(BaseModel):
     type: str = Field(
         ...,
         description="A URI reference that identifies the problem type.",
-        example="https://example.com/probs/out-of-stock",
+        json_schema_extra={"example": "https://example.com/probs/out-of-stock"},
     )
     title: str = Field(
         ...,
         description="A short, human-readable summary of the problem type.",
-        example="You do not have enough credit.",
+        json_schema_extra={"example": "You do not have enough credit."},
     )
     status: int = Field(
         ...,

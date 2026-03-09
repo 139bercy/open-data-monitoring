@@ -10,7 +10,17 @@ vi.mock("@codegouvfr/react-dsfr", () => ({
       getHex: vi
         .fn()
         .mockReturnValue({
-          decisions: { border: { default: { grey: { default: "#cecece" } } } },
+          decisions: {
+            border: { default: { grey: { default: "#cecece" } } },
+            background: {
+              flat: {
+                success: { default: "#18753c" },
+                info: { default: "#0063cb" },
+                warning: { default: "#b34000" },
+                error: { default: "#e1000f" },
+              },
+            },
+          },
         }),
     },
   },
@@ -61,15 +71,17 @@ vi.mock("recharts", async () => {
 describe("HeatmapPresenter", () => {
   const mockData = [
     { direction: "DGFiP", score: 85, crises: 0 },
-    { direction: "DG Trésor", score: 45, crises: 2 },
+    { direction: "INSEE", score: 75, crises: 1 },
+    { direction: "DG Trésor", score: 55, crises: 2 },
     { direction: "Customs", score: 12, crises: 5 },
   ];
 
   it("renders clusters for each direction", () => {
     render(<HeatmapPresenter data={mockData} />);
-    expect(screen.getByText("DGFiP")).toBeDefined();
-    expect(screen.getByText("DG Trésor")).toBeDefined();
-    expect(screen.getByText("Customs")).toBeDefined();
+    expect(screen.getByText("✅ DGFiP")).toBeDefined();
+    expect(screen.getByText("🔵 INSEE")).toBeDefined();
+    expect(screen.getByText("⚠️ DG Trésor")).toBeDefined();
+    expect(screen.getByText("🚨 Customs")).toBeDefined();
   });
 
   it("applies correct color classes/styles based on score", () => {
@@ -77,10 +89,12 @@ describe("HeatmapPresenter", () => {
 
     // Check for color markers (we'll define specific data-attributes or classes)
     const healthyCluster = container.querySelector('[data-health="healthy"]');
+    const infoCluster = container.querySelector('[data-health="info"]');
     const warningCluster = container.querySelector('[data-health="warning"]');
     const crisisCluster = container.querySelector('[data-health="crisis"]');
 
     expect(healthyCluster).toBeDefined();
+    expect(infoCluster).toBeDefined();
     expect(warningCluster).toBeDefined();
     expect(crisisCluster).toBeDefined();
   });

@@ -1,9 +1,7 @@
--- ============================================================================
--- MBI Calculation & Aggregation
--- Description: Recalculate health scores and aggregate by direction.
--- ============================================================================
+-- Drop the static table created in previous mock step
+DROP TABLE IF EXISTS direction_health_stats;
 
--- 1. Create a Dynamic View for Real-time Aggregation
+-- View: direction_health_stats_view
 CREATE OR REPLACE VIEW direction_health_stats_view AS
 WITH latest_version_info AS (
     SELECT DISTINCT ON (dataset_id)

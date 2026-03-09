@@ -1,9 +1,30 @@
--- ============================================================================
--- MBI Calculation & Aggregation
--- Description: Recalculate health scores and aggregate by direction.
--- ============================================================================
+-- View: normalized_datasets
+CREATE OR REPLACE VIEW normalized_datasets AS
+SELECT
+    id,
+    slug,
+    CASE
+        WHEN publisher ILIKE 'DGFIP' THEN 'DGFiP'
+        WHEN publisher ILIKE 'DGCCRF%' THEN 'DGCCRF'
+        WHEN publisher ILIKE 'DGE' THEN 'DGE'
+        WHEN publisher ILIKE 'DGTRESOR' THEN 'DG Trésor'
+        WHEN publisher ILIKE 'DGDDI' THEN 'DGDDI'
+        WHEN publisher ILIKE 'DAJ' THEN 'DAJ'
+        WHEN publisher ILIKE 'DAE' THEN 'DAE'
+        WHEN publisher ILIKE 'DGAFP' THEN 'DGAFP'
+        WHEN publisher ILIKE 'DGT' THEN 'DG Trésor'
+        WHEN publisher ilike 'Direction Générale du Trésor' THEN 'DG Trésor'
+        WHEN publisher ILIKE 'Bercy Hub - Mission Open Data' THEN 'Bercy Hub'
+        WHEN publisher IS NULL OR publisher = '' THEN 'Inconnu'
+        ELSE publisher
+    END AS normalized_publisher,
+    modified,
+    published,
+    deleted,
+    restricted
+FROM datasets;
 
--- 1. Create a Dynamic View for Real-time Aggregation
+-- View: direction_health_stats_view
 CREATE OR REPLACE VIEW direction_health_stats_view AS
 WITH latest_version_info AS (
     SELECT DISTINCT ON (dataset_id)

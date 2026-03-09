@@ -73,11 +73,7 @@ describe("DatasetTable - Basic Tests", () => {
 
       const expectedDate = new Date(mockDatasets[0].created).toLocaleDateString(
         undefined,
-        {
-          day: "2-digit",
-          month: "2-digit",
-          year: "2-digit",
-        }
+        { day: "2-digit", month: "2-digit", year: "2-digit" }
       );
       expect(screen.getByText(expectedDate)).toBeInTheDocument();
     });

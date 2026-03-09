@@ -95,6 +95,11 @@ def setup_test_database():
                         with open(os.path.join(patch_dir, patch)) as f:
                             cur.execute(f.read())
 
+                # Apply base views if present
+                views_file = "db/views.sql"
+                if os.path.exists(views_file):
+                    cur.execute(open(views_file).read())
+
                 migration_conn.commit()
     finally:
         postgres.close()

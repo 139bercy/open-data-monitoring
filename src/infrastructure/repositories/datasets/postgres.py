@@ -984,20 +984,24 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 for r in list_rows
             ]
 
-        health_scores = _calculate_health_scores(
-            {
-                "quality": {
-                    "has_description": d.get("has_description"),
-                    "is_slug_valid": d.get("is_slug_valid"),
-                    "syntax_change_score": d.get("syntax_change_score"),
-                },
-                "modified": d["modified"],
-                "views_count": current_snapshot.get("views_count") if current_snapshot else 0,
-                "api_calls_count": current_snapshot.get("api_calls_count") if current_snapshot else 0,
-                "reuses_count": current_snapshot.get("reuses_count") if current_snapshot else 0,
-                "data": current_snapshot.get("data") if current_snapshot else {},
-            }
-        ) if d.get("modified") else None
+        health_scores = (
+            _calculate_health_scores(
+                {
+                    "quality": {
+                        "has_description": d.get("has_description"),
+                        "is_slug_valid": d.get("is_slug_valid"),
+                        "syntax_change_score": d.get("syntax_change_score"),
+                    },
+                    "modified": d["modified"],
+                    "views_count": current_snapshot.get("views_count") if current_snapshot else 0,
+                    "api_calls_count": current_snapshot.get("api_calls_count") if current_snapshot else 0,
+                    "reuses_count": current_snapshot.get("reuses_count") if current_snapshot else 0,
+                    "data": current_snapshot.get("data") if current_snapshot else {},
+                }
+            )
+            if d.get("modified")
+            else None
+        )
 
         return {
             "id": d["id"],

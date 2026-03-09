@@ -17,7 +17,7 @@ async def get_direction_health():
         direction,
         score_global as score,
         unhealthy_count as crises
-    FROM direction_health_stats
+    FROM direction_health_stats_view
     ORDER BY score_global DESC
     """
     # Use the database client from the repository

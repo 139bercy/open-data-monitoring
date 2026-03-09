@@ -1020,7 +1020,6 @@ function QualityTab({
         </div>
       </div>
 
-
       {evalError && (
         <Alert
           severity="error"
@@ -1496,7 +1495,9 @@ export function DatasetDetailsModal({
             {activeTab === "info" && (
               <>
                 <HealthDetail health={dataset.healthBreakdown as any} />
-                <SyntaxScoreGauge score={dataset.quality?.syntax_change_score} />
+                <SyntaxScoreGauge
+                  score={dataset.quality?.syntax_change_score}
+                />
                 <InfoTab
                   dataset={dataset}
                   platformName={platformName}

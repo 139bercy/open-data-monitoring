@@ -28,15 +28,24 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
 
   // Mapping scores to DSFR colors
   const getColor = (score: number) => {
-    if (score >= 80) return "#18753c"; // success-700
-    if (score >= 30) return "#b34000"; // warning-625
-    return "#e1000f"; // error-472
+    if (score >= 85) return hexColors.decisions.background.flat.success.default;
+    if (score >= 70) return hexColors.decisions.background.flat.info.default;
+    if (score >= 50) return hexColors.decisions.background.flat.warning.default;
+    return hexColors.decisions.background.flat.error.default;
   };
 
   const getHealthAttr = (score: number) => {
-    if (score >= 80) return "healthy";
-    if (score >= 30) return "warning";
+    if (score >= 85) return "healthy";
+    if (score >= 70) return "info";
+    if (score >= 50) return "warning";
     return "crisis";
+  };
+
+  const getIcon = (score: number) => {
+    if (score >= 85) return "✅";
+    if (score >= 70) return "🔵";
+    if (score >= 50) return "⚠️";
+    return "🚨";
   };
 
   const CustomContent = (props: any) => {
@@ -54,7 +63,7 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
           width={width}
           height={height}
           fill={getColor(score)}
-          stroke="#fff"
+          stroke={isDark ? "#1e1e1e" : "#ffffff"}
           strokeWidth={2}
         />
         {width > 50 && height > 30 && (
@@ -62,11 +71,11 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
             x={x + width / 2}
             y={y + height / 2}
             textAnchor="middle"
-            fill="#fff"
+            fill="#ffffff"
             fontSize={14}
             fontWeight="bold"
           >
-            {direction}
+            {getIcon(score)} {direction}
           </text>
         )}
       </g>
