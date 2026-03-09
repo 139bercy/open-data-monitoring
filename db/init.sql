@@ -114,3 +114,25 @@ COMMENT ON COLUMN dataset_quality.downloads_count IS 'téléchargements du jeu d
 COMMENT ON COLUMN dataset_quality.api_calls_count IS 'Appels API du jeu de données depuis sa création';
 COMMENT ON COLUMN dataset_quality.has_description IS 'Le jeu de données a une description en métadonnées';
 COMMENT ON COLUMN dataset_quality.is_slug_valid IS 'L''identifiant du jeu de données ne comporte pas de caractères indésirables (ex: _)';
+
+-- Table des utilisateurs pour l'authentification
+CREATE TABLE IF NOT EXISTS users (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email varchar(255) NOT NULL UNIQUE,
+    hashed_password text NOT NULL,
+    full_name varchar(255),
+    role varchar(50) NOT NULL DEFAULT 'user',
+    created_at timestamptz NOT NULL DEFAULT NOW(),
+    last_login timestamptz
+);
+
+COMMENT ON TABLE users IS 'Table des utilisateurs pour l''authentification locale et SSO';
+
+-- Utilisateur admin initial (mot de passe: admin)
+INSERT INTO users (email, hashed_password, full_name, role)
+VALUES (
+    'admin@odm.local',
+    '$argon2id$v=19$m=65536,t=3,p=4$R2htba31njOGEGIMYWztfQ$/bAMysi/FgCbVRKw+MuRr8MQICPbkKB51YeJu2abjXM',
+    'Administrateur ODM',
+    'admin'
+) ON CONFLICT (email) DO NOTHING;
