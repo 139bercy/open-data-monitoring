@@ -10,6 +10,7 @@ import { DatasetListPage } from "./pages/DatasetListPage";
 import { PlatformListPage } from "./pages/PlatformListPage";
 import { AuditReportPage } from "./pages/AuditReportPage";
 import { LoginPage } from "./pages/LoginPage";
+import { RadarHealthPage } from "./pages/RadarHealthPage";
 import { Home } from "./pages/Home";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import authService from "./api/auth";
@@ -122,6 +123,14 @@ function App(): JSX.Element {
           element={
             <ProtectedRoute>
               <AuditReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/radar"
+          element={
+            <ProtectedRoute>
+              <RadarHealthPage />
             </ProtectedRoute>
           }
         />

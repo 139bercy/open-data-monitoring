@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from interfaces.api.errors import register_error_handlers
-from interfaces.api.routers import auth, common, datasets, platforms, publishers
+from interfaces.api.routers import analytics, auth, common, datasets, platforms, publishers
 from settings import ENV
 
 # Configuration de l'application FastAPI
@@ -43,6 +43,7 @@ api_app.include_router(platforms.router, prefix="/api/v1")
 api_app.include_router(auth.router, prefix="/api/v1")
 api_app.include_router(datasets.router, prefix="/api/v1")
 api_app.include_router(publishers.router, prefix="/api/v1")
+api_app.include_router(analytics.router, prefix="/api/v1")
 
 
 # Health check endpoint

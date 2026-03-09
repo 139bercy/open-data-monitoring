@@ -1188,9 +1188,7 @@ export function DatasetDetailsModal({
     toggleSelection,
   } = useHistoryManager(dataset?.id);
 
-  useIsModalOpen(datasetDetailsModal, {
-    onConceal: () => onClose?.(),
-  });
+  useIsModalOpen(datasetDetailsModal, { onConceal: () => onClose?.() });
 
   const downloadsPerDay = useMemo(
     () =>
@@ -1212,8 +1210,21 @@ export function DatasetDetailsModal({
   const content = useMemo(() => {
     if (!dataset) {
       return (
-        <div style={{ minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <i className="ri-loader-4-line ri-spin" style={{ fontSize: "2rem", color: "var(--background-flat-blue-france)" }}></i>
+        <div
+          style={{
+            minHeight: "200px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <i
+            className="ri-loader-4-line ri-spin"
+            style={{
+              fontSize: "2rem",
+              color: "var(--background-flat-blue-france)",
+            }}
+          ></i>
           <p className="fr-ml-2w fr-mb-0">Chargement des données...</p>
         </div>
       );
@@ -1255,9 +1266,7 @@ export function DatasetDetailsModal({
           style={{ marginTop: "-1rem" }}
         >
           <div className="fr-col">
-            <h1 className="fr-h3 fr-mb-1w">
-              {dataset.title ?? dataset.slug}
-            </h1>
+            <h1 className="fr-h3 fr-mb-1w">{dataset.title ?? dataset.slug}</h1>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <Badge
                 noIcon
@@ -1296,17 +1305,17 @@ export function DatasetDetailsModal({
             {
               label: "Informations",
               content: (
-                  <InfoTab
-                    dataset={dataset}
-                    platformName={platformName}
-                    platformUrl={platformUrl}
-                    downloadsPerDay={downloadsPerDay}
-                    versionsCount={versions?.length ?? 0}
-                    onSync={sync}
-                    syncing={syncing}
-                    onNavigate={onNavigate}
-                    onClose={onClose}
-                  />
+                <InfoTab
+                  dataset={dataset}
+                  platformName={platformName}
+                  platformUrl={platformUrl}
+                  downloadsPerDay={downloadsPerDay}
+                  versionsCount={versions?.length ?? 0}
+                  onSync={sync}
+                  syncing={syncing}
+                  onNavigate={onNavigate}
+                  onClose={onClose}
+                />
               ),
             },
             ...(!platformName?.toLowerCase().includes("data.gouv")
@@ -1351,10 +1360,26 @@ export function DatasetDetailsModal({
       </div>
     );
   }, [
-    dataset, syncing, loading, platformName, platformUrl,
-    downloadsPerDay, versions, sync, onNavigate, onClose,
-    evaluating, downloading, evalError, evaluate, downloadReport,
-    loadingVersions, historyError, fetchVersions, selectedSnapshots, toggleSelection
+    dataset,
+    syncing,
+    loading,
+    platformName,
+    platformUrl,
+    downloadsPerDay,
+    versions,
+    sync,
+    onNavigate,
+    onClose,
+    evaluating,
+    downloading,
+    evalError,
+    evaluate,
+    downloadReport,
+    loadingVersions,
+    historyError,
+    fetchVersions,
+    selectedSnapshots,
+    toggleSelection,
   ]);
 
   const Modal = datasetDetailsModal.Component;

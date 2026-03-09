@@ -10,7 +10,7 @@ export function Home(): JSX.Element {
       </p>
 
       <div className="fr-grid-row fr-grid-row--gutters fr-mt-4w">
-        <div className="fr-col-12 fr-col-md-6">
+        <div className="fr-col-12 fr-col-md-4">
           <Link
             to="/datasets"
             className="fr-btn"
@@ -18,12 +18,12 @@ export function Home(): JSX.Element {
             Consulter les jeux de données
           </Link>
         </div>
-        <div className="fr-col-12 fr-col-md-6">
+        <div className="fr-col-12 fr-col-md-4">
           <Link
-            to="/platforms"
-            className="fr-btn"
+            to="/radar"
+            className="fr-btn fr-btn--secondary"
           >
-            Voir les plateformes
+            Radar de Santé
           </Link>
         </div>
       </div>
