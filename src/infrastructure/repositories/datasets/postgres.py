@@ -174,6 +174,87 @@ def strip_volatile_fields(data: dict) -> tuple[dict, dict]:
     return stripped, volatile
 
 
+def _get_frequency_thresholds(frequency: str | None) -> int:
+    """Mapping to days (including grace period) based on ODS frequency labels."""
+    thresholds = {
+        "daily": 2,
+        "continuous": 2,
+        "weekly": 9,
+        "monthly": 37,
+        "quarterly": 105,
+        "semiannual": 210,
+        "annual": 395,
+        "punctual": 3650,
+    }
+    return thresholds.get(str(frequency).lower(), 90)
+
+
+def _calculate_health_scores(row: dict) -> dict:
+    """
+    Calculates health scores following the logic in compute-mbis.sql.
+    Expected row keys: quality, modified, views_count, api_calls_count, reuses_count, raw (or data)
+    """
+    # 1. Quality Score (0-100)
+    q = row.get("quality") or {}
+    quality_score = 0.0
+    if q:
+        if q.get("has_description"):
+            quality_score += 40
+        if q.get("is_slug_valid"):
+            quality_score += 20
+        quality_score += (q.get("syntax_change_score") or 0.0) * 0.4
+
+    # 2. Freshness Score (0-100)
+    modified = row.get("modified")
+    if isinstance(modified, str):
+        from datetime import datetime
+
+        modified = datetime.fromisoformat(modified.replace("Z", "+00:00"))
+
+    # Extract frequency from raw metadata
+    raw = row.get("raw") or row.get("data") or {}
+    frequency = raw.get("frequency")
+    if not frequency:
+        metas = raw.get("metas") or {}
+        default_meta = metas.get("default") or {}
+        frequency = default_meta.get("accrual_periodicity")
+
+    days_limit = _get_frequency_thresholds(frequency)
+    import datetime as dt
+    from datetime import timezone
+
+    if modified.tzinfo is None:
+        modified = modified.replace(tzinfo=timezone.utc)
+
+    delta_days = (dt.datetime.now(timezone.utc) - modified).days
+    if delta_days <= days_limit:
+        freshness_score = 100.0
+    elif delta_days <= days_limit * 2:
+        freshness_score = 50.0
+    else:
+        freshness_score = 0.0
+
+    # 3. Engagement Score (0-100)
+    import math
+
+    views = row.get("views_count") or 0
+    api_calls = row.get("api_calls_count") or 0
+    reuses = row.get("reuses_count") or 0
+
+    engagement_score = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
+    engagement_score = max(0.0, min(100.0, round(engagement_score)))
+
+    # Global Score (0-100)
+    global_score = (quality_score * 0.5) + (freshness_score * 0.3) + (engagement_score * 0.2)
+
+    return {
+        "global": round(global_score, 2),
+        "quality": round(quality_score, 2),
+        "freshness": round(freshness_score, 2),
+        "engagement": round(engagement_score, 2),
+    }
+
+
 class PostgresDatasetRepository(AbstractDatasetRepository):
     def __init__(self, client: PostgresClient):
         self.client = client
@@ -686,6 +767,24 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "evaluation_results": r.get("evaluation_results"),
                     "syntax_change_score": r.get("syntax_change_score"),
                 },
+                "health_score": (
+                    _calculate_health_scores(
+                        {
+                            "quality": {
+                                "has_description": r.get("has_description"),
+                                "is_slug_valid": r.get("is_slug_valid"),
+                                "syntax_change_score": r.get("syntax_change_score"),
+                            },
+                            "modified": r.get("modified"),
+                            "views_count": r.get("views_count"),
+                            "api_calls_count": r.get("api_calls_count"),
+                            "reuses_count": r.get("reuses_count"),
+                            "data": r.get("data") or {},  # Assuming data is merged/extracted if needed
+                        }
+                    )["global"]
+                    if r.get("modified")
+                    else None
+                ),
             }
             for r in rows
         ]
@@ -885,6 +984,21 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 for r in list_rows
             ]
 
+        health_scores = _calculate_health_scores(
+            {
+                "quality": {
+                    "has_description": d.get("has_description"),
+                    "is_slug_valid": d.get("is_slug_valid"),
+                    "syntax_change_score": d.get("syntax_change_score"),
+                },
+                "modified": d["modified"],
+                "views_count": current_snapshot.get("views_count") if current_snapshot else 0,
+                "api_calls_count": current_snapshot.get("api_calls_count") if current_snapshot else 0,
+                "reuses_count": current_snapshot.get("reuses_count") if current_snapshot else 0,
+                "data": current_snapshot.get("data") if current_snapshot else {},
+            }
+        ) if d.get("modified") else None
+
         return {
             "id": d["id"],
             "platform_id": d["platform_id"],
@@ -911,6 +1025,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             },
             "current_snapshot": current_snapshot,
             "snapshots": snapshots,
+            "health_breakdown": health_scores,
+            "health_score": health_scores["global"] if health_scores else None,
         }
 
     def get_versions(self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:

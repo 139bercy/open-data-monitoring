@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Alert } from "@codegouvfr/react-dsfr/Alert";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import { DatasetFilters } from "../components/DatasetFilters";
@@ -15,7 +15,7 @@ import type {
   PlatformRef,
   PublishersRef,
 } from "../types/datasets";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   getDatasets,
   getPlatforms,
@@ -27,12 +27,64 @@ export function DatasetListPage(): JSX.Element {
   const { id: routeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [query, setQuery] = useState<DatasetListQuery>({
-    page: 1,
-    pageSize: 25,
-    sortBy: "modified",
-    order: "desc",
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Helper to convert URL params to DatasetListQuery
+  const getQueryFromParams = useCallback((): DatasetListQuery => {
+    return {
+      page: Number(searchParams.get("page")) || 1,
+      pageSize: Number(searchParams.get("pageSize")) || 25,
+      sortBy: (searchParams.get("sortBy") as any) || "modified",
+      order: (searchParams.get("order") as any) || "desc",
+      q: searchParams.get("q") || undefined,
+      platformId: searchParams.get("platformId") || undefined,
+      publisher: searchParams.get("publisher") || undefined,
+      isDeleted: searchParams.has("isDeleted")
+        ? searchParams.get("isDeleted") === "true"
+        : undefined,
+      createdFrom: searchParams.get("createdFrom") || undefined,
+      createdTo: searchParams.get("createdTo") || undefined,
+      modifiedFrom: searchParams.get("modifiedFrom") || undefined,
+      modifiedTo: searchParams.get("modifiedTo") || undefined,
+    };
+  }, [searchParams]);
+
+  const [query, setQuery] = useState<DatasetListQuery>(getQueryFromParams());
+
+  // Update URL whenever query state changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (query.page && query.page !== 1) params.set("page", String(query.page));
+    if (query.pageSize && query.pageSize !== 25)
+      params.set("pageSize", String(query.pageSize));
+    if (query.sortBy && query.sortBy !== "modified")
+      params.set("sortBy", query.sortBy);
+    if (query.order && query.order !== "desc") params.set("order", query.order);
+    if (query.q) params.set("q", query.q);
+    if (query.platformId) params.set("platformId", query.platformId);
+    if (query.publisher) params.set("publisher", query.publisher);
+    if (query.isDeleted !== undefined)
+      params.set("isDeleted", String(query.isDeleted));
+    if (query.createdFrom) params.set("createdFrom", query.createdFrom);
+    if (query.createdTo) params.set("createdTo", query.createdTo);
+    if (query.modifiedFrom) params.set("modifiedFrom", query.modifiedFrom);
+    if (query.modifiedTo) params.set("modifiedTo", query.modifiedTo);
+
+    // Only update if search-params string actually changed to avoid loop
+    const newSearchStr = params.toString();
+    if (newSearchStr !== searchParams.toString()) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [query, setSearchParams, searchParams]);
+
+  // Update query whenever URL parameters change (for back/forward navigation)
+  useEffect(() => {
+    const fromUrl = getQueryFromParams();
+    // Only update if there's an actual difference to avoid unnecessary refreshes
+    if (JSON.stringify(fromUrl) !== JSON.stringify(query)) {
+      setQuery(fromUrl);
+    }
+  }, [searchParams, getQueryFromParams]);
   const [data, setData] = useState<PaginatedResponse<DatasetSummary>>({
     items: [],
     total: 0,
@@ -138,6 +190,20 @@ export function DatasetListPage(): JSX.Element {
     }
   };
 
+  const handleClose = useCallback(() => {
+    navigate({ pathname: "/datasets/", search: searchParams.toString() });
+  }, [navigate, searchParams]);
+
+  const handleNavigateDetail = useCallback(
+    (id: string) => {
+      navigate({
+        pathname: `/datasets/${id}`,
+        search: searchParams.toString(),
+      });
+    },
+    [navigate, searchParams]
+  );
+
   const resetFilters = () => {
     setQuery({
       page: 1,
@@ -207,7 +273,14 @@ export function DatasetListPage(): JSX.Element {
         query={query}
         platforms={platforms}
         publishers={publishers}
-        onChange={(partial) => setQuery((q) => ({ ...q, ...partial }))}
+        onChange={(partial) => {
+          setQuery((q) => {
+            const next = { ...q, ...partial };
+            // If query text changed, don't reset page immediately to avoid jumpy UI,
+            // but we usually want page 1 on filter changes.
+            return next;
+          });
+        }}
         onReset={resetFilters}
       />
 
@@ -235,7 +308,7 @@ export function DatasetListPage(): JSX.Element {
         onPageSizeChange={(size) =>
           setQuery((q) => ({ ...q, page: 1, pageSize: size }))
         }
-        onRowClick={(id) => navigate(`/datasets/${id}`)}
+        onRowClick={(id) => handleNavigateDetail(id)}
       />
 
       <DatasetDetailsModal
@@ -253,8 +326,8 @@ export function DatasetListPage(): JSX.Element {
             return null;
           }
         })()}
-        onNavigate={(id) => navigate(`/datasets/${id}`)}
-        onClose={() => navigate("/datasets/")}
+        onNavigate={handleNavigateDetail}
+        onClose={handleClose}
       />
       <div className="fr-mt-6w">
         <Button

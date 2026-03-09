@@ -143,7 +143,6 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
       <Table
         caption="Liste des jeux de données"
         headers={[
-          "Statut",
           <button
             key="h-title"
             className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
@@ -166,52 +165,58 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 : "▼"
               : ""}
           </button>,
-          "Plateforme",
-          "Producteur",
-          <button
-            key="h-created"
-            className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
-            type="button"
-            disabled={!!loading}
-            onClick={() => {
-              const nextOrder =
-                props.order === "asc" && props.sortBy === "created"
-                  ? "desc"
-                  : "asc";
-              props.onSortChange?.("created", nextOrder as "asc" | "desc");
-            }}
-            aria-pressed={props.sortBy === "created"}
-            aria-label="Trier par créé le"
+          "Santé",
+          <div
+            className="fr-grid-row fr-grid-row--middle"
+            style={{ display: "flex", gap: "1rem" }}
           >
-            Créé le{" "}
-            {props.sortBy === "created"
-              ? props.order === "asc"
-                ? "▲"
-                : "▼"
-              : ""}
-          </button>,
-          <button
-            key="h-modified"
-            className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
-            type="button"
-            disabled={!!loading}
-            onClick={() => {
-              const nextOrder =
-                props.order === "asc" && props.sortBy === "modified"
-                  ? "desc"
-                  : "asc";
-              props.onSortChange?.("modified", nextOrder as "asc" | "desc");
-            }}
-            aria-pressed={props.sortBy === "modified"}
-            aria-label="Trier par modifié le"
-          >
-            Modifié le{" "}
-            {props.sortBy === "modified"
-              ? props.order === "asc"
-                ? "▲"
-                : "▼"
-              : ""}
-          </button>,
+            <button
+              key="h-created"
+              className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
+              type="button"
+              disabled={!!loading}
+              onClick={() => {
+                const nextOrder =
+                  props.order === "asc" && props.sortBy === "created"
+                    ? "desc"
+                    : "asc";
+                props.onSortChange?.("created", nextOrder as "asc" | "desc");
+              }}
+              aria-pressed={props.sortBy === "created"}
+              aria-label="Trier par créé le"
+              style={{ padding: "0.25rem" }}
+            >
+              📅+{" "}
+              {props.sortBy === "created"
+                ? props.order === "asc"
+                  ? "▲"
+                  : "▼"
+                : ""}
+            </button>
+            <button
+              key="h-modified"
+              className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
+              type="button"
+              disabled={!!loading}
+              onClick={() => {
+                const nextOrder =
+                  props.order === "asc" && props.sortBy === "modified"
+                    ? "desc"
+                    : "asc";
+                props.onSortChange?.("modified", nextOrder as "asc" | "desc");
+              }}
+              aria-pressed={props.sortBy === "modified"}
+              aria-label="Trier par modifié le"
+              style={{ padding: "0.25rem" }}
+            >
+              📅~{" "}
+              {props.sortBy === "modified"
+                ? props.order === "asc"
+                  ? "▲"
+                  : "▼"
+                : ""}
+            </button>
+          </div>,
           <button
             key="h-views"
             className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
@@ -252,7 +257,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
             aria-pressed={props.sortBy === "api_calls_count"}
             aria-label="Trier par nb d'appels API"
           >
-            API calls{" "}
+            API{" "}
             {props.sortBy === "api_calls_count"
               ? props.order === "asc"
                 ? "▲"
@@ -277,7 +282,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
             aria-pressed={props.sortBy === "downloads_count"}
             aria-label="Trier par téléchargements"
           >
-            Downloads{" "}
+            DL{" "}
             {props.sortBy === "downloads_count"
               ? props.order === "asc"
                 ? "▲"
@@ -302,7 +307,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
             aria-pressed={props.sortBy === "versions_count"}
             aria-label="Trier par nombre de versions"
           >
-            Versions{" "}
+            Ver.{" "}
             {props.sortBy === "versions_count"
               ? props.order === "asc"
                 ? "▲"
@@ -315,105 +320,135 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
           loading
             ? skeletonRows
             : items.map((item) => [
+                <div style={{ minWidth: "200px" }}>
+                  <div style={{ fontWeight: "bold", lineHeight: "1.2" }}>
+                    {item.title ?? "—"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "var(--text-mention-grey)",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <span
+                      className={`fr-badge fr-badge--sm ${
+                        item.platformType === "opendatasoft"
+                          ? "fr-badge--purple-glycine"
+                          : "fr-badge--blue-france"
+                      }`}
+                      style={{ fontSize: "0.65rem", padding: "0 4px" }}
+                    >
+                      {item.platformName}
+                    </span>{" "}
+                    · {item.publisher}
+                  </div>
+                </div>,
                 <div
                   style={{
                     display: "flex",
-                    gap: "0.5rem",
                     flexDirection: "column",
+                    gap: "0.25rem",
+                    alignItems: "flex-start",
                   }}
                 >
-                  <span
-                    className={`fr-badge ${
-                      item.lastSyncStatus === "success"
-                        ? "fr-badge--success"
+                  <div style={{ display: "flex", gap: "0.25rem" }}>
+                    <span
+                      className={`fr-badge ${
+                        !item.healthScore
+                          ? "fr-badge--no-status"
+                          : item.healthScore >= 85
+                            ? "fr-badge--success"
+                            : item.healthScore >= 70
+                              ? "fr-badge--info"
+                              : item.healthScore >= 50
+                                ? "fr-badge--warning"
+                                : "fr-badge--error"
+                      }`}
+                      style={{ fontWeight: "bold", padding: "0 8px" }}
+                      title={`Score global: ${item.healthScore?.toFixed(1) ?? "N/A"}/100`}
+                    >
+                      {item.healthScore
+                        ? `${Math.round(item.healthScore)}%`
+                        : "—"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.25rem",
+                      flexWrap: "wrap",
+                      maxWidth: "100px",
+                    }}
+                  >
+                    <span
+                      className={`fr-badge fr-badge--sm ${
+                        item.lastSyncStatus === "success"
+                          ? "fr-badge--success"
+                          : item.lastSyncStatus === "pending"
+                            ? "fr-badge--info"
+                            : "fr-badge--error"
+                      }`}
+                      title="Synchronisation"
+                    >
+                      {item.lastSyncStatus === "success"
+                        ? "🟢"
                         : item.lastSyncStatus === "pending"
-                          ? "fr-badge--info"
-                          : "fr-badge--error"
-                    }`}
-                    style={{
-                      minWidth: "4rem",
-                      textAlign: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    {item.lastSyncStatus === "success"
-                      ? "🟢"
-                      : item.lastSyncStatus === "pending"
-                        ? "🟡"
-                        : "🔴"}{" "}
-                  </span>
-                  <span
-                    className={`fr-badge ${
-                      item.published ? "fr-badge--success" : "fr-badge--warning"
-                    }`}
-                    style={{
-                      minWidth: "4rem",
-                      textAlign: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    {item.published ? "📢" : "🚧"}
-                  </span>
-                  <span
-                    className={`fr-badge ${
-                      item.restricted ? "fr-badge--error" : "fr-badge--success"
-                    }`}
-                    style={{
-                      minWidth: "4rem",
-                      textAlign: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    {item.restricted ? "🔒" : "✓"}
-                  </span>
-                  {item.isDeleted && (
-                    <span
-                      className="fr-badge fr-badge--error"
-                      style={{
-                        minWidth: "4rem",
-                        textAlign: "center",
-                        alignItems: "center",
-                      }}
-                      title="Supprimé sur la plateforme"
-                    >
-                      🗑️
+                          ? "🟡"
+                          : "🔴"}
                     </span>
-                  )}
-                  {item.linkedDatasetId && (
                     <span
-                      className="fr-badge fr-badge--info"
-                      style={{
-                        minWidth: "4rem",
-                        textAlign: "center",
-                        alignItems: "center",
-                      }}
-                      title={`Lié à ${item.linkedPlatformName}: ${item.linkedDatasetSlug}`}
+                      className={`fr-badge fr-badge--sm ${
+                        item.published
+                          ? "fr-badge--success"
+                          : "fr-badge--warning"
+                      }`}
+                      title={item.published ? "Publié" : "Brouillon"}
                     >
-                      🔗
+                      {item.published ? "📢" : "🚧"}
                     </span>
-                  )}
+                    <span
+                      className={`fr-badge fr-badge--sm ${
+                        item.restricted
+                          ? "fr-badge--error"
+                          : "fr-badge--success"
+                      }`}
+                      title={item.restricted ? "Accès restreint" : "Public"}
+                    >
+                      {item.restricted ? "🔒" : "✓"}
+                    </span>
+                  </div>
                 </div>,
-                item.title ?? "—",
-                <span
-                  className={`fr-badge ${
-                    item.platformType === "opendatasoft"
-                      ? "fr-badge--purple-glycine"
-                      : item.platformType === "datagouvfr" ||
-                          item.platformType === "datagouvfr"
-                        ? "fr-badge--blue-france"
-                        : "fr-badge--info"
-                  }`}
-                  style={{ fontSize: "0.7rem", fontWeight: 600 }}
-                >
-                  {item.platformName ?? item.platformId}
+                <div style={{ fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                  <div>
+                    <small>Cr: </small>
+                    {new Date(item.created).toLocaleDateString(undefined, {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "2-digit",
+                    })}
+                  </div>
+                  <div>
+                    <small>Mod: </small>
+                    {new Date(item.modified).toLocaleDateString(undefined, {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "2-digit",
+                    })}
+                  </div>
+                </div>,
+                <span style={{ fontSize: "0.9rem" }}>
+                  {formatNumber(item.viewsCount)}
                 </span>,
-                item.publisher ?? "—",
-                formatDate(item.created),
-                formatDate(item.modified),
-                formatNumber(item.viewsCount),
-                formatNumber(item.apiCallsCount),
-                formatNumber(item.downloadsCount),
-                formatNumber(item.versionsCount),
+                <span style={{ fontSize: "0.9rem" }}>
+                  {formatNumber(item.apiCallsCount)}
+                </span>,
+                <span style={{ fontSize: "0.9rem" }}>
+                  {formatNumber(item.downloadsCount)}
+                </span>,
+                <span style={{ fontSize: "0.9rem" }}>
+                  {formatNumber(item.versionsCount)}
+                </span>,
                 <button
                   key={`view-${item.id}`}
                   className="fr-btn fr-btn--sm"

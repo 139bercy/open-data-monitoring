@@ -51,6 +51,7 @@ export type DatasetSummary = {
   hasDescription: boolean;
   isDeleted: boolean | null;
   quality?: QualityIndicators;
+  healthScore?: number;
   linkedDatasetId?: UUID;
   linkedDatasetSlug?: string;
   linkedPlatformName?: string;
@@ -101,6 +102,13 @@ export type DatasetDetail = {
   linkedDatasetSlug?: string;
   linkedPlatformName?: string;
   quality?: QualityIndicators;
+  healthScore?: number;
+  healthBreakdown?: {
+    global: number;
+    quality: number;
+    freshness: number;
+    engagement: number;
+  };
   currentSnapshot: SnapshotVersion | null;
   snapshots?: SnapshotVersion[] | null; // Only when include_snapshots=true
 };

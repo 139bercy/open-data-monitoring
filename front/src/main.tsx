@@ -95,15 +95,7 @@ function App(): JSX.Element {
           }
         />
         <Route
-          path="/datasets"
-          element={
-            <ProtectedRoute>
-              <DatasetListPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/datasets/:id"
+          path="/datasets/:id?"
           element={
             <ProtectedRoute>
               <DatasetListPage />

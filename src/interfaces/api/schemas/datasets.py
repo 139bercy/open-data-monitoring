@@ -66,6 +66,9 @@ class DatasetAPI(BaseModel):
     last_sync: datetime.datetime | None = None
     last_sync_status: SyncStatus | None = None
 
+    # Quality & Health
+    health_score: Score | None = None
+
     # Linked dataset
     linked_dataset_id: UUID | None = None
     linked_dataset_slug: str | None = None
@@ -138,6 +141,7 @@ class DatasetDetailAPI(DatasetAPI):
     """Comprehensive dataset view with detailed quality and snapshots."""
 
     quality: dict | None = None
+    health_breakdown: dict | None = None
     current_snapshot: SnapshotVersionAPI | None = None
     snapshots: list[SnapshotVersionAPI] | None = None
 

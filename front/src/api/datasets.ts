@@ -90,6 +90,7 @@ export async function getDatasets(
     linkedDatasetSlug: it.linked_dataset_slug,
     linkedPlatformName: it.linked_platform_name,
     quality: it.quality,
+    healthScore: it.health_score,
   }));
   return {
     items,
@@ -178,6 +179,8 @@ export async function getDatasetDetail(
     linkedDatasetSlug: data.linked_dataset_slug,
     linkedPlatformName: data.linked_platform_name,
     quality: data.quality,
+    healthScore: data.health_score,
+    healthBreakdown: data.health_breakdown,
   };
 }
 

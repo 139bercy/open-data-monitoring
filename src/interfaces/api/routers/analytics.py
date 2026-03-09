@@ -16,7 +16,7 @@ async def get_direction_health():
     SELECT
         direction,
         score_global as score,
-        0 as crises -- TODO: count datasets with score < 30 in a more complex query if needed
+        unhealthy_count as crises
     FROM direction_health_stats
     ORDER BY score_global DESC
     """

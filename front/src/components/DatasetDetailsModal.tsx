@@ -4,7 +4,6 @@ import { createModal } from "@codegouvfr/react-dsfr/Modal";
 import { useIsModalOpen } from "@codegouvfr/react-dsfr/Modal/useIsModalOpen";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import { Alert } from "@codegouvfr/react-dsfr/Alert";
-import { Tabs } from "@codegouvfr/react-dsfr/Tabs";
 import { Badge } from "@codegouvfr/react-dsfr/Badge";
 import type { DatasetDetail, SnapshotVersion } from "../types/datasets";
 import {
@@ -195,8 +194,9 @@ function QualityScoreBadge({ score }: { score?: number | null }) {
       <span
         className="fr-text--xs fr-mb-1v"
         style={{ textTransform: "uppercase", fontWeight: "bold", opacity: 0.8 }}
+        title="Analyse sémantique approfondie par IA (Complétude, clarté, pertinence des métadonnées)"
       >
-        Score Qualité IA
+        Score Qualité IA ⓘ
       </span>
       <div style={{ display: "flex", alignItems: "baseline", gap: "0.25rem" }}>
         <span
@@ -226,6 +226,102 @@ function QualityScoreBadge({ score }: { score?: number | null }) {
               ? "Moyen"
               : "Faible"}
       </Badge>
+    </div>
+  );
+}
+
+/* Affiche le détail de la santé (3 piliers) */
+function HealthDetail({
+  health,
+}: {
+  health?: {
+    global: number;
+    quality: number;
+    freshness: number;
+    engagement: number;
+  };
+}) {
+  if (!health) return null;
+
+  const getSeverity = (val: number) => {
+    if (val >= 85) return "success";
+    if (val >= 70) return "info";
+    if (val >= 50) return "warning";
+    return "error";
+  };
+
+  const getIcon = (val: number) => {
+    if (val >= 85) return "🟢";
+    if (val >= 70) return "🔵";
+    if (val >= 50) return "🟡";
+    return "🔴";
+  };
+
+  return (
+    <div
+      className="fr-p-2w fr-mb-3w"
+      style={{
+        border: "1px solid var(--border-default-grey)",
+        borderRadius: "8px",
+        backgroundColor: "var(--background-alt-grey)",
+      }}
+    >
+      <h6 className="fr-text--sm fr-mb-2w fr-text--bold">
+        Détail du Score de Santé
+      </h6>
+      <div className="fr-grid-row fr-grid-row--gutters">
+        {[
+          {
+            label: "Qualité",
+            val: health.quality,
+            icon: "📋",
+            desc: "Score technique : Description, Validité du slug, Stabilité syntaxique",
+          },
+          {
+            label: "Fraîcheur",
+            val: health.freshness,
+            icon: "🕒",
+            desc: "Respect de la fréquence de mise à jour déclarée",
+          },
+          {
+            label: "Engagement",
+            val: health.engagement,
+            icon: "📈",
+            desc: "Popularité et usage : Vues, API, Réutilisations",
+          },
+        ].map((item) => (
+          <div
+            className="fr-col-4"
+            key={item.label}
+            title={item.desc}
+          >
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "1.2rem", marginBottom: "0.25rem" }}>
+                {item.icon}
+              </div>
+              <div
+                className="fr-text--xs fr-mb-1v"
+                style={{ fontWeight: "bold" }}
+              >
+                {item.label} ⓘ
+              </div>
+              <Badge
+                severity={getSeverity(item.val)}
+                noIcon
+                small
+              >
+                {Math.round(item.val)}%
+              </Badge>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p
+        className="fr-text--xs fr-mt-2w fr-mb-0"
+        style={{ opacity: 0.6, fontStyle: "italic" }}
+      >
+        Moyenne pondérée : 50% Qualité, 30% Fraîcheur, 20% Engagement.
+      </p>
     </div>
   );
 }
@@ -924,7 +1020,6 @@ function QualityTab({
         </div>
       </div>
 
-      <SyntaxScoreGauge score={dataset.quality?.syntax_change_score} />
 
       {evalError && (
         <Alert
@@ -1207,6 +1302,10 @@ export function DatasetDetailsModal({
     return snapA && snapB ? { snapA, snapB } : null;
   }, [selectedSnapshots, versions]);
 
+  const [activeTab, setActiveTab] = useState<"info" | "quality" | "history">(
+    "info"
+  );
+
   const content = useMemo(() => {
     if (!dataset) {
       return (
@@ -1229,6 +1328,8 @@ export function DatasetDetailsModal({
         </div>
       );
     }
+
+    const showQualityTab = !platformName?.toLowerCase().includes("data.gouv");
 
     return (
       <div style={{ position: "relative" }}>
@@ -1293,18 +1394,109 @@ export function DatasetDetailsModal({
               )}
             </div>
           </div>
-          <div className="fr-col--auto">
+          <div
+            className="fr-col--auto"
+            style={{ display: "flex", gap: "1rem" }}
+          >
+            {dataset.healthScore != null && (
+              <div
+                className="fr-p-2w"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  backgroundColor: "var(--background-alt-grey)",
+                  borderRadius: "8px",
+                  minWidth: "120px",
+                  border: "1px solid var(--border-default-grey)",
+                }}
+              >
+                <span
+                  className="fr-text--xs fr-mb-1v"
+                  style={{
+                    textTransform: "uppercase",
+                    fontWeight: "bold",
+                    opacity: 0.8,
+                  }}
+                >
+                  Score de Santé
+                </span>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: "0.25rem",
+                  }}
+                >
+                  <span className="fr-h3 fr-mb-0">
+                    {Math.round(dataset.healthScore)}
+                  </span>
+                  <span
+                    className="fr-text--sm"
+                    style={{ opacity: 0.6 }}
+                  >
+                    /100
+                  </span>
+                </div>
+              </div>
+            )}
             <QualityScoreBadge
               score={dataset.quality?.evaluation_results?.overall_score}
             />
           </div>
         </div>
 
-        <Tabs
-          tabs={[
-            {
-              label: "Informations",
-              content: (
+        <div className="fr-tabs">
+          <ul
+            className="fr-tabs__list"
+            role="tablist"
+          >
+            <li role="presentation">
+              <button
+                className="fr-tabs__tab"
+                tabIndex={activeTab === "info" ? 0 : -1}
+                role="tab"
+                aria-selected={activeTab === "info"}
+                onClick={() => setActiveTab("info")}
+              >
+                Informations
+              </button>
+            </li>
+            {showQualityTab && (
+              <li role="presentation">
+                <button
+                  className="fr-tabs__tab"
+                  tabIndex={activeTab === "quality" ? 0 : -1}
+                  role="tab"
+                  aria-selected={activeTab === "quality"}
+                  onClick={() => setActiveTab("quality")}
+                >
+                  Audit Qualité (IA)
+                </button>
+              </li>
+            )}
+            <li role="presentation">
+              <button
+                className="fr-tabs__tab"
+                tabIndex={activeTab === "history" ? 0 : -1}
+                role="tab"
+                aria-selected={activeTab === "history"}
+                onClick={() => setActiveTab("history")}
+              >
+                Historique
+              </button>
+            </li>
+          </ul>
+
+          <div
+            className={`fr-tabs__panel ${activeTab === "info" ? "fr-tabs__panel--selected" : ""}`}
+            role="tabpanel"
+            tabIndex={0}
+          >
+            {activeTab === "info" && (
+              <>
+                <HealthDetail health={dataset.healthBreakdown as any} />
+                <SyntaxScoreGauge score={dataset.quality?.syntax_change_score} />
                 <InfoTab
                   dataset={dataset}
                   platformName={platformName}
@@ -1316,47 +1508,51 @@ export function DatasetDetailsModal({
                   onNavigate={onNavigate}
                   onClose={onClose}
                 />
-              ),
-            },
-            ...(!platformName?.toLowerCase().includes("data.gouv")
-              ? [
-                  {
-                    label: "Audit Qualité (IA)",
-                    content: (
-                      <QualityTab
-                        dataset={dataset}
-                        evaluating={evaluating}
-                        downloading={downloading}
-                        evalError={evalError}
-                        onEvaluate={evaluate}
-                        onDownloadReport={downloadReport}
-                        syncing={syncing}
-                        onSyncAndEvaluate={async () => {
-                          await sync();
-                          await evaluate();
-                        }}
-                      />
-                    ),
-                  },
-                ]
-              : []),
-            {
-              label: "Historique",
-              content: (
-                <HistoryTab
-                  versions={versions}
-                  loading={loadingVersions}
-                  error={historyError}
-                  refresh={fetchVersions}
-                  selectedSnapshots={selectedSnapshots}
-                  toggleSelection={toggleSelection}
-                  onCompare={compareSnapshotsModal.open}
-                  baseline={dataset.currentSnapshot}
+              </>
+            )}
+          </div>
+          {showQualityTab && (
+            <div
+              className={`fr-tabs__panel ${activeTab === "quality" ? "fr-tabs__panel--selected" : ""}`}
+              role="tabpanel"
+              tabIndex={0}
+            >
+              {activeTab === "quality" && (
+                <QualityTab
+                  dataset={dataset}
+                  evaluating={evaluating}
+                  downloading={downloading}
+                  evalError={evalError}
+                  onEvaluate={evaluate}
+                  onDownloadReport={downloadReport}
+                  syncing={syncing}
+                  onSyncAndEvaluate={async () => {
+                    await sync();
+                    await evaluate();
+                  }}
                 />
-              ),
-            },
-          ]}
-        />
+              )}
+            </div>
+          )}
+          <div
+            className={`fr-tabs__panel ${activeTab === "history" ? "fr-tabs__panel--selected" : ""}`}
+            role="tabpanel"
+            tabIndex={0}
+          >
+            {activeTab === "history" && (
+              <HistoryTab
+                versions={versions}
+                loading={loadingVersions}
+                error={historyError}
+                refresh={fetchVersions}
+                selectedSnapshots={selectedSnapshots}
+                toggleSelection={toggleSelection}
+                onCompare={compareSnapshotsModal.open}
+                baseline={dataset.currentSnapshot}
+              />
+            )}
+          </div>
+        </div>
       </div>
     );
   }, [
@@ -1380,6 +1576,7 @@ export function DatasetDetailsModal({
     fetchVersions,
     selectedSnapshots,
     toggleSelection,
+    activeTab,
   ]);
 
   const Modal = datasetDetailsModal.Component;
