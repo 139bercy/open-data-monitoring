@@ -22,21 +22,30 @@ class DatagouvDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-        id,
-        slug,
-        page,
-        created_at,
-        last_update,
-        contact_points,
-        archived,
-        metrics,
+        id=None,
+        slug=None,
+        page=None,
+        created_at=None,
+        last_update=None,
+        contact_points=None,
+        archived=None,
+        metrics=None,
         *args,
         **kwargs,
     ):
-        publisher = next(
-            (item.get("name") for item in contact_points if item["role"] == "publisher"),
-            None,
+        publisher = (
+            next(
+                (item.get("name") for item in contact_points if item["role"] == "publisher"),
+                None,
+            )
+            if contact_points
+            else None
         )
+
+        metrics = metrics or {}
+        is_archived = bool(archived)
+        is_private = kwargs.get("private", False)
+
         quality = DatasetQuality(
             downloads_count=metrics.get("resources_downloads", None),
             api_calls_count=None,
@@ -51,8 +60,8 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             publisher=publisher,
             created=created_at,
             modified=last_update,
-            published=True if archived is None else False,
-            restricted=False if archived is None else True,
+            published=True if is_archived else not is_private,
+            restricted=is_archived,
             downloads_count=metrics.get("resources_downloads", None),
             api_calls_count=None,
             views_count=metrics.get("views", None),

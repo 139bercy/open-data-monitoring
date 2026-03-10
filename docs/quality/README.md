@@ -80,5 +80,6 @@ The evaluation provides:
 
 - `dcat_reference.md`: DCAT vocabulary and best practices
 - `charter_opendata.md`: Ministerial Open Data charter
+- `health_scores.md`: Logique de calcul des scores (Fraîcheur, Engagement)
 
 You can customize these documents to match your organization's specific requirements.
