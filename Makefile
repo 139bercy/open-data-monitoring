@@ -1,4 +1,4 @@
-.PHONY: help install test coverage export-es clean clean-db docker-up docker-down dump load exec-db stats lint generate-service install-service deploy
+.PHONY: help install test coverage export-es clean clean-db docker-up docker-down dump load exec-db stats lint generate-service install-service deploy restart-service status-service logs-service
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -62,15 +62,15 @@ install-service: ## Install and enable the systemd user service locally
 	systemctl --user enable --now odm-api
 	@echo "✅ Service installé. Utilisez 'loginctl enable-linger $$(whoami)' pour le faire persister."
 
-restart-service:
+restart-service: ## Restart systemctl service
 	systemctl --user unmask odm-api
 	systemctl --user daemon-reload
 	systemctl --user restart odm-api
 
-status-service:
+status-service: ## Check systemctl service status
 	systemctl --user status odm-api
 
-logs-service:
+logs-service: ## View systemctl service logs
 	journalctl --user -u odm-api -f
 
 deploy: ## Run deployment script (usage: make deploy REMOTE_PATH=/path SSH_HOST=ds [UPDATE_DB=true])

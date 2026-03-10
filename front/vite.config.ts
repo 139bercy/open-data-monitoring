@@ -24,6 +24,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      watch: {
+        ignored: ["**/node_modules/**", "**/dist/**"],
+        usePolling: false,
+      },
       proxy: {
         "/api": {
           target,
@@ -35,6 +39,9 @@ export default defineConfig(({ mode }) => {
               : undefined,
         },
       },
+    },
+    optimizeDeps: {
+      include: ["@codegouvfr/react-dsfr", "@codegouvfr/react-dsfr/spa"],
     },
   };
 });

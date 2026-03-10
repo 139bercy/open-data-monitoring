@@ -734,65 +734,64 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         list_params = params + [page_size, offset]
         rows = self.client.fetchall(list_query, tuple(list_params))
 
-        items = [
-            {
-                "id": r["id"],
-                "platform_id": r["platform_id"],
-                "buid": r.get("buid"),
-                "slug": r.get("slug"),
-                "publisher": r.get("publisher"),
-                "title": r.get("title"),
-                "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
-                "created": r["created"].isoformat() if r.get("created") else None,
-                "modified": r["modified"].isoformat() if r.get("modified") else None,
-                "restricted": r.get("restricted"),
-                "published": r.get("published"),
-                "downloads_count": r.get("downloads_count"),
-                "api_calls_count": r.get("api_calls_count"),
-                "views_count": r.get("views_count"),
-                "reuses_count": r.get("reuses_count"),
-                "followers_count": r.get("followers_count"),
-                "popularity_score": r.get("popularity_score"),
-                "versions_count": r.get("versions_count"),
-                "page": r.get("page"),
-                "last_sync": r.get("last_sync"),
-                "last_sync_status": r.get("last_sync_status"),
-                "deleted": r.get("deleted"),
-                "linked_dataset_id": r.get("linked_dataset_id"),
-                "linked_dataset_slug": r.get("linked_dataset_slug"),
-                "linked_platform_name": r.get("linked_platform_name"),
-                "quality": {
-                    "has_description": r.get("has_description"),
-                    "is_slug_valid": r.get("is_slug_valid"),
-                    "evaluation_results": r.get("evaluation_results"),
-                    "syntax_change_score": r.get("syntax_change_score"),
-                },
-                "health_score": (
-                    (
-                        scores := _calculate_health_scores(
-                            {
-                                "quality": {
-                                    "has_description": r.get("has_description"),
-                                    "is_slug_valid": r.get("is_slug_valid"),
-                                    "syntax_change_score": r.get("syntax_change_score"),
-                                },
-                                "modified": r.get("modified"),
-                                "views_count": r.get("views_count"),
-                                "api_calls_count": r.get("api_calls_count"),
-                                "reuses_count": r.get("reuses_count"),
-                                "data": r.get("data") or {},
-                            }
-                        )
-                    )["global"]
-                    if r.get("modified")
-                    else None
-                ),
-                "health_quality_score": scores["quality"] if r.get("modified") and scores else None,
-                "health_freshness_score": scores["freshness"] if r.get("modified") and scores else None,
-                "health_engagement_score": scores["engagement"] if r.get("modified") and scores else None,
-            }
-            for r in rows
-        ]
+        items = []
+        for r in rows:
+            scores = None
+            if r.get("modified") and not r.get("restricted") and r.get("published") is not False:
+                scores = _calculate_health_scores(
+                    {
+                        "quality": {
+                            "has_description": r.get("has_description"),
+                            "is_slug_valid": r.get("is_slug_valid"),
+                            "syntax_change_score": r.get("syntax_change_score"),
+                        },
+                        "modified": r.get("modified"),
+                        "views_count": r.get("views_count"),
+                        "api_calls_count": r.get("api_calls_count"),
+                        "reuses_count": r.get("reuses_count"),
+                        "data": r.get("data") or {},
+                    }
+                )
+
+            items.append(
+                {
+                    "id": r["id"],
+                    "platform_id": r["platform_id"],
+                    "buid": r.get("buid"),
+                    "slug": r.get("slug"),
+                    "publisher": r.get("publisher"),
+                    "title": r.get("title"),
+                    "timestamp": r["timestamp"].isoformat() if r.get("timestamp") else None,
+                    "created": r["created"].isoformat() if r.get("created") else None,
+                    "modified": r["modified"].isoformat() if r.get("modified") else None,
+                    "restricted": r.get("restricted"),
+                    "published": r.get("published"),
+                    "downloads_count": r.get("downloads_count"),
+                    "api_calls_count": r.get("api_calls_count"),
+                    "views_count": r.get("views_count"),
+                    "reuses_count": r.get("reuses_count"),
+                    "followers_count": r.get("followers_count"),
+                    "popularity_score": r.get("popularity_score"),
+                    "versions_count": r.get("versions_count"),
+                    "page": r.get("page"),
+                    "last_sync": r.get("last_sync"),
+                    "last_sync_status": r.get("last_sync_status"),
+                    "deleted": r.get("deleted"),
+                    "linked_dataset_id": r.get("linked_dataset_id"),
+                    "linked_dataset_slug": r.get("linked_dataset_slug"),
+                    "linked_platform_name": r.get("linked_platform_name"),
+                    "quality": {
+                        "has_description": r.get("has_description"),
+                        "is_slug_valid": r.get("is_slug_valid"),
+                        "evaluation_results": r.get("evaluation_results"),
+                        "syntax_change_score": r.get("syntax_change_score"),
+                    },
+                    "health_score": scores["global"] if scores else None,
+                    "health_quality_score": scores["quality"] if scores else None,
+                    "health_freshness_score": scores["freshness"] if scores else None,
+                    "health_engagement_score": scores["engagement"] if scores else None,
+                }
+            )
 
         return items, total
 
@@ -1004,7 +1003,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "data": current_snapshot.get("data") if current_snapshot else {},
                 }
             )
-            if d.get("modified")
+            if d.get("modified") and not d.get("restricted") and d.get("published") is not False
             else None
         )
 

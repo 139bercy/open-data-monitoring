@@ -63,12 +63,21 @@ prompt_kill_port() {
     esac
 }
 
-# Install dependencies
-cd "$FRONT_DIR"
-npm i --no-audit --no-fund
+# Install dependencies only if needed
+install_if_needed() {
+    local dir="$1"
+    cd "$dir"
+    if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then
+        echo "Installing dependencies in $dir..."
+        npm i --no-audit --no-fund
+        touch "node_modules" # Update timestamp to match package.json check
+    else
+        echo "Dependencies in $dir are up to date."
+    fi
+}
 
-cd "$SERVER_DIR"
-npm i --no-audit --no-fund
+install_if_needed "$FRONT_DIR"
+install_if_needed "$SERVER_DIR"
 
 # Run both; stop on exit
 trap 'jobs -p | xargs -r kill' EXIT
