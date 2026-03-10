@@ -100,12 +100,15 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
         if isinstance(title, dict):
             title = title.get("value", dataset_id)
 
-        # Get modified date from metadata.default.modified (YYYY-MM-DD format) or fall back to updated_at
-        modified_raw = (
-            metadata.get("default", {}).get("modified", {}).get("value")
-            if isinstance(metadata.get("default", {}).get("modified"), dict)
-            else kwargs.get("modified")
-        )
+        # Get modified date from metadata.default.modified (YYYY-MM-DD or ISO format) or fall back to updated_at
+        default_metas = metadata.get("default") or {}
+        modified_val = default_metas.get("modified")
+
+        if isinstance(modified_val, dict):
+            modified_raw = modified_val.get("value")
+        else:
+            modified_raw = modified_val or kwargs.get("modified")
+
         modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, updated_at)
 
         dataset = DatasetDTO(

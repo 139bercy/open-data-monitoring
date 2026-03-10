@@ -66,8 +66,18 @@ raw_scores AS (
         ) as quality_score,
         -- Freshness Score (0-100) - Relative to expected frequency
         CASE
-            WHEN (EXTRACT(EPOCH FROM (NOW() - d.modified)) / 86400) <= t.days_limit THEN 100
-            WHEN (EXTRACT(EPOCH FROM (NOW() - d.modified)) / 86400) <= t.days_limit * 2 THEN 50
+            WHEN (EXTRACT(EPOCH FROM (NOW() -
+                COALESCE(
+                    NULLIF(b.data->'metas'->'default'->>'modified', '')::timestamptz,
+                    d.modified
+                )
+            )) / 86400) <= t.days_limit THEN 100
+            WHEN (EXTRACT(EPOCH FROM (NOW() -
+                COALESCE(
+                    NULLIF(b.data->'metas'->'default'->>'modified', '')::timestamptz,
+                    d.modified
+                )
+            )) / 86400) <= t.days_limit * 2 THEN 50
             ELSE 0
         END as freshness_score,
         -- Engagement Score (0-100) - Log weighted
@@ -82,6 +92,7 @@ raw_scores AS (
     LEFT JOIN latest_quality q ON d.id = q.dataset_id
     LEFT JOIN latest_version_info v ON d.id = v.dataset_id
     LEFT JOIN dataset_thresholds t ON d.id = t.dataset_id
+    LEFT JOIN dataset_blobs b ON v.blob_id = b.id
     WHERE d.deleted IS FALSE AND d.published IS TRUE AND d.restricted IS FALSE
 ),
 dataset_scores AS (

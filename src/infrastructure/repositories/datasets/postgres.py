@@ -205,19 +205,28 @@ def _calculate_health_scores(row: dict) -> dict:
         quality_score += (q.get("syntax_change_score") or 0.0) * 0.4
 
     # 2. Freshness Score (0-100)
-    modified = row.get("modified")
+    # Extract frequency and refined modified date from raw metadata
+    raw = row.get("raw") or row.get("data") or {}
+    metas = raw.get("metas") or {}
+    default_metas = metas.get("default") or {}
+
+    # Prioritize ODS specific modified date if available in metadata
+    modified_raw = default_metas.get("modified")
+    if modified_raw:
+        from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
+
+        modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, row.get("modified"))
+    else:
+        modified = row.get("modified")
+
     if isinstance(modified, str):
         from datetime import datetime
 
         modified = datetime.fromisoformat(modified.replace("Z", "+00:00"))
 
-    # Extract frequency from raw metadata
-    raw = row.get("raw") or row.get("data") or {}
     frequency = raw.get("frequency")
     if not frequency:
-        metas = raw.get("metas") or {}
-        default_meta = metas.get("default") or {}
-        frequency = default_meta.get("accrual_periodicity")
+        frequency = default_metas.get("accrual_periodicity")
 
     days_limit = _get_frequency_thresholds(frequency)
     import datetime as dt
