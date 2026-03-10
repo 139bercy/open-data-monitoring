@@ -73,8 +73,8 @@ status-service: ## Check systemctl service status
 logs-service: ## View systemctl service logs
 	journalctl --user -u odm-api -f
 
-deploy: ## Run deployment script (usage: make deploy REMOTE_PATH=/path SSH_HOST=ds [UPDATE_DB=true])
-	bash ./deploy.sh $(if $(UPDATE_DB),--update-db) $(REMOTE_PATH) $(SSH_HOST)
+deploy: ## Run deployment script (usage: make deploy REMOTE_PATH=/path SSH_HOST=ds [UPDATE_DB=true] [UPDATE_VIEW=true])
+	bash ./deploy.sh $(if $(UPDATE_DB),--update-db) $(if $(UPDATE_VIEW),--update-view) $(REMOTE_PATH) $(SSH_HOST)
 
 logs: ## View logs
 	journalctl --user -u odm-api -f

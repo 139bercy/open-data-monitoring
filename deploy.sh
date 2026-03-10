@@ -4,11 +4,13 @@ set -e
 REMOTE_PATH=""
 SSH_HOST=""
 UPDATE_DB=false
+UPDATE_VIEW=false
 
 # Argument parsing
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --update-db) UPDATE_DB=true ;;
+        --update-view) UPDATE_VIEW=true ;;
         -*) echo "Unknown option: $1"; exit 1 ;;
         *)
             if [ -z "$REMOTE_PATH" ]; then REMOTE_PATH="$1";
@@ -21,7 +23,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if [ -z "$REMOTE_PATH" ] || [ -z "$SSH_HOST" ]; then
-    echo "Usage: $0 [--update-db] <REMOTE_PATH> <SSH_HOST>"
+    echo "Usage: $0 [--update-db] [--update-view] <REMOTE_PATH> <SSH_HOST>"
     echo "Example: $0 /home/paul/open-data-monitoring my-server"
     exit 1
 fi
@@ -29,7 +31,7 @@ fi
 # Basic validation for SSH_HOST
 if [[ "$SSH_HOST" == /* ]]; then
     echo "❌ Error: SSH_HOST ('$SSH_HOST') looks like a path. Check your arguments."
-    echo "Usage: $0 [--update-db] <REMOTE_PATH> <SSH_HOST>"
+    echo "Usage: $0 [--update-db] [--update-view] <REMOTE_PATH> <SSH_HOST>"
     exit 1
 fi
 
@@ -72,6 +74,14 @@ if [ "$UPDATE_DB" = true ]; then
     ssh $SSH_HOST "cd $REMOTE_PATH && ./utils/migrate.sh"
 else
     echo "⏭️ Skipping database migrations (use --update-db to enable)."
+fi
+
+# 4.5 Update Views (Optional)
+if [ "$UPDATE_VIEW" = true ]; then
+    echo "📊 Updating database views..."
+    ssh $SSH_HOST "cd $REMOTE_PATH && psql -h localhost -U postgres -d odm -f db/views.sql"
+else
+    echo "⏭️ Skipping database views update (use --update-view to enable)."
 fi
 
 # 5. Restart Service
