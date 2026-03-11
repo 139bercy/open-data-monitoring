@@ -25,29 +25,45 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
   onClusterClick,
 }) => {
   const { isDark } = useIsDark();
-  const hexColors = fr.colors.getHex({ isDark });
 
-  // Mapping scores to DSFR colors
+  // Pre-process data for logarithmic sizing
+  const processedData = React.useMemo(() => {
+    return data.map((item) => ({
+      ...item,
+      logCount: Math.log10(item.count + 1) + 0.1, // Add small offset to ensure visibility
+    }));
+  }, [data]);
+
+  // Continuous HSL color function for a "demanding" gradation
+  // 0 -> Red (0°), 120 -> Green (120°)
+  // We use a power function to make it "harder" to reach green
   const getColor = (score: number) => {
-    if (score >= 85) return hexColors.decisions.background.flat.success.default;
-    if (score >= 70) return hexColors.decisions.background.flat.info.default;
-    if (score >= 50) return hexColors.decisions.background.flat.warning.default;
-    return hexColors.decisions.background.flat.error.default;
+    const normalized = Math.min(100, Math.max(0, score)) / 100;
+    // Power of 1.5 to stay longer in warm colors (orange/yellow)
+    const hue = Math.pow(normalized, 1.5) * 125;
+    const saturation = isDark ? 65 : 75;
+    const lightness = isDark ? 35 : 45;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   };
 
   const getHealthAttr = (score: number) => {
-    if (score >= 85) return "healthy";
-    if (score >= 70) return "info";
+    if (score >= 90) return "excellent";
+    if (score >= 75) return "healthy";
     if (score >= 50) return "warning";
-    return "crisis";
+    return "critical";
   };
 
   const getIcon = (score: number) => {
+    if (score >= 95) return "🌟";
     if (score >= 85) return "✅";
-    if (score >= 70) return "🔵";
-    if (score >= 50) return "⚠️";
-    return "🚨";
+    if (score >= 70) return "🍃";
+    if (score >= 55) return "🟡";
+    if (score >= 40) return "⚠️";
+    if (score >= 25) return "🚨";
+    return "🔥";
   };
+
+  const [hoveredDir, setHoveredDir] = React.useState<string | null>(null);
 
   const wrapText = (text: string, maxCharsPerLine: number): string[] => {
     const words = text.split(" ");
@@ -67,16 +83,20 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
 
   const CustomContent = (props: any) => {
     const { x, y, width, height, direction, score, count } = props;
+    const isHovered = hoveredDir === direction;
     const maxChars = Math.max(6, Math.floor(width / 8));
     const lines = wrapText(direction ?? "", maxChars);
     const lineHeight = 16;
-    const totalTextHeight = lines.length * lineHeight + 36; // +36 for score + count lines
+    const totalTextHeight = lines.length * lineHeight + 36;
     const startY = y + height / 2 - totalTextHeight / 2 + lineHeight;
 
     return (
       <g
         onClick={() => onClusterClick?.(direction)}
-        style={{ cursor: "pointer" }}
+        onMouseEnter={() => setHoveredDir(direction)}
+        onMouseLeave={() => setHoveredDir(null)}
+        style={{ cursor: "pointer", color: "#444444" }}
+        fill="#444444"
         data-health={getHealthAttr(score)}
       >
         <rect
@@ -85,22 +105,44 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
           width={width}
           height={height}
           fill={getColor(score)}
-          stroke={isDark ? "#1e1e1e" : "#ffffff"}
-          strokeWidth={2}
+          stroke={
+            isHovered
+              ? isDark
+                ? "#ffffff"
+                : "#000000"
+              : isDark
+                ? "#1e1e1e"
+                : "#ffffff"
+          }
+          strokeWidth={isHovered ? 3 : 1}
+          style={{
+            filter: isHovered ? "brightness(1.1) saturate(1.2)" : "none",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
         />
-        {width > 50 && height > 30 && (
+        {width > 40 && height > 25 && (
           <text
             x={x + width / 2}
             textAnchor="middle"
-            fill="#ffffff"
-            fontSize={12}
+            fill="#444444"
+            fontSize={isHovered ? 15 : 13}
             fontWeight="bold"
+            style={{
+              transition: "all 0.2s ease",
+              pointerEvents: "none",
+              fill: "#444444",
+            }}
           >
             {lines.map((line, i) => (
               <tspan
                 key={i}
                 x={x + width / 2}
                 y={startY + i * lineHeight}
+                fill="#444444"
+                style={{
+                  fontWeight: "bold",
+                  fill: "#444444",
+                }}
               >
                 {i === 0 ? `${getIcon(score)} ${line}` : line}
               </tspan>
@@ -108,23 +150,16 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
             <tspan
               x={x + width / 2}
               y={startY + lines.length * lineHeight}
-              fontSize={11}
-              fontWeight="normal"
-              opacity={0.85}
+              fontSize={12}
+              fontWeight="bold"
+              fill="#444444"
+              style={{
+                opacity: 0.9,
+                fill: "#444444",
+              }}
             >
               {Math.round(score)}%
             </tspan>
-            {height > 60 && (
-              <tspan
-                x={x + width / 2}
-                y={startY + lines.length * lineHeight + 16}
-                fontSize={10}
-                fontWeight="normal"
-                opacity={0.7}
-              >
-                {count} jeux de données
-              </tspan>
-            )}
           </text>
         )}
       </g>
@@ -133,23 +168,41 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
 
   return (
     <div
+      id="heatmap-container"
       className="fr-container fr-my-4w"
       style={{ width: "100%" }}
     >
-      <p
-        className="fr-text--xs fr-mb-1w"
-        style={{ color: "var(--text-mention-grey)", textAlign: "right" }}
+      <style>{`
+        #heatmap-container text,
+        #heatmap-container tspan {
+          fill: #444444 !important;
+          color: #444444 !important;
+          stroke: none !important;
+        }
+      `}</style>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+        }}
       >
-        📐 Par nombre de jeux de données · 🎨 Couleur = score de santé
-      </p>
-      <div style={{ height: "400px", width: "100%" }}>
+        <p
+          className="fr-text--xs fr-mb-1w"
+          style={{ color: "var(--text-mention-grey)", textAlign: "right" }}
+        >
+          📐 Échelle Logarithmique · 🎨 Couleur Continue
+        </p>
+      </div>
+
+      <div style={{ height: "450px", width: "100%" }}>
         <ResponsiveContainer
           width="100%"
           height="100%"
         >
           <Treemap
-            data={data}
-            dataKey="count"
+            data={processedData}
+            dataKey="logCount"
             aspectRatio={4 / 3}
             stroke="#fff"
             content={<CustomContent />}
@@ -157,26 +210,43 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
             <RechartsTooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                  const item = payload[0].payload as HeatmapData;
+                  const item = payload[0].payload as any;
                   return (
                     <div
                       className="fr-card fr-p-2w"
                       style={{
-                        backgroundColor: isDark ? "#1e1e1e" : "white",
-                        border: `1px solid ${hexColors.decisions.border.default.grey.default}`,
-                        boxShadow: "0 2px 6px 0 rgba(0,0,0,0.2)",
+                        borderRadius: "2px",
                       }}
                     >
                       <p className="fr-text--bold fr-mb-1w">{item.direction}</p>
-                      <p className="fr-text--sm fr-mb-0">
-                        Score : {item.score}%
-                      </p>
-                      <p className="fr-text--sm fr-mb-0">
-                        Jeux de données : {item.count}
-                      </p>
-                      <p className="fr-text--sm fr-mb-0">
-                        Crises : {item.crises}
-                      </p>
+                      <div className="fr-grid-row fr-grid-row--gutters fr-grid-row--sm">
+                        <div className="fr-col-12">
+                          <p className="fr-text--sm fr-mb-0">
+                            Score Santé :{" "}
+                            <span
+                              style={{
+                                color: getColor(item.score),
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {item.score}%
+                            </span>
+                          </p>
+                          <p className="fr-text--sm fr-mb-0">
+                            Jeux de données :{" "}
+                            <span className="fr-text--bold">{item.count}</span>
+                          </p>
+                          <p className="fr-text--sm fr-mb-0">
+                            Crises détectées :{" "}
+                            <span
+                              className="fr-text--bold"
+                              style={{ color: "var(--text-default-error)" }}
+                            >
+                              {item.crises}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   );
                 }
@@ -185,6 +255,29 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
             />
           </Treemap>
         </ResponsiveContainer>
+      </div>
+
+      <div
+        className="fr-mt-2w"
+        style={{
+          height: "8px",
+          width: "100%",
+          background: "linear-gradient(to right, #ff0000, #ffcc00, #00ff00)",
+          borderRadius: "4px",
+          display: "flex",
+          justifyContent: "space-between",
+          padding: "0 4px",
+        }}
+      >
+        <span style={{ fontSize: "10px", marginTop: "12px", opacity: 0.6 }}>
+          CRITIQUE
+        </span>
+        <span style={{ fontSize: "10px", marginTop: "12px", opacity: 0.6 }}>
+          MOYEN
+        </span>
+        <span style={{ fontSize: "10px", marginTop: "12px", opacity: 0.6 }}>
+          EXCELLENT
+        </span>
       </div>
     </div>
   );
