@@ -13,7 +13,7 @@ Options:
     --skip-evaluated   Skip datasets already with evaluation_results
     --platform SLUG    Filter by platform slug
     --publisher NAME   Filter by publisher name
-    --prompt-type TYPE "light" (default) or "stscandard"
+    --prompt-type TYPE "light" (default) or "standard"
     --concurrency N    Max parallel LLM calls (default: 3)
     --dry-run          List eligible datasets without calling LLM
     --reset            Ignore existing checkpoint and restart from scratch
@@ -173,6 +173,7 @@ async def audit_one(
     async with semaphore:
         try:
             t0 = time.time()
+
             # Run the synchronous (blocking) LLM call in a thread pool.
             # Each call creates its own DB connection — psycopg2 is not thread-safe.
             def _run():
@@ -221,6 +222,37 @@ async def run_audit(rows: list[dict], args, done: set[str]) -> dict:
 # ---------------------------------------------------------------------------
 
 
+def _prepare_run(args) -> tuple[list[dict], set[str]]:
+    """Load checkpoint and fetch the list of datasets to process."""
+    if args.reset:
+        reset_checkpoint()
+    done = load_checkpoint()
+    if done:
+        print(f"♻️  Checkpoint trouvé : {len(done)} datasets déjà traités, reprise...\n")
+
+    all_rows = fetch_datasets(args)
+    if args.skip_evaluated:
+        all_rows = [r for r in all_rows if not r.get("already_evaluated")]
+
+    rows = [r for r in all_rows if str(r["id"]) not in done]
+
+    skipped = len(all_rows) - len(rows)
+    print(f"📊 Total éligibles : {len(all_rows)}")
+    if skipped:
+        print(f"   ⏭  Ignorés (checkpoint) : {skipped}")
+    print(f"   🔄 À traiter : {len(rows)}\n")
+
+    return rows, done
+
+
+def _print_summary(counters: dict) -> None:
+    print(f"\n🏁 Terminé : {counters['success']} succès, {counters['error']} erreurs")
+    if counters.get("failed_slugs"):
+        print("Slugs en erreur :")
+        for s in counters["failed_slugs"]:
+            print(f"  - {s}")
+
+
 def main():
     args = parse_args()
 
@@ -228,33 +260,12 @@ def main():
     print(f"   DCAT:    {DCAT_PATH}")
     print(f"   Charter: {CHARTER_PATH}\n")
 
-    # Validate reference files
     for path, name in [(DCAT_PATH, "DCAT reference"), (CHARTER_PATH, "Charte")]:
         if not os.path.exists(path):
             print(f"❌ Fichier manquant : {name} → {path}")
             sys.exit(1)
 
-    # Handle checkpoint reset
-    if args.reset:
-        reset_checkpoint()
-    done = load_checkpoint()
-    if done:
-        print(f"♻️  Checkpoint trouvé : {len(done)} datasets déjà traités, reprise...\n")
-
-    # Fetch candidates
-    all_rows = fetch_datasets(args)
-    if args.skip_evaluated:
-        all_rows = [r for r in all_rows if not r.get("already_evaluated")]
-
-    # Filter out already processed (checkpoint)
-    rows = [r for r in all_rows if str(r["id"]) not in done]
-
-    total = len(rows)
-    skipped = len(all_rows) - total
-    print(f"📊 Total éligibles : {len(all_rows)}")
-    if skipped:
-        print(f"   ⏭  Ignorés (checkpoint) : {skipped}")
-    print(f"   🔄 À traiter : {total}\n")
+    rows, done = _prepare_run(args)
 
     if args.dry_run:
         print("[DRY RUN] Datasets qui seraient audités :\n")
@@ -262,20 +273,13 @@ def main():
             print(f"  {i:4}. {r['slug']} ({r['platform_slug']})")
         return
 
-    if total == 0:
+    if not rows:
         print("✅ Aucun dataset à auditer.")
         return
 
-    # Run async
     counters = asyncio.run(run_audit(rows, args, done))
+    _print_summary(counters)
 
-    print(f"\n🏁 Terminé : {counters['success']} succès, {counters['error']} erreurs")
-    if counters.get("failed_slugs"):
-        print("Slugs en erreur :")
-        for s in counters["failed_slugs"]:
-            print(f"  - {s}")
-
-    # Clean up checkpoint on full success
     if counters["error"] == 0:
         reset_checkpoint()
 

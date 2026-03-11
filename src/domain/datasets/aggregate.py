@@ -286,17 +286,45 @@ class Dataset:
             + (self.quality.health_engagement_score * 0.2)
         )
 
-    def _calculate_quality_score(self) -> float:
-        """Calculates the quality sub-score."""
+    def _calculate_quality_score(self) -> float:  # noqa: C901
+        """Calculates the quality sub-score (0-100).
+
+        With LLM audit:
+          20 pts — has_description
+          10 pts — is_slug_valid
+          70 pts — LLM overall_score (stored as 0.0-1.0, × 100)
+
+        Without LLM audit (fallback):
+          40 pts — has_description
+          20 pts — is_slug_valid
+          40 pts — syntax_change_score × 0.4
+        """
         if not self.quality:
             return 0.0
 
+        # Check if an LLM evaluation is available
+        llm_score = None
+        if self.quality.evaluation_results:
+            raw = self.quality.evaluation_results.get("overall_score")
+            if raw is not None:
+                # overall_score is stored as 0.0-1.0 → scale to 0-100
+                llm_score = float(raw) * 100
+
+        if llm_score is not None:
+            quality_pts = 0.0
+            if self.quality.has_description:
+                quality_pts += 20
+            if self.quality.is_slug_valid:
+                quality_pts += 10
+            quality_pts += llm_score * 0.70
+            return min(100.0, quality_pts)
+
+        # Fallback: no LLM audit yet
         quality_pts = 0.0
         if self.quality.has_description:
             quality_pts += 40
         if self.quality.is_slug_valid:
             quality_pts += 20
-
         syntax_score = self.quality.syntax_change_score or 0.0
         quality_pts += syntax_score * 0.4
         return quality_pts
