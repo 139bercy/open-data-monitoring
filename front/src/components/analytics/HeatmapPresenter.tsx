@@ -11,6 +11,7 @@ export interface HeatmapData {
   direction: string;
   score: number;
   crises: number;
+  count: number;
   [key: string]: any; // Fix for Recharts Treemap typing
 }
 
@@ -48,8 +49,29 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
     return "🚨";
   };
 
+  const wrapText = (text: string, maxCharsPerLine: number): string[] => {
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      if ((current + " " + word).trim().length <= maxCharsPerLine) {
+        current = (current + " " + word).trim();
+      } else {
+        if (current) lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  };
+
   const CustomContent = (props: any) => {
     const { x, y, width, height, direction, score } = props;
+    const maxChars = Math.max(6, Math.floor(width / 8));
+    const lines = wrapText(direction ?? "", maxChars);
+    const lineHeight = 16;
+    const totalTextHeight = lines.length * lineHeight + 18; // +18 for score line
+    const startY = y + height / 2 - totalTextHeight / 2 + lineHeight;
 
     return (
       <g
@@ -69,13 +91,29 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
         {width > 50 && height > 30 && (
           <text
             x={x + width / 2}
-            y={y + height / 2}
             textAnchor="middle"
             fill="#ffffff"
-            fontSize={14}
+            fontSize={12}
             fontWeight="bold"
           >
-            {getIcon(score)} {direction}
+            {lines.map((line, i) => (
+              <tspan
+                key={i}
+                x={x + width / 2}
+                y={startY + i * lineHeight}
+              >
+                {i === 0 ? `${getIcon(score)} ${line}` : line}
+              </tspan>
+            ))}
+            <tspan
+              x={x + width / 2}
+              y={startY + lines.length * lineHeight}
+              fontSize={11}
+              fontWeight="normal"
+              opacity={0.85}
+            >
+              {Math.round(score)}%
+            </tspan>
           </text>
         )}
       </g>
@@ -93,7 +131,7 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
       >
         <Treemap
           data={data}
-          dataKey="score"
+          dataKey="count"
           aspectRatio={4 / 3}
           stroke="#fff"
           content={<CustomContent />}

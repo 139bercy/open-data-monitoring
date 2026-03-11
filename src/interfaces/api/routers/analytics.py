@@ -16,7 +16,8 @@ async def get_direction_health():
     SELECT
         direction,
         score_global as score,
-        unhealthy_count as crises
+        unhealthy_count as crises,
+        dataset_count as count
     FROM direction_health_stats_view
     ORDER BY score_global DESC
     """

@@ -104,7 +104,7 @@ export const SidePanelPresenter: React.FC<SidePanelPresenterProps> = ({
                   >
                     {ds.publisher}
                   </span>
-                  {ds.healthScore !== undefined && (
+                  {ds.healthScore != null && ds.healthScore > 0 && (
                     <Badge
                       severity={
                         ds.healthScore >= 85

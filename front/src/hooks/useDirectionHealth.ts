@@ -5,6 +5,7 @@ export interface HeatmapData {
   direction: string;
   score: number;
   crises: number;
+  count: number;
   [key: string]: any;
 }
 
