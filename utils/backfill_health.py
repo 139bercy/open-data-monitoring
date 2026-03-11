@@ -16,7 +16,7 @@ async def backfill_health_scores():
 
     # Get all datasets with their quality info
     rows = repo.client.fetchall("""
-        SELECT d.id, d.modified, d.restricted, d.published,
+        SELECT d.id, d.slug, d.modified, d.restricted, d.published,
                dq.has_description, dq.is_slug_valid, dq.syntax_change_score, dq.evaluated_blob_id,
                lv.blob_id as current_blob_id, lv.views_count, lv.api_calls_count, lv.reuses_count, lv.timestamp,
                db.data as raw_data
@@ -42,6 +42,7 @@ async def backfill_health_scores():
         if r.get("modified") and not r.get("restricted") and r.get("published") is not False:
             scores = _calculate_health_scores(
                 {
+                    "slug": r.get("slug"),
                     "quality": {
                         "has_description": r.get("has_description") or False,
                         "is_slug_valid": r.get("is_slug_valid") if r.get("is_slug_valid") is not None else True,

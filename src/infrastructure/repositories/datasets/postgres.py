@@ -267,6 +267,11 @@ def _get_freshness_score(row: dict) -> float:
 def _get_engagement_score(row: dict) -> float:
     import math
 
+    # Admin datasets get 100 engagement score
+    slug = row.get("slug") or ""
+    if "admin" in slug.lower():
+        return 100.0
+
     views = row.get("views_count") or 0
     api_calls = row.get("api_calls_count") or 0
     reuses = row.get("reuses_count") or 0
@@ -817,10 +822,10 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "engagement": r.get("stored_engagement_score"),
                 }
 
-            # 2. Fallback to calculation if no stored scores
             if not scores and r.get("modified") and not r.get("restricted") and r.get("published") is not False:
                 scores = _calculate_health_scores(
                     {
+                        "slug": r.get("slug"),
                         "quality": {
                             "has_description": r.get("has_description"),
                             "is_slug_valid": r.get("is_slug_valid"),

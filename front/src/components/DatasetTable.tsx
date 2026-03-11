@@ -365,8 +365,26 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
             ? skeletonRows
             : items.map((item) => [
                 <div style={{ minWidth: "200px" }}>
-                  <div style={{ fontWeight: "bold", lineHeight: "1.2" }}>
-                    {item.title ?? "—"}
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                      lineHeight: "1.2",
+                      display: "flex",
+                      gap: "0.5rem",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>{item.title ?? "—"}</span>
+                    {item.slug?.toLowerCase().includes("admin") && (
+                      <Badge
+                        severity="info"
+                        small
+                        noIcon
+                        title="Admin"
+                      >
+                        Admin
+                      </Badge>
+                    )}
                   </div>
                   <div
                     style={{
