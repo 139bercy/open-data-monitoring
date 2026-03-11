@@ -84,7 +84,7 @@ export async function getDatasets(
     published: it.published ?? null,
     lastSync: it.last_sync,
     lastSyncStatus: it.last_sync_status,
-    hasDescription: it.has_description,
+    hasDescription: it.quality?.has_description ?? false,
     isDeleted: it.deleted ?? null,
     linkedDatasetId: it.linked_dataset_id,
     linkedDatasetSlug: it.linked_dataset_slug,
@@ -176,7 +176,7 @@ export async function getDatasetDetail(
     snapshots: Array.isArray(data.snapshots)
       ? data.snapshots.map(mapSnap)
       : undefined,
-    hasDescription: data.has_description,
+    hasDescription: data.quality?.has_description ?? false,
     isDeleted: data.deleted ?? null,
     linkedDatasetId: data.linked_dataset_id,
     linkedDatasetSlug: data.linked_dataset_slug,
