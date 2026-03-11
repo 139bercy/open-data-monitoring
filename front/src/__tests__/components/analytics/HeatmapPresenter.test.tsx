@@ -70,32 +70,26 @@ vi.mock("recharts", async () => {
 
 describe("HeatmapPresenter", () => {
   const mockData = [
-    { direction: "DGFiP", score: 85, crises: 0 },
-    { direction: "INSEE", score: 75, crises: 1 },
-    { direction: "DG Trésor", score: 55, crises: 2 },
-    { direction: "Customs", score: 12, crises: 5 },
+    { direction: "DGFiP", score: 85, crises: 0, count: 10 },
+    { direction: "INSEE", score: 75, crises: 1, count: 20 },
+    { direction: "DG Trésor", score: 55, crises: 2, count: 30 },
+    { direction: "Customs", score: 12, crises: 5, count: 40 },
   ];
 
   it("renders clusters for each direction", () => {
     render(<HeatmapPresenter data={mockData} />);
     expect(screen.getByText("✅ DGFiP")).toBeDefined();
-    expect(screen.getByText("🔵 INSEE")).toBeDefined();
-    expect(screen.getByText("⚠️ DG Trésor")).toBeDefined();
-    expect(screen.getByText("🚨 Customs")).toBeDefined();
+    expect(screen.getByText("🍃 INSEE")).toBeDefined();
+    expect(screen.getByText("🟡 DG Trésor")).toBeDefined();
+    expect(screen.getByText("🔥 Customs")).toBeDefined();
   });
 
   it("applies correct color classes/styles based on score", () => {
     const { container } = render(<HeatmapPresenter data={mockData} />);
 
-    // Check for color markers (we'll define specific data-attributes or classes)
-    const healthyCluster = container.querySelector('[data-health="healthy"]');
-    const infoCluster = container.querySelector('[data-health="info"]');
-    const warningCluster = container.querySelector('[data-health="warning"]');
-    const crisisCluster = container.querySelector('[data-health="crisis"]');
-
-    expect(healthyCluster).toBeDefined();
-    expect(infoCluster).toBeDefined();
-    expect(warningCluster).toBeDefined();
-    expect(crisisCluster).toBeDefined();
+    // Check for color markers
+    expect(container.querySelector('[data-health="healthy"]')).toBeDefined();
+    expect(container.querySelector('[data-health="warning"]')).toBeDefined();
+    expect(container.querySelector('[data-health="critical"]')).toBeDefined();
   });
 });
