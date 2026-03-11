@@ -66,11 +66,11 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
   };
 
   const CustomContent = (props: any) => {
-    const { x, y, width, height, direction, score } = props;
+    const { x, y, width, height, direction, score, count } = props;
     const maxChars = Math.max(6, Math.floor(width / 8));
     const lines = wrapText(direction ?? "", maxChars);
     const lineHeight = 16;
-    const totalTextHeight = lines.length * lineHeight + 18; // +18 for score line
+    const totalTextHeight = lines.length * lineHeight + 36; // +36 for score + count lines
     const startY = y + height / 2 - totalTextHeight / 2 + lineHeight;
 
     return (
@@ -114,6 +114,17 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
             >
               {Math.round(score)}%
             </tspan>
+            {height > 60 && (
+              <tspan
+                x={x + width / 2}
+                y={startY + lines.length * lineHeight + 16}
+                fontSize={10}
+                fontWeight="normal"
+                opacity={0.7}
+              >
+                {count} jeux de données
+              </tspan>
+            )}
           </text>
         )}
       </g>
@@ -123,12 +134,19 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
   return (
     <div
       className="fr-container fr-my-4w"
-      style={{ height: "400px", width: "100%" }}
+      style={{ width: "100%" }}
     >
-      <ResponsiveContainer
-        width="100%"
-        height="100%"
+      <p
+        className="fr-text--xs fr-mb-1w"
+        style={{ color: "var(--text-mention-grey)", textAlign: "right" }}
       >
+        📐 Par nombre de jeux de données · 🎨 Couleur = score de santé
+      </p>
+      <div style={{ height: "400px", width: "100%" }}>
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+        >
         <Treemap
           data={data}
           dataKey="count"
@@ -150,8 +168,9 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
                     }}
                   >
                     <p className="fr-text--bold fr-mb-1w">{item.direction}</p>
-                    <p className="fr-text--sm fr-mb-0">Score: {item.score}%</p>
-                    <p className="fr-text--sm fr-mb-0">Crises: {item.crises}</p>
+                    <p className="fr-text--sm fr-mb-0">Score : {item.score}%</p>
+                    <p className="fr-text--sm fr-mb-0">Jeux de données : {item.count}</p>
+                    <p className="fr-text--sm fr-mb-0">Crises : {item.crises}</p>
                   </div>
                 );
               }
@@ -159,7 +178,8 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
             }}
           />
         </Treemap>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

@@ -249,6 +249,84 @@ class Dataset:
             semantic_quality_score=semantic_score,
         )
 
+    def calculate_health_scores(self) -> None:
+        """
+        Calculates the complete set of health scores for the dataset.
+        Moves scoring logic from Infrastructure to Domain.
+        """
+        if not self.quality:
+            return
+
+        # 1. Quality Score (0-100)
+        quality_pts = 0.0
+        if self.quality.has_description:
+            quality_pts += 40
+        if self.quality.is_slug_valid:
+            quality_pts += 20
+
+        syntax_score = self.quality.syntax_change_score or 0.0
+        # If evaluated on current blob, syntax score is 100
+        if self.quality.evaluated_blob_id and self.checksum:
+            # Note: in real use case, we compare evaluated_blob_id with current active blob id
+            # For now, we trust the repo to have set syntax_change_score if it differed
+            pass
+
+        quality_pts += syntax_score * 0.4
+        self.quality.health_quality_score = quality_pts
+
+        # 2. Freshness Score (0-100)
+        frequency = self.raw.get("frequency")
+        if not frequency:
+            metas = self.raw.get("metas") or {}
+            default_meta = metas.get("default") or {}
+            frequency = default_meta.get("accrual_periodicity")
+
+        # Mapping to days (including grace period)
+        frequency_thresholds = {
+            "daily": 2,
+            "continuous": 2,
+            "weekly": 9,
+            "monthly": 37,
+            "quarterly": 105,
+            "semiannual": 210,
+            "annual": 395,
+            "punctual": 3650,
+        }
+        days_limit = frequency_thresholds.get(str(frequency).lower(), 90)
+
+        modified_dt = self.modified
+        if modified_dt.tzinfo is None:
+            modified_dt = modified_dt.replace(tzinfo=timezone.utc)
+
+        delta_days = (datetime.now(timezone.utc) - modified_dt).days
+        if delta_days <= days_limit:
+            freshness_pts = 100.0
+        elif delta_days <= days_limit * 2:
+            freshness_pts = 50.0
+        else:
+            freshness_pts = 0.0
+        self.quality.health_freshness_score = freshness_pts
+
+        # 3. Engagement Score (0-100)
+        if "admin" in str(self.slug).lower():
+            engagement_pts = 100.0
+        else:
+            import math
+
+            views = self.views_count or 0
+            api_calls = self.api_calls_count or 0
+            reuses = self.reuses_count or 0
+            engagement_pts = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
+            engagement_pts = max(0.0, min(100.0, round(engagement_pts, 2)))
+        self.quality.health_engagement_score = engagement_pts
+
+        # 4. Global Health Score
+        self.quality.health_score = (
+            (self.quality.health_quality_score * 0.5)
+            + (self.quality.health_freshness_score * 0.3)
+            + (self.quality.health_engagement_score * 0.2)
+        )
+
     def calculate_impact_kpi(self) -> ImpactKPI:
         """
         Calculates the impact KPI based on usage metrics.

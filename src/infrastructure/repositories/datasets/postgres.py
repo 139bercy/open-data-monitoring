@@ -190,94 +190,10 @@ def _get_frequency_thresholds(frequency: str | None) -> int:
     return thresholds.get(str(frequency).lower(), 90)
 
 
-def _calculate_health_scores(row: dict) -> dict:
-    """
-    Calculates health scores following the logic in compute-mbis.sql.
-    Expected row keys: quality, modified, views_count, api_calls_count, reuses_count, raw (or data)
-    """
-    quality_score = _get_quality_score(row)
-    freshness_score = _get_freshness_score(row)
-    engagement_score = _get_engagement_score(row)
-
-    global_score = (quality_score * 0.5) + (freshness_score * 0.3) + (engagement_score * 0.2)
-
-    return {
-        "global": round(global_score, 2),
-        "quality": round(quality_score, 2),
-        "freshness": round(freshness_score, 2),
-        "engagement": round(engagement_score, 2),
-    }
 
 
-def _get_quality_score(row: dict) -> float:
-    q = row.get("quality") or {}
-    quality_score = 0.0
-    if q:
-        if q.get("has_description"):
-            quality_score += 40
-        if q.get("is_slug_valid"):
-            quality_score += 20
-
-    syntax_score = q.get("syntax_change_score") or 0.0
-    evaluated_blob_id = row.get("evaluated_blob_id")
-    current_blob_id = row.get("current_blob_id")
-    if evaluated_blob_id and current_blob_id and str(evaluated_blob_id) == str(current_blob_id):
-        syntax_score = 100.0
-
-    quality_score += syntax_score * 0.4
-    return quality_score
 
 
-def _get_freshness_score(row: dict) -> float:
-    raw = row.get("raw") or row.get("data") or {}
-    metas = raw.get("metas") or {}
-    default_metas = metas.get("default") or {}
-
-    modified_raw = default_metas.get("modified")
-    if modified_raw:
-        from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
-
-        modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, row.get("modified"))
-    else:
-        modified = row.get("modified")
-
-    if modified and isinstance(modified, str):
-        try:
-            modified = datetime.fromisoformat(modified.replace("Z", "+00:00"))
-        except ValueError:
-            modified = row.get("modified")
-
-    if not modified:
-        modified = row.get("modified") or datetime.now(timezone.utc)
-
-    frequency = raw.get("frequency") or default_metas.get("accrual_periodicity")
-    days_limit = _get_frequency_thresholds(frequency)
-
-    if modified.tzinfo is None:
-        modified = modified.replace(tzinfo=timezone.utc)
-
-    delta_days = (datetime.now(timezone.utc) - modified).days
-    if delta_days <= days_limit:
-        return 100.0
-    if delta_days <= days_limit * 2:
-        return 50.0
-    return 0.0
-
-
-def _get_engagement_score(row: dict) -> float:
-    import math
-
-    # Admin datasets get 100 engagement score
-    slug = row.get("slug") or ""
-    if "admin" in slug.lower():
-        return 100.0
-
-    views = row.get("views_count") or 0
-    api_calls = row.get("api_calls_count") or 0
-    reuses = row.get("reuses_count") or 0
-
-    engagement_score = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
-    return max(0.0, min(100.0, round(engagement_score, 2)))
 
 
 class PostgresDatasetRepository(AbstractDatasetRepository):
@@ -320,56 +236,41 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 str(dataset.linked_dataset_id) if dataset.linked_dataset_id else None,
             ),
         )
-        # Calculate health scores for persistence
-        scores = None
-        if dataset.modified and not dataset.restricted and dataset.published is not False:
-            scores = _calculate_health_scores(
-                {
-                    "quality": {
-                        "has_description": dataset.quality.has_description,
-                        "is_slug_valid": dataset.quality.is_slug_valid,
-                        "syntax_change_score": dataset.quality.syntax_change_score,
-                    },
-                    "evaluated_blob_id": dataset.quality.evaluated_blob_id,
-                    "current_blob_id": dataset.quality.evaluated_blob_id,  # Assume evaluated is current during save
-                    "modified": dataset.modified,
-                    "views_count": dataset.views_count,
-                    "api_calls_count": dataset.api_calls_count,
-                    "reuses_count": dataset.reuses_count,
-                    "data": dataset.raw,
-                }
-            )
+        # Calculate health scores for persistence using Domain logic
+        if dataset.quality and dataset.modified and not dataset.restricted and dataset.published is not False:
+            dataset.calculate_health_scores()
 
-        self.client.execute(
-            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results, syntax_change_score, evaluated_blob_id, health_score, health_quality_score, health_freshness_score, health_engagement_score) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            "ON CONFLICT (dataset_id) DO UPDATE SET "
-            "downloads_count = EXCLUDED.downloads_count, "
-            "api_calls_count = EXCLUDED.api_calls_count, "
-            "has_description = EXCLUDED.has_description, "
-            "evaluation_results = COALESCE(EXCLUDED.evaluation_results, dataset_quality.evaluation_results), "
-            "is_slug_valid = EXCLUDED.is_slug_valid, "
-            "syntax_change_score = COALESCE(EXCLUDED.syntax_change_score, dataset_quality.syntax_change_score), "
-            "evaluated_blob_id = COALESCE(EXCLUDED.evaluated_blob_id, dataset_quality.evaluated_blob_id), "
-            "health_score = EXCLUDED.health_score, "
-            "health_quality_score = EXCLUDED.health_quality_score, "
-            "health_freshness_score = EXCLUDED.health_freshness_score, "
-            "health_engagement_score = EXCLUDED.health_engagement_score",
-            (
-                str(dataset.id),
-                dataset.quality.downloads_count,
-                dataset.quality.api_calls_count,
-                dataset.quality.has_description,
-                dataset.quality.is_slug_valid,
-                Json(dataset.quality.evaluation_results) if dataset.quality.evaluation_results else None,
-                dataset.quality.syntax_change_score,
-                str(dataset.quality.evaluated_blob_id) if dataset.quality.evaluated_blob_id else None,
-                scores["global"] if scores else None,
-                scores["quality"] if scores else None,
-                scores["freshness"] if scores else None,
-                scores["engagement"] if scores else None,
-            ),
-        )
+        if dataset.quality:
+            self.client.execute(
+                "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results, syntax_change_score, evaluated_blob_id, health_score, health_quality_score, health_freshness_score, health_engagement_score) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                "ON CONFLICT (dataset_id) DO UPDATE SET "
+                "downloads_count = EXCLUDED.downloads_count, "
+                "api_calls_count = EXCLUDED.api_calls_count, "
+                "has_description = EXCLUDED.has_description, "
+                "evaluation_results = COALESCE(EXCLUDED.evaluation_results, dataset_quality.evaluation_results), "
+                "is_slug_valid = EXCLUDED.is_slug_valid, "
+                "syntax_change_score = COALESCE(EXCLUDED.syntax_change_score, dataset_quality.syntax_change_score), "
+                "evaluated_blob_id = COALESCE(EXCLUDED.evaluated_blob_id, dataset_quality.evaluated_blob_id), "
+                "health_score = EXCLUDED.health_score, "
+                "health_quality_score = EXCLUDED.health_quality_score, "
+                "health_freshness_score = EXCLUDED.health_freshness_score, "
+                "health_engagement_score = EXCLUDED.health_engagement_score",
+                (
+                    str(dataset.id),
+                    dataset.quality.downloads_count,
+                    dataset.quality.api_calls_count,
+                    dataset.quality.has_description,
+                    dataset.quality.is_slug_valid,
+                    Json(dataset.quality.evaluation_results) if dataset.quality.evaluation_results else None,
+                    dataset.quality.syntax_change_score,
+                    str(dataset.quality.evaluated_blob_id) if dataset.quality.evaluated_blob_id else None,
+                    dataset.quality.health_score,
+                    dataset.quality.health_quality_score,
+                    dataset.quality.health_freshness_score,
+                    dataset.quality.health_engagement_score,
+                ),
+            )
 
     def add_version(self, params: DatasetVersionParams) -> None:
         """Add a new version of a dataset using Parameter Object pattern."""
@@ -496,10 +397,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             """
             SELECT d.*,
                    dq.has_description, dq.is_slug_valid, dq.evaluation_results, dq.evaluated_blob_id,
-                   dq.downloads_count as q_downloads_count, dq.api_calls_count as q_api_calls_count
+                   dq.downloads_count as q_downloads_count, dq.api_calls_count as q_api_calls_count,
+                   dq.health_score, dq.health_quality_score, dq.health_freshness_score, dq.health_engagement_score
              FROM datasets d
              LEFT JOIN (
-                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, evaluated_blob_id, downloads_count, api_calls_count
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, evaluated_blob_id, downloads_count, api_calls_count,
+                       health_score, health_quality_score, health_freshness_score, health_engagement_score
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
              ) dq ON d.id = dq.dataset_id
@@ -542,6 +445,10 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 evaluation_results=data.get("evaluation_results"),
                 syntax_change_score=data.get("syntax_change_score"),
                 evaluated_blob_id=data.get("evaluated_blob_id"),
+                health_score=data.get("health_score"),
+                health_quality_score=data.get("health_quality_score"),
+                health_freshness_score=data.get("health_freshness_score"),
+                health_engagement_score=data.get("health_engagement_score"),
             )
 
         if not include_versions:
@@ -811,35 +718,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         items = []
         for r in rows:
-            scores = None
-
-            # 1. Prioritize stored scores for consistency with SQL ORDER BY
-            if r.get("stored_health_score") is not None:
-                scores = {
-                    "global": r.get("stored_health_score"),
-                    "quality": r.get("stored_quality_score"),
-                    "freshness": r.get("stored_freshness_score"),
-                    "engagement": r.get("stored_engagement_score"),
-                }
-
-            if not scores and r.get("modified") and not r.get("restricted") and r.get("published") is not False:
-                scores = _calculate_health_scores(
-                    {
-                        "slug": r.get("slug"),
-                        "quality": {
-                            "has_description": r.get("has_description"),
-                            "is_slug_valid": r.get("is_slug_valid"),
-                            "syntax_change_score": r.get("syntax_change_score"),
-                        },
-                        "evaluated_blob_id": r.get("evaluated_blob_id"),
-                        "current_blob_id": r.get("current_blob_id"),
-                        "modified": r.get("modified"),
-                        "views_count": r.get("views_count"),
-                        "api_calls_count": r.get("api_calls_count"),
-                        "reuses_count": r.get("reuses_count"),
-                        "data": r.get("data") or {},
-                    }
-                )
+            health_scores = {
+                "global": r.get("stored_health_score"),
+                "quality": r.get("stored_quality_score"),
+                "freshness": r.get("stored_freshness_score"),
+                "engagement": r.get("stored_engagement_score"),
+            }
 
             items.append(
                 {
@@ -880,10 +764,10 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                         "blob_id": r.get("current_blob_id"),
                         "timestamp": r.get("timestamp"),
                     },
-                    "health_score": scores["global"] if scores else None,
-                    "health_quality_score": scores["quality"] if scores else None,
-                    "health_freshness_score": scores["freshness"] if scores else None,
-                    "health_engagement_score": scores["engagement"] if scores else None,
+                    "health_score": health_scores["global"],
+                    "health_quality_score": health_scores["quality"],
+                    "health_freshness_score": health_scores["freshness"],
+                    "health_engagement_score": health_scores["engagement"],
                 }
             )
 
@@ -1098,26 +982,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 for r in list_rows
             ]
 
-        health_scores = (
-            _calculate_health_scores(
-                {
-                    "quality": {
-                        "has_description": d.get("has_description"),
-                        "is_slug_valid": d.get("is_slug_valid"),
-                        "syntax_change_score": d.get("syntax_change_score"),
-                    },
-                    "evaluated_blob_id": d.get("evaluated_blob_id"),
-                    "current_blob_id": current_snapshot.get("blob_id") if current_snapshot else None,
-                    "modified": d["modified"],
-                    "views_count": current_snapshot.get("views_count") if current_snapshot else 0,
-                    "api_calls_count": current_snapshot.get("api_calls_count") if current_snapshot else 0,
-                    "reuses_count": current_snapshot.get("reuses_count") if current_snapshot else 0,
-                    "data": current_snapshot.get("data") if current_snapshot else {},
-                }
-            )
-            if d.get("modified") and not d.get("restricted") and d.get("published") is not False
-            else None
-        )
+        health_scores = {
+            "global": d.get("health_score"),
+            "quality": d.get("health_quality_score"),
+            "freshness": d.get("health_freshness_score"),
+            "engagement": d.get("health_engagement_score"),
+        }
 
         return {
             "id": d["id"],
