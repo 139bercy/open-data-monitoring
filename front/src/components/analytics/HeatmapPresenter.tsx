@@ -189,7 +189,7 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
         </p>
       </div>
 
-      <div style={{ height: "450px", width: "100%" }}>
+      <div style={{ height: "550px", width: "100%" }}>
         <ResponsiveContainer
           width="100%"
           height="100%"

@@ -26,3 +26,22 @@ async def get_direction_health():
 
     # Return raw results; FastAPI handles JSON conversion
     return results
+
+
+@router.get("/summary")
+async def get_summary_stats():
+    """
+    Récupère les KPIs globaux pour le tableau de bord de la page d'accueil.
+    """
+    query = """
+    SELECT
+        (SELECT COUNT(*) FROM datasets WHERE NOT deleted) as total_datasets,
+        (SELECT COALESCE(AVG(health_score), 0) FROM dataset_quality dq
+         JOIN datasets d ON d.id = dq.dataset_id WHERE NOT d.deleted) as avg_health_score,
+        (SELECT COUNT(DISTINCT publisher) FROM datasets WHERE NOT deleted AND publisher IS NOT NULL AND publisher != '') as total_publishers,
+        (SELECT COUNT(*) FROM dataset_quality dq
+         JOIN datasets d ON d.id = dq.dataset_id WHERE NOT d.deleted AND dq.health_score < 50) as crises_count,
+        (SELECT COUNT(*) FROM platforms) as total_platforms
+    """
+    result = domain_app.dataset.repository.client.fetchone(query)
+    return result
