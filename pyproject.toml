@@ -64,7 +64,7 @@ source = [
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--showlocals --capture=fd --tb=short --maxfail=1 -v"
+addopts = "--showlocals --capture=fd --tb=short --maxfail=1 -v -n auto"
 testpaths = ["tests"]
 pythonpath = "src"
 norecursedirs = ["venv", "dev"]

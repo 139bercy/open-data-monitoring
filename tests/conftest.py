@@ -67,21 +67,26 @@ def datagouv_platform(app):
     return platform
 
 
-@pytest.fixture()
-def setup_test_database():
+@pytest.fixture(scope="session")
+def test_db_name(worker_id):
+    return f"{TEST_DB}_{worker_id}"
+
+
+@pytest.fixture(scope="session")
+def setup_test_database(test_db_name):
     postgres = PostgresClient(dbname="postgres", user=TEST_USER, password=TEST_PASSWORD, host=HOST, port=PORT)
     postgres.connection.set_session(autocommit=True)
-    postgres.execute(f"DROP DATABASE IF EXISTS {TEST_DB};")
-    postgres.execute(f"CREATE DATABASE {TEST_DB};")
+    postgres.execute(f"DROP DATABASE IF EXISTS {test_db_name} WITH (FORCE);")
+    postgres.execute(f"CREATE DATABASE {test_db_name};")
 
+    migration_conn = psycopg2.connect(
+        dbname=test_db_name,
+        user=TEST_USER,
+        password=TEST_PASSWORD,
+        host=HOST,
+        port=PORT,
+    )
     try:
-        migration_conn = psycopg2.connect(
-            dbname=TEST_DB,
-            user=TEST_USER,
-            password=TEST_PASSWORD,
-            host=HOST,
-            port=PORT,
-        )
         with migration_conn:
             with migration_conn.cursor() as cur:
                 # Apply base schema
@@ -99,14 +104,11 @@ def setup_test_database():
                 views_file = "db/views.sql"
                 if os.path.exists(views_file):
                     cur.execute(open(views_file).read())
-
-                migration_conn.commit()
     finally:
         postgres.close()
-        if "migration_conn" in locals():
-            migration_conn.close()
+        migration_conn.close()
 
-    yield
+    yield test_db_name
 
     # Teardown
     conn = psycopg2.connect(
@@ -120,20 +122,34 @@ def setup_test_database():
 
     try:
         with conn.cursor() as cur:
-            cur.execute(f"DROP DATABASE {TEST_DB} WITH (FORCE)")
+            cur.execute(f"DROP DATABASE IF EXISTS {test_db_name} WITH (FORCE);")
     finally:
         conn.close()
 
 
 @pytest.fixture
 def db_transaction(setup_test_database):
+    test_db_name = setup_test_database
     client = PostgresClient(
-        dbname=TEST_DB,
+        dbname=test_db_name,
         user=TEST_USER,
         password=TEST_PASSWORD,
         host=HOST,
         port=int(PORT),
     )
+
+    try:
+        # TRUNCATE ALL TABLES to guarantee a fresh state per test.
+        # This is strictly required because PostgresUnitOfWork calls client.commit(),
+        # bypassing the mock/yield client.rollback() test strategy.
+        client.execute(
+            "TRUNCATE TABLE platforms, platform_sync_histories, datasets, dataset_blobs, "
+            "dataset_versions, dataset_quality, users CASCADE;"
+        )
+        client.commit()
+    except Exception as e:
+        print(f"Error truncating tables: {e}")
+
     try:
         yield client
     finally:
