@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from datetime import datetime, timezone
 from uuid import UUID
 
 from psycopg2.extras import Json
@@ -188,12 +187,6 @@ def _get_frequency_thresholds(frequency: str | None) -> int:
         "punctual": 3650,
     }
     return thresholds.get(str(frequency).lower(), 90)
-
-
-
-
-
-
 
 
 class PostgresDatasetRepository(AbstractDatasetRepository):
@@ -398,11 +391,11 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             SELECT d.*,
                    dq.has_description, dq.is_slug_valid, dq.evaluation_results, dq.evaluated_blob_id,
                    dq.downloads_count as q_downloads_count, dq.api_calls_count as q_api_calls_count,
-                   dq.health_score, dq.health_quality_score, dq.health_freshness_score, dq.health_engagement_score
+                   dq.health_score, dq.health_quality_score, dq.health_freshness_score, dq.health_engagement_score, dq.syntax_change_score
              FROM datasets d
              LEFT JOIN (
                 SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, evaluated_blob_id, downloads_count, api_calls_count,
-                       health_score, health_quality_score, health_freshness_score, health_engagement_score
+                       health_score, health_quality_score, health_freshness_score, health_engagement_score, syntax_change_score
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
              ) dq ON d.id = dq.dataset_id
@@ -418,7 +411,10 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         # Current snapshot reconstruction for the main aggregate
         cur_row = self.client.fetchone(
             """
-            SELECT dv.metadata_volatile, db.data as blob_data
+            SELECT dv.metadata_volatile, db.data as blob_data,
+                   dv.downloads_count, dv.api_calls_count, dv.views_count,
+                   dv.reuses_count, dv.followers_count, dv.popularity_score,
+                   dv.timestamp, dv.checksum
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
             WHERE dv.dataset_id = %s
@@ -430,6 +426,19 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             blob_data = cur_row.get("blob_data") or {}
             volatile = cur_row.get("metadata_volatile") or {}
             data["raw"] = deep_merge(blob_data, volatile)
+            # Update metrics in the data dict before from_dict
+            data.update(
+                {
+                    "downloads_count": cur_row.get("downloads_count"),
+                    "api_calls_count": cur_row.get("api_calls_count"),
+                    "views_count": cur_row.get("views_count"),
+                    "reuses_count": cur_row.get("reuses_count"),
+                    "followers_count": cur_row.get("followers_count"),
+                    "popularity_score": cur_row.get("popularity_score"),
+                    "last_version_timestamp": cur_row.get("timestamp"),
+                    "checksum": cur_row.get("checksum"),
+                }
+            )
 
         data["id"] = uuid.UUID(data["id"])
         dataset = Dataset.from_dict(data)
@@ -906,7 +915,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         # Base dataset
         ds_query = """
             SELECT d.id, d.platform_id, d.buid, d.slug, d.page, d.publisher, d.created, d.modified, d.published, d.restricted, d.deleted, d.last_sync, d.last_sync_status, d.linked_dataset_id,
-                   dq.has_description, dq.is_slug_valid, dq.evaluation_results, dq.syntax_change_score,
+                   dq.has_description, dq.is_slug_valid, dq.evaluation_results, dq.syntax_change_score, dq.evaluated_blob_id,
+                   dq.health_score, dq.health_quality_score, dq.health_freshness_score, dq.health_engagement_score,
                    ld.slug AS linked_dataset_slug,
                    lp.name AS linked_platform_name
             FROM datasets d
@@ -1018,6 +1028,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             "snapshots": snapshots,
             "health_breakdown": health_scores,
             "health_score": health_scores["global"] if health_scores else None,
+            "health_quality_score": health_scores["quality"] if health_scores else None,
+            "health_freshness_score": health_scores["freshness"] if health_scores else None,
+            "health_engagement_score": health_scores["engagement"] if health_scores else None,
         }
 
     def get_versions(self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:

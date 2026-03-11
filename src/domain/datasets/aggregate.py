@@ -54,8 +54,8 @@ class Dataset:
         self.title = title
         self.page = page if isinstance(page, Url) else Url(page)
         self.publisher = publisher
-        self.created = created
-        self.modified = modified
+        self.created = created if isinstance(created, datetime) else datetime.fromisoformat(created)
+        self.modified = modified if isinstance(modified, datetime) else datetime.fromisoformat(modified)
         self.published = published
         self.restricted = restricted
         self.downloads_count = downloads_count
@@ -72,7 +72,11 @@ class Dataset:
             if last_sync_status is None or isinstance(last_sync_status, SyncStatus)
             else SyncStatus(last_sync_status)
         )
-        self.last_version_timestamp = last_version_timestamp
+        self.last_version_timestamp = (
+            last_version_timestamp
+            if last_version_timestamp is None or isinstance(last_version_timestamp, datetime)
+            else datetime.fromisoformat(last_version_timestamp)
+        )
         self.quality = None
         self.is_deleted = is_deleted
         self.linked_dataset_id = linked_dataset_id
@@ -143,9 +147,14 @@ class Dataset:
         evaluation_results=None,
         previous_raw=None,
         evaluated_blob_id=None,
+        syntax_change_score=None,
+        health_score=None,
+        health_quality_score=None,
+        health_freshness_score=None,
+        health_engagement_score=None,
         **kwargs,
     ):
-        syntax_score = None
+        syntax_score = syntax_change_score
         if previous_raw:
             analysis = SyntaxAnalyzer.analyze_change(previous_raw, self.raw)
             syntax_score = analysis.get("syntax_score")
@@ -160,6 +169,10 @@ class Dataset:
             impact=self.calculate_impact_kpi(),
             syntax_change_score=syntax_score,
             evaluated_blob_id=evaluated_blob_id,
+            health_score=health_score,
+            health_quality_score=health_quality_score,
+            health_freshness_score=health_freshness_score,
+            health_engagement_score=health_engagement_score,
         )
 
     def calculate_discoverability_kpi(self, evaluation_results: dict | None = None) -> DiscoverabilityKPI:  # noqa: C901
@@ -258,6 +271,26 @@ class Dataset:
             return
 
         # 1. Quality Score (0-100)
+        self.quality.health_quality_score = self._calculate_quality_score()
+
+        # 2. Freshness Score (0-100)
+        self.quality.health_freshness_score = self._calculate_freshness_score()
+
+        # 3. Engagement Score (0-100)
+        self.quality.health_engagement_score = self._calculate_engagement_score()
+
+        # 4. Global Health Score
+        self.quality.health_score = (
+            (self.quality.health_quality_score * 0.5)
+            + (self.quality.health_freshness_score * 0.3)
+            + (self.quality.health_engagement_score * 0.2)
+        )
+
+    def _calculate_quality_score(self) -> float:
+        """Calculates the quality sub-score."""
+        if not self.quality:
+            return 0.0
+
         quality_pts = 0.0
         if self.quality.has_description:
             quality_pts += 40
@@ -265,16 +298,11 @@ class Dataset:
             quality_pts += 20
 
         syntax_score = self.quality.syntax_change_score or 0.0
-        # If evaluated on current blob, syntax score is 100
-        if self.quality.evaluated_blob_id and self.checksum:
-            # Note: in real use case, we compare evaluated_blob_id with current active blob id
-            # For now, we trust the repo to have set syntax_change_score if it differed
-            pass
-
         quality_pts += syntax_score * 0.4
-        self.quality.health_quality_score = quality_pts
+        return quality_pts
 
-        # 2. Freshness Score (0-100)
+    def _calculate_freshness_score(self) -> float:
+        """Calculates the freshness sub-score."""
         frequency = self.raw.get("frequency")
         if not frequency:
             metas = self.raw.get("metas") or {}
@@ -295,37 +323,31 @@ class Dataset:
         days_limit = frequency_thresholds.get(str(frequency).lower(), 90)
 
         modified_dt = self.modified
+        if isinstance(modified_dt, str):
+            modified_dt = datetime.fromisoformat(modified_dt)
+
         if modified_dt.tzinfo is None:
             modified_dt = modified_dt.replace(tzinfo=timezone.utc)
 
         delta_days = (datetime.now(timezone.utc) - modified_dt).days
         if delta_days <= days_limit:
-            freshness_pts = 100.0
-        elif delta_days <= days_limit * 2:
-            freshness_pts = 50.0
-        else:
-            freshness_pts = 0.0
-        self.quality.health_freshness_score = freshness_pts
+            return 100.0
+        if delta_days <= days_limit * 2:
+            return 50.0
+        return 0.0
 
-        # 3. Engagement Score (0-100)
+    def _calculate_engagement_score(self) -> float:
+        """Calculates the engagement sub-score."""
         if "admin" in str(self.slug).lower():
-            engagement_pts = 100.0
-        else:
-            import math
+            return 100.0
 
-            views = self.views_count or 0
-            api_calls = self.api_calls_count or 0
-            reuses = self.reuses_count or 0
-            engagement_pts = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
-            engagement_pts = max(0.0, min(100.0, round(engagement_pts, 2)))
-        self.quality.health_engagement_score = engagement_pts
+        import math
 
-        # 4. Global Health Score
-        self.quality.health_score = (
-            (self.quality.health_quality_score * 0.5)
-            + (self.quality.health_freshness_score * 0.3)
-            + (self.quality.health_engagement_score * 0.2)
-        )
+        views = self.views_count or 0
+        api_calls = self.api_calls_count or 0
+        reuses = self.reuses_count or 0
+        engagement_pts = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
+        return max(0.0, min(100.0, round(engagement_pts, 2)))
 
     def calculate_impact_kpi(self) -> ImpactKPI:
         """

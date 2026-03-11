@@ -147,37 +147,43 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
           width="100%"
           height="100%"
         >
-        <Treemap
-          data={data}
-          dataKey="count"
-          aspectRatio={4 / 3}
-          stroke="#fff"
-          content={<CustomContent />}
-        >
-          <RechartsTooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const item = payload[0].payload as HeatmapData;
-                return (
-                  <div
-                    className="fr-card fr-p-2w"
-                    style={{
-                      backgroundColor: isDark ? "#1e1e1e" : "white",
-                      border: `1px solid ${hexColors.decisions.border.default.grey.default}`,
-                      boxShadow: "0 2px 6px 0 rgba(0,0,0,0.2)",
-                    }}
-                  >
-                    <p className="fr-text--bold fr-mb-1w">{item.direction}</p>
-                    <p className="fr-text--sm fr-mb-0">Score : {item.score}%</p>
-                    <p className="fr-text--sm fr-mb-0">Jeux de données : {item.count}</p>
-                    <p className="fr-text--sm fr-mb-0">Crises : {item.crises}</p>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-        </Treemap>
+          <Treemap
+            data={data}
+            dataKey="count"
+            aspectRatio={4 / 3}
+            stroke="#fff"
+            content={<CustomContent />}
+          >
+            <RechartsTooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const item = payload[0].payload as HeatmapData;
+                  return (
+                    <div
+                      className="fr-card fr-p-2w"
+                      style={{
+                        backgroundColor: isDark ? "#1e1e1e" : "white",
+                        border: `1px solid ${hexColors.decisions.border.default.grey.default}`,
+                        boxShadow: "0 2px 6px 0 rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <p className="fr-text--bold fr-mb-1w">{item.direction}</p>
+                      <p className="fr-text--sm fr-mb-0">
+                        Score : {item.score}%
+                      </p>
+                      <p className="fr-text--sm fr-mb-0">
+                        Jeux de données : {item.count}
+                      </p>
+                      <p className="fr-text--sm fr-mb-0">
+                        Crises : {item.crises}
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </Treemap>
         </ResponsiveContainer>
       </div>
     </div>

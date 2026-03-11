@@ -44,10 +44,10 @@ dataset_scores AS (
         dq.health_score as global_score
     FROM normalized_datasets d
     JOIN latest_quality dq ON d.id = dq.dataset_id
-    WHERE d.deleted IS FALSE 
-      AND d.published IS TRUE 
+    WHERE d.deleted IS FALSE
+      AND d.published IS TRUE
       AND d.restricted IS FALSE
-      AND dq.evaluated_blob_id IS NOT NULL  -- Exclure les datasets sans version évaluée
+      AND dq.health_score IS NOT NULL  -- Exclure les datasets sans score calculé
 )
 SELECT
     direction,
