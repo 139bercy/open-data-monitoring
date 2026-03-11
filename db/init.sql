@@ -107,7 +107,13 @@ CREATE TABLE IF NOT EXISTS dataset_quality (
     api_calls_count int,
     has_description bool DEFAULT FALSE,
     is_slug_valid bool DEFAULT TRUE,
-    evaluation_results jsonb
+    evaluation_results jsonb,
+    syntax_change_score double precision,
+    evaluated_blob_id uuid REFERENCES dataset_blobs(id) ON DELETE SET NULL,
+    health_score double precision,
+    health_quality_score double precision,
+    health_freshness_score double precision,
+    health_engagement_score double precision
 );
 COMMENT ON TABLE dataset_quality IS 'Stockage des données de qualité des jeux de données';
 COMMENT ON COLUMN dataset_quality.downloads_count IS 'téléchargements du jeu de données depuis sa création';

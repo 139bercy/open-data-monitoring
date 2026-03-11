@@ -170,9 +170,33 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
           </button>,
           <div
             key="h-health"
-            style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}
+            style={{ display: "flex", alignItems: "center", gap: "0rem" }}
           >
-            Santé
+            <button
+              className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
+              type="button"
+              disabled={!!loading}
+              onClick={() => {
+                const nextOrder =
+                  props.sortBy === "health_score" && props.order === "desc"
+                    ? "asc"
+                    : "desc";
+                props.onSortChange?.(
+                  "health_score",
+                  nextOrder as "asc" | "desc"
+                );
+              }}
+              aria-pressed={props.sortBy === "health_score"}
+              aria-label="Trier par score de santé"
+              style={{ padding: "0.25rem" }}
+            >
+              Santé{" "}
+              {props.sortBy === "health_score"
+                ? props.order === "asc"
+                  ? "▲"
+                  : "▼"
+                : ""}
+            </button>
             <Tooltip
               kind="hover"
               title="Moyenne pondérée : Qualité (50%), Fraîcheur (30%), Engagement (20%)"

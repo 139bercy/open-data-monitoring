@@ -101,13 +101,15 @@ async def list_datasets(
     q: str | None = None,
     sort_by: str = Query(  # noqa: B008
         "modified",
-        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count|popularity_score|views_count|reuses_count|followers_count)$",
+        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count|popularity_score|views_count|reuses_count|followers_count|health_score)$",
     ),
     order: str = Query("desc", pattern="^(asc|desc)$"),  # noqa: B008
     page: int = 1,
     page_size: int = 25,
     include_counts: bool = True,
     is_deleted: bool | None = None,
+    min_health: float | None = None,
+    max_health: float | None = None,
 ):
     """
     Liste paginée de datasets.
@@ -125,6 +127,8 @@ async def list_datasets(
         order=order,
         page=page,
         page_size=page_size,
+        min_health=min_health,
+        max_health=max_health,
     )
 
     return DatasetResponse(datasets=items, total_datasets=total)

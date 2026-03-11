@@ -107,6 +107,7 @@ class Dataset:
         dataset_id: str,
         snapshot: dict,
         checksum: str,
+        blob_id: UUID | None = None,
         downloads_count: int | None = None,
         api_calls_count: int | None = None,
         views_count: int | None = None,
@@ -119,6 +120,7 @@ class Dataset:
     ):
         version = DatasetVersion(
             dataset_id=dataset_id,
+            blob_id=blob_id,
             snapshot=snapshot,
             checksum=checksum,
             downloads_count=downloads_count,
@@ -140,6 +142,7 @@ class Dataset:
         is_slug_valid=True,
         evaluation_results=None,
         previous_raw=None,
+        evaluated_blob_id=None,
         **kwargs,
     ):
         syntax_score = None
@@ -156,6 +159,7 @@ class Dataset:
             discoverability=self.calculate_discoverability_kpi(evaluation_results),
             impact=self.calculate_impact_kpi(),
             syntax_change_score=syntax_score,
+            evaluated_blob_id=evaluated_blob_id,
         )
 
     def calculate_discoverability_kpi(self, evaluation_results: dict | None = None) -> DiscoverabilityKPI:  # noqa: C901

@@ -22,6 +22,7 @@ type QualityIndicators = {
   is_slug_valid: boolean; // No underscores or special chars
   evaluation_results: any | null; // LLM evaluation results (JSON)
   syntax_change_score?: number | null;
+  evaluated_blob_id?: string | null;
 };
 
 // ----------------------------------------------------------------------------
@@ -70,6 +71,7 @@ export type DatasetSummary = {
  */
 export type SnapshotVersion = {
   id: UUID;
+  blob_id: UUID;
   timestamp: ISO8601Date;
   downloadsCount: number | null;
   apiCallsCount: number | null;
@@ -140,6 +142,10 @@ export type DatasetListQuery = {
   modifiedFrom?: ISO8601Date;
   modifiedTo?: ISO8601Date;
 
+  // Health Score filters
+  minHealth?: number;
+  maxHealth?: number;
+
   // Sorting
   sortBy?:
     | "created"
@@ -151,7 +157,8 @@ export type DatasetListQuery = {
     | "versions_count"
     | "popularity_score"
     | "views_count"
-    | "reuses_count";
+    | "reuses_count"
+    | "health_score";
   order?: "asc" | "desc";
 
   // Pagination

@@ -15,6 +15,11 @@ class DatasetQuality:
     discoverability: Optional[DiscoverabilityKPI] = None
     impact: Optional[ImpactKPI] = None
     syntax_change_score: Optional[float] = None
+    evaluated_blob_id: Optional[UUID] = None
+    health_score: Optional[float] = None
+    health_quality_score: Optional[float] = None
+    health_freshness_score: Optional[float] = None
+    health_engagement_score: Optional[float] = None
 
 
 @dataclass(frozen=True)

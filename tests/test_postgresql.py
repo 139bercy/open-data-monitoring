@@ -242,3 +242,44 @@ def test_postgresql_search_sorting(pg_app, pg_ods_platform, ods_dataset):
     assert total == 1
     assert len(items) == 1
     assert items[0]["slug"] == ods_dataset["dataset_id"]
+
+
+def test_postgresql_search_sorting_health_nulls_last(pg_app, pg_ods_platform, ods_dataset):
+    # Arrange
+    # Dataset 1: Health Score 100
+    d1_id = upsert_dataset(
+        app=pg_app, platform=pg_ods_platform, dataset={**ods_dataset, "uid": "d1", "dataset_id": "d1"}
+    )
+    pg_app.dataset.repository.client.execute(
+        "UPDATE dataset_quality SET health_score = 100 WHERE dataset_id = %s", (str(d1_id),)
+    )
+
+    # Dataset 2: Health Score 50
+    d2_id = upsert_dataset(
+        app=pg_app, platform=pg_ods_platform, dataset={**ods_dataset, "uid": "d2", "dataset_id": "d2"}
+    )
+    pg_app.dataset.repository.client.execute(
+        "UPDATE dataset_quality SET health_score = 50 WHERE dataset_id = %s", (str(d2_id),)
+    )
+
+    # Dataset 3: No Health Score (NULL)
+    d3_id = upsert_dataset(
+        app=pg_app, platform=pg_ods_platform, dataset={**ods_dataset, "uid": "d3", "dataset_id": "d3"}
+    )
+    pg_app.dataset.repository.client.execute(
+        "UPDATE dataset_quality SET health_score = NULL WHERE dataset_id = %s", (str(d3_id),)
+    )
+
+    # Act & Assert: DESC (Best first, NULLs last)
+    items_desc, _ = pg_app.dataset.repository.search(sort_by="health_score", order="desc")
+    # Order should be: d1 (100), d2 (50), d3 (NULL)
+    assert items_desc[0]["slug"] == "d1"
+    assert items_desc[1]["slug"] == "d2"
+    assert items_desc[2]["slug"] == "d3"
+
+    # Act & Assert: ASC (Worst first, NULLs last)
+    items_asc, _ = pg_app.dataset.repository.search(sort_by="health_score", order="asc")
+    # Order should be: d2 (50), d1 (100), d3 (NULL)
+    assert items_asc[0]["slug"] == "d2"
+    assert items_asc[1]["slug"] == "d1"
+    assert items_asc[2]["slug"] == "d3"

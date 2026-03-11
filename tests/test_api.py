@@ -163,6 +163,32 @@ def test_api_list_datasets(mock_datasets_router):
     assert res.json()["total_datasets"] == 1
 
 
+def test_api_list_datasets_sorting_health(mock_datasets_router):
+    # Arrange
+    mock_app = mock_datasets_router
+    mock_app.dataset.repository.search.return_value = ([], 0)
+    # Act
+    res = client.get("/api/v1/datasets/?sort_by=health_score&order=asc")
+    # Assert
+    assert res.status_code == 200
+    mock_app.dataset.repository.search.assert_called_with(
+        platform_id=None,
+        publisher=None,
+        q=None,
+        created_from=None,
+        created_to=None,
+        modified_from=None,
+        modified_to=None,
+        is_deleted=None,
+        sort_by="health_score",
+        order="asc",
+        page=1,
+        page_size=25,
+        min_health=None,
+        max_health=None,
+    )
+
+
 def test_get_audit_report(mock_datasets_router):
     # Arrange
     mock_app = mock_datasets_router

@@ -142,6 +142,44 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
         </div>
 
         <div className="fr-col-12 fr-col-md-3">
+          <Select
+            label="Santé"
+            nativeSelectProps={{
+              value:
+                query.minHealth === 80
+                  ? "good"
+                  : query.minHealth === 50 && query.maxHealth === 80
+                    ? "average"
+                    : query.maxHealth === 50
+                      ? "poor"
+                      : "",
+              onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+                const val = e.currentTarget.value;
+                if (val === "good") {
+                  onChange({ minHealth: 80, maxHealth: undefined, page: 1 });
+                } else if (val === "average") {
+                  onChange({ minHealth: 50, maxHealth: 80, page: 1 });
+                } else if (val === "poor") {
+                  onChange({ minHealth: undefined, maxHealth: 50, page: 1 });
+                } else {
+                  onChange({
+                    minHealth: undefined,
+                    maxHealth: undefined,
+                    page: 1,
+                  });
+                }
+              },
+              style: { width: "100%", transition: "box-shadow .2s ease" },
+            }}
+          >
+            <option value="">Tous les scores</option>
+            <option value="good">Bon (80-100)</option>
+            <option value="average">Moyen (50-80)</option>
+            <option value="poor">Faible (0-50)</option>
+          </Select>
+        </div>
+
+        <div className="fr-col-12 fr-col-md-3">
           <Input
             label="Créé après"
             nativeInputProps={{

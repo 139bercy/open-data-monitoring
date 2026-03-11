@@ -32,7 +32,7 @@ def test_get_dataset_versions_contract(monkeypatch):
     """
     # 1. Arrange: Mock the repository get_versions call
     dataset_id = uuid.uuid4()
-    mock_items = [{"id": str(uuid.uuid4()), "timestamp": "2024-01-01T00:00:00Z"}]
+    mock_items = [{"id": str(uuid.uuid4()), "blob_id": str(uuid.uuid4()), "timestamp": "2024-01-01T00:00:00Z"}]
     mock_total = 1
 
     from settings import app as domain_app

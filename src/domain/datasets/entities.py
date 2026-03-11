@@ -14,6 +14,7 @@ class DatasetVersion:
 
     dataset_id: UUID
     snapshot: dict
+    blob_id: Optional[UUID] = None
     checksum: Optional[str] = None
     downloads_count: Optional[int] = None
     api_calls_count: Optional[int] = None

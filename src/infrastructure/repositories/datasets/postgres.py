@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from datetime import datetime, timezone
 from uuid import UUID
 
 from psycopg2.extras import Json
@@ -194,66 +195,10 @@ def _calculate_health_scores(row: dict) -> dict:
     Calculates health scores following the logic in compute-mbis.sql.
     Expected row keys: quality, modified, views_count, api_calls_count, reuses_count, raw (or data)
     """
-    # 1. Quality Score (0-100)
-    q = row.get("quality") or {}
-    quality_score = 0.0
-    if q:
-        if q.get("has_description"):
-            quality_score += 40
-        if q.get("is_slug_valid"):
-            quality_score += 20
-        quality_score += (q.get("syntax_change_score") or 0.0) * 0.4
+    quality_score = _get_quality_score(row)
+    freshness_score = _get_freshness_score(row)
+    engagement_score = _get_engagement_score(row)
 
-    # 2. Freshness Score (0-100)
-    # Extract frequency and refined modified date from raw metadata
-    raw = row.get("raw") or row.get("data") or {}
-    metas = raw.get("metas") or {}
-    default_metas = metas.get("default") or {}
-
-    # Prioritize ODS specific modified date if available in metadata
-    modified_raw = default_metas.get("modified")
-    if modified_raw:
-        from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
-
-        modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, row.get("modified"))
-    else:
-        modified = row.get("modified")
-
-    if isinstance(modified, str):
-        from datetime import datetime
-
-        modified = datetime.fromisoformat(modified.replace("Z", "+00:00"))
-
-    frequency = raw.get("frequency")
-    if not frequency:
-        frequency = default_metas.get("accrual_periodicity")
-
-    days_limit = _get_frequency_thresholds(frequency)
-    import datetime as dt
-    from datetime import timezone
-
-    if modified.tzinfo is None:
-        modified = modified.replace(tzinfo=timezone.utc)
-
-    delta_days = (dt.datetime.now(timezone.utc) - modified).days
-    if delta_days <= days_limit:
-        freshness_score = 100.0
-    elif delta_days <= days_limit * 2:
-        freshness_score = 50.0
-    else:
-        freshness_score = 0.0
-
-    # 3. Engagement Score (0-100)
-    import math
-
-    views = row.get("views_count") or 0
-    api_calls = row.get("api_calls_count") or 0
-    reuses = row.get("reuses_count") or 0
-
-    engagement_score = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
-    engagement_score = max(0.0, min(100.0, round(engagement_score)))
-
-    # Global Score (0-100)
     global_score = (quality_score * 0.5) + (freshness_score * 0.3) + (engagement_score * 0.2)
 
     return {
@@ -262,6 +207,72 @@ def _calculate_health_scores(row: dict) -> dict:
         "freshness": round(freshness_score, 2),
         "engagement": round(engagement_score, 2),
     }
+
+
+def _get_quality_score(row: dict) -> float:
+    q = row.get("quality") or {}
+    quality_score = 0.0
+    if q:
+        if q.get("has_description"):
+            quality_score += 40
+        if q.get("is_slug_valid"):
+            quality_score += 20
+
+    syntax_score = q.get("syntax_change_score") or 0.0
+    evaluated_blob_id = row.get("evaluated_blob_id")
+    current_blob_id = row.get("current_blob_id")
+    if evaluated_blob_id and current_blob_id and str(evaluated_blob_id) == str(current_blob_id):
+        syntax_score = 100.0
+
+    quality_score += syntax_score * 0.4
+    return quality_score
+
+
+def _get_freshness_score(row: dict) -> float:
+    raw = row.get("raw") or row.get("data") or {}
+    metas = raw.get("metas") or {}
+    default_metas = metas.get("default") or {}
+
+    modified_raw = default_metas.get("modified")
+    if modified_raw:
+        from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
+
+        modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, row.get("modified"))
+    else:
+        modified = row.get("modified")
+
+    if modified and isinstance(modified, str):
+        try:
+            modified = datetime.fromisoformat(modified.replace("Z", "+00:00"))
+        except ValueError:
+            modified = row.get("modified")
+
+    if not modified:
+        modified = row.get("modified") or datetime.now(timezone.utc)
+
+    frequency = raw.get("frequency") or default_metas.get("accrual_periodicity")
+    days_limit = _get_frequency_thresholds(frequency)
+
+    if modified.tzinfo is None:
+        modified = modified.replace(tzinfo=timezone.utc)
+
+    delta_days = (datetime.now(timezone.utc) - modified).days
+    if delta_days <= days_limit:
+        return 100.0
+    if delta_days <= days_limit * 2:
+        return 50.0
+    return 0.0
+
+
+def _get_engagement_score(row: dict) -> float:
+    import math
+
+    views = row.get("views_count") or 0
+    api_calls = row.get("api_calls_count") or 0
+    reuses = row.get("reuses_count") or 0
+
+    engagement_score = math.log1p(views) * 5 + math.log1p(api_calls) * 3 + math.log1p(reuses) * 20
+    return max(0.0, min(100.0, round(engagement_score, 2)))
 
 
 class PostgresDatasetRepository(AbstractDatasetRepository):
@@ -304,16 +315,41 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 str(dataset.linked_dataset_id) if dataset.linked_dataset_id else None,
             ),
         )
+        # Calculate health scores for persistence
+        scores = None
+        if dataset.modified and not dataset.restricted and dataset.published is not False:
+            scores = _calculate_health_scores(
+                {
+                    "quality": {
+                        "has_description": dataset.quality.has_description,
+                        "is_slug_valid": dataset.quality.is_slug_valid,
+                        "syntax_change_score": dataset.quality.syntax_change_score,
+                    },
+                    "evaluated_blob_id": dataset.quality.evaluated_blob_id,
+                    "current_blob_id": dataset.quality.evaluated_blob_id,  # Assume evaluated is current during save
+                    "modified": dataset.modified,
+                    "views_count": dataset.views_count,
+                    "api_calls_count": dataset.api_calls_count,
+                    "reuses_count": dataset.reuses_count,
+                    "data": dataset.raw,
+                }
+            )
+
         self.client.execute(
-            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results, syntax_change_score) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+            "INSERT INTO dataset_quality (dataset_id, downloads_count, api_calls_count, has_description, is_slug_valid, evaluation_results, syntax_change_score, evaluated_blob_id, health_score, health_quality_score, health_freshness_score, health_engagement_score) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             "ON CONFLICT (dataset_id) DO UPDATE SET "
             "downloads_count = EXCLUDED.downloads_count, "
             "api_calls_count = EXCLUDED.api_calls_count, "
             "has_description = EXCLUDED.has_description, "
-            "evaluation_results = EXCLUDED.evaluation_results, "
+            "evaluation_results = COALESCE(EXCLUDED.evaluation_results, dataset_quality.evaluation_results), "
             "is_slug_valid = EXCLUDED.is_slug_valid, "
-            "syntax_change_score = EXCLUDED.syntax_change_score",
+            "syntax_change_score = COALESCE(EXCLUDED.syntax_change_score, dataset_quality.syntax_change_score), "
+            "evaluated_blob_id = COALESCE(EXCLUDED.evaluated_blob_id, dataset_quality.evaluated_blob_id), "
+            "health_score = EXCLUDED.health_score, "
+            "health_quality_score = EXCLUDED.health_quality_score, "
+            "health_freshness_score = EXCLUDED.health_freshness_score, "
+            "health_engagement_score = EXCLUDED.health_engagement_score",
             (
                 str(dataset.id),
                 dataset.quality.downloads_count,
@@ -322,6 +358,11 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 dataset.quality.is_slug_valid,
                 Json(dataset.quality.evaluation_results) if dataset.quality.evaluation_results else None,
                 dataset.quality.syntax_change_score,
+                str(dataset.quality.evaluated_blob_id) if dataset.quality.evaluated_blob_id else None,
+                scores["global"] if scores else None,
+                scores["quality"] if scores else None,
+                scores["freshness"] if scores else None,
+                scores["engagement"] if scores else None,
             ),
         )
 
@@ -449,11 +490,11 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         data = self.client.fetchone(
             """
             SELECT d.*,
-                   dq.has_description, dq.is_slug_valid, dq.evaluation_results,
+                   dq.has_description, dq.is_slug_valid, dq.evaluation_results, dq.evaluated_blob_id,
                    dq.downloads_count as q_downloads_count, dq.api_calls_count as q_api_calls_count
              FROM datasets d
              LEFT JOIN (
-                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, downloads_count, api_calls_count
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, evaluated_blob_id, downloads_count, api_calls_count
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
              ) dq ON d.id = dq.dataset_id
@@ -495,6 +536,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 is_slug_valid=data.get("is_slug_valid", True),
                 evaluation_results=data.get("evaluation_results"),
                 syntax_change_score=data.get("syntax_change_score"),
+                evaluated_blob_id=data.get("evaluated_blob_id"),
             )
 
         if not include_versions:
@@ -512,7 +554,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         versions = self.client.fetchall(
             """
-            SELECT dv.dataset_id, db.data as blob_data, dv.metadata_volatile, dv.snapshot,
+            SELECT dv.dataset_id, dv.blob_id, db.data as blob_data, dv.metadata_volatile, dv.snapshot,
                    dv.checksum, dv.downloads_count, dv.api_calls_count, dv.views_count,
                    dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.timestamp
             FROM dataset_versions dv
@@ -657,10 +699,21 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         order: str = "desc",
         page: int = 1,
         page_size: int = 25,
+        min_health: float | None = None,
+        max_health: float | None = None,
     ) -> tuple[list[dict], int]:
         """Search datasets with filters, sorting and pagination."""
         where_sql, params = self._build_where_clause(
-            platform_id, publisher, q, created_from, created_to, modified_from, modified_to, is_deleted
+            platform_id,
+            publisher,
+            q,
+            created_from,
+            created_to,
+            modified_from,
+            modified_to,
+            is_deleted,
+            min_health=min_health,
+            max_health=max_health,
         )
 
         # Count total
@@ -689,7 +742,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 GROUP BY dataset_id
             ),
             latest_quality AS (
-                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, syntax_change_score
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, syntax_change_score, evaluated_blob_id,
+                       health_score, health_quality_score, health_freshness_score, health_engagement_score
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
             )
@@ -726,7 +780,14 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                    dq.has_description as has_description,
                    dq.is_slug_valid as is_slug_valid,
                    dq.evaluation_results as evaluation_results,
-                   dq.syntax_change_score as syntax_change_score
+                   dq.syntax_change_score as syntax_change_score,
+                   dq.evaluated_blob_id as evaluated_blob_id,
+                   dq.health_score as stored_health_score,
+                   dq.health_quality_score as stored_quality_score,
+                   dq.health_freshness_score as stored_freshness_score,
+                   dq.health_engagement_score as stored_engagement_score,
+                   lv.blob_id as current_blob_id,
+                   db.data as data
 
             FROM datasets d
             LEFT JOIN latest_versions lv ON lv.dataset_id = d.id
@@ -746,7 +807,18 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         items = []
         for r in rows:
             scores = None
-            if r.get("modified") and not r.get("restricted") and r.get("published") is not False:
+
+            # 1. Prioritize stored scores for consistency with SQL ORDER BY
+            if r.get("stored_health_score") is not None:
+                scores = {
+                    "global": r.get("stored_health_score"),
+                    "quality": r.get("stored_quality_score"),
+                    "freshness": r.get("stored_freshness_score"),
+                    "engagement": r.get("stored_engagement_score"),
+                }
+
+            # 2. Fallback to calculation if no stored scores
+            if not scores and r.get("modified") and not r.get("restricted") and r.get("published") is not False:
                 scores = _calculate_health_scores(
                     {
                         "quality": {
@@ -754,6 +826,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                             "is_slug_valid": r.get("is_slug_valid"),
                             "syntax_change_score": r.get("syntax_change_score"),
                         },
+                        "evaluated_blob_id": r.get("evaluated_blob_id"),
+                        "current_blob_id": r.get("current_blob_id"),
                         "modified": r.get("modified"),
                         "views_count": r.get("views_count"),
                         "api_calls_count": r.get("api_calls_count"),
@@ -794,6 +868,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                         "is_slug_valid": r.get("is_slug_valid"),
                         "evaluation_results": r.get("evaluation_results"),
                         "syntax_change_score": r.get("syntax_change_score"),
+                        "evaluated_blob_id": r.get("evaluated_blob_id"),
+                    },
+                    "current_snapshot": {
+                        "id": r.get("id"),
+                        "blob_id": r.get("current_blob_id"),
+                        "timestamp": r.get("timestamp"),
                     },
                     "health_score": scores["global"] if scores else None,
                     "health_quality_score": scores["quality"] if scores else None,
@@ -814,6 +894,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         modified_from: str | None,
         modified_to: str | None,
         is_deleted: bool | None,
+        min_health: float | None = None,
+        max_health: float | None = None,
     ) -> tuple[str, list]:
         """Build WHERE clause and params for dataset filtering."""
         where_clauses = ["TRUE"]
@@ -828,68 +910,79 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         if q:
             where_clauses.append("d.slug ILIKE %s")
             params.append(f"%{q}%")
-        if created_from:
-            where_clauses.append("d.created >= %s")
-            params.append(created_from)
-        if created_to:
-            where_clauses.append("d.created <= %s")
-            params.append(created_to)
-        if modified_from:
-            where_clauses.append("d.modified >= %s")
-            params.append(modified_from)
-        if modified_to:
-            where_clauses.append("d.modified <= %s")
-            params.append(modified_to)
+
+        self._add_date_filters(where_clauses, params, created_from, created_to, modified_from, modified_to)
+
         if is_deleted is not None:
             where_clauses.append("d.deleted = %s")
             params.append(is_deleted)
 
+        if min_health is not None:
+            where_clauses.append("dq.health_score >= %s")
+            params.append(min_health)
+        if max_health is not None:
+            where_clauses.append("dq.health_score <= %s")
+            params.append(max_health)
+
         return " AND ".join(where_clauses), params
+
+    def _add_date_filters(self, where_clauses, params, c_from, c_to, m_from, m_to):
+        if c_from:
+            where_clauses.append("d.created >= %s")
+            params.append(c_from)
+        if c_to:
+            where_clauses.append("d.created <= %s")
+            params.append(c_to)
+        if m_from:
+            where_clauses.append("d.modified >= %s")
+            params.append(m_from)
+        if m_to:
+            where_clauses.append("d.modified <= %s")
+            params.append(m_to)
 
     def _build_order_clause(self, sort_by: str, order: str) -> tuple[str, str]:
         """Build ORDER BY clause with NULL-safe sorting."""
-        sort_column = (
-            sort_by
-            if sort_by
-            in (
-                "created",
-                "modified",
-                "publisher",
-                "title",
-                "api_calls_count",
-                "downloads_count",
-                "versions_count",
-                "popularity_score",
-                "views_count",
-                "reuses_count",
-                "followers_count",
-            )
-            else "modified"
-        )
-
-        if sort_column == "title":
-            order_sql = "COALESCE(title, '')"
-        elif sort_column == "api_calls_count":
-            order_sql = "COALESCE(lv.api_calls_count, 0)"
-        elif sort_column == "downloads_count":
-            order_sql = "COALESCE(lv.downloads_count, 0)"
-        elif sort_column == "versions_count":
-            order_sql = "COALESCE(vc.versions_count, 0)"
-        elif sort_column == "popularity_score":
-            order_sql = "COALESCE(lv.popularity_score, 0)"
-        elif sort_column == "views_count":
-            order_sql = "COALESCE(lv.views_count, 0)"
-        elif sort_column == "reuses_count":
-            order_sql = "COALESCE(lv.reuses_count, 0)"
-        elif sort_column == "followers_count":
-            order_sql = "COALESCE(lv.followers_count, 0)"
-        elif sort_column == "publisher":
-            order_sql = "COALESCE(publisher, '')"
-        else:
-            order_sql = sort_column
-
+        sort_column = self._get_sort_column(sort_by)
+        order_sql = self._get_order_sql(sort_column)
         sort_dir = "DESC" if order.lower() != "asc" else "ASC"
+
+        # Add NULLS LAST for specific columns like health_score
+        if sort_column == "health_score":
+            sort_dir += " NULLS LAST"
+
         return order_sql, sort_dir
+
+    def _get_sort_column(self, sort_by: str) -> str:
+        valid = (
+            "created",
+            "modified",
+            "publisher",
+            "title",
+            "api_calls_count",
+            "downloads_count",
+            "versions_count",
+            "popularity_score",
+            "views_count",
+            "reuses_count",
+            "followers_count",
+            "health_score",
+        )
+        return sort_by if sort_by in valid else "modified"
+
+    def _get_order_sql(self, sort_column: str) -> str:
+        mapping = {
+            "title": "COALESCE(title, '')",
+            "api_calls_count": "COALESCE(lv.api_calls_count, 0)",
+            "downloads_count": "COALESCE(lv.downloads_count, 0)",
+            "versions_count": "COALESCE(vc.versions_count, 0)",
+            "popularity_score": "COALESCE(lv.popularity_score, 0)",
+            "views_count": "COALESCE(lv.views_count, 0)",
+            "reuses_count": "COALESCE(lv.reuses_count, 0)",
+            "followers_count": "COALESCE(lv.followers_count, 0)",
+            "publisher": "COALESCE(publisher, '')",
+            "health_score": "dq.health_score",
+        }
+        return mapping.get(sort_column, sort_column)
 
     def list_publishers(self, platform_id: UUID | None = None, q: str | None = None, limit: int = 50) -> list[str]:
         """Get a list of distinct publishers, optionally filtered by platform or name."""
@@ -929,7 +1022,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                    lp.name AS linked_platform_name
             FROM datasets d
             LEFT JOIN (
-                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, syntax_change_score
+                SELECT DISTINCT ON (dataset_id) dataset_id, has_description, is_slug_valid, evaluation_results, syntax_change_score, evaluated_blob_id,
+                       health_score, health_quality_score, health_freshness_score, health_engagement_score
                 FROM dataset_quality
                 ORDER BY dataset_id, timestamp DESC
             ) dq ON d.id = dq.dataset_id
@@ -944,7 +1038,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         # Current snapshot
         cur_query = """
-            SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data, dv.title,
+            SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data, dv.title,
                    COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
@@ -957,6 +1051,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             snapshot_data = deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {})
             current_snapshot = {
                 "id": r["id"],
+                "blob_id": r["blob_id"],
                 "timestamp": r["timestamp"],
                 "downloads_count": r.get("downloads_count"),
                 "api_calls_count": r.get("api_calls_count"),
@@ -973,7 +1068,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         if include_snapshots:
             list_rows = self.client.fetchall(
                 """
-                SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data,
+                SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data,
                        COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
                 FROM dataset_versions dv
                 LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
@@ -984,6 +1079,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             snapshots = [
                 {
                     "id": r["id"],
+                    "blob_id": r["blob_id"],
                     "timestamp": r["timestamp"],
                     "downloads_count": r.get("downloads_count"),
                     "api_calls_count": r.get("api_calls_count"),
@@ -1005,6 +1101,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                         "is_slug_valid": d.get("is_slug_valid"),
                         "syntax_change_score": d.get("syntax_change_score"),
                     },
+                    "evaluated_blob_id": d.get("evaluated_blob_id"),
+                    "current_blob_id": current_snapshot.get("blob_id") if current_snapshot else None,
                     "modified": d["modified"],
                     "views_count": current_snapshot.get("views_count") if current_snapshot else 0,
                     "api_calls_count": current_snapshot.get("api_calls_count") if current_snapshot else 0,
@@ -1039,6 +1137,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 "is_slug_valid": d.get("is_slug_valid"),
                 "evaluation_results": d.get("evaluation_results"),
                 "syntax_change_score": d.get("syntax_change_score"),
+                "evaluated_blob_id": d.get("evaluated_blob_id"),
             },
             "current_snapshot": current_snapshot,
             "snapshots": snapshots,
@@ -1058,7 +1157,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         rows = self.client.fetchall(
             """
-            SELECT dv.id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, db.data as blob_data,
+            SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, db.data as blob_data,
                    COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
@@ -1069,6 +1168,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         items = [
             {
                 "id": r["id"],
+                "blob_id": r["blob_id"],
                 "timestamp": r["timestamp"],
                 "downloads_count": r.get("downloads_count"),
                 "api_calls_count": r.get("api_calls_count"),

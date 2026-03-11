@@ -33,6 +33,8 @@ export async function getDatasets(
     modifiedTo,
     q,
     isDeleted,
+    minHealth,
+    maxHealth,
     sortBy = "modified",
     order = "desc",
     page = 1,
@@ -48,6 +50,8 @@ export async function getDatasets(
     modified_to: modifiedTo,
     q,
     is_deleted: isDeleted,
+    min_health: minHealth,
+    max_health: maxHealth,
     sort_by: sortBy,
     order,
     page,
@@ -145,6 +149,7 @@ export async function getDatasetDetail(
   });
   const mapSnap = (s: any): SnapshotVersion => ({
     id: s.id,
+    blob_id: s.blob_id,
     timestamp: s.timestamp,
     downloadsCount: s.downloads_count ?? null,
     apiCallsCount: s.api_calls_count ?? null,
@@ -204,6 +209,7 @@ export async function getDatasetVersions(
   }>(`/datasets/${id}/versions`, query);
   const items: SnapshotVersion[] = (data.versions ?? []).map((s: any) => ({
     id: s.id,
+    blob_id: s.blob_id,
     timestamp: s.timestamp,
     downloadsCount: s.downloads_count ?? null,
     apiCallsCount: s.api_calls_count ?? null,

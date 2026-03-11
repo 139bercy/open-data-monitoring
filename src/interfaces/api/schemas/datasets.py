@@ -105,6 +105,7 @@ class SnapshotVersionAPI(BaseModel):
     """
 
     id: UUID
+    blob_id: UUID
     timestamp: datetime.datetime
     title: str | None = None
 

@@ -97,6 +97,8 @@ class QualityAssessmentService:
         eval_data["evaluated_at"] = eval_data["evaluated_at"].isoformat()
 
         previous_raw = dataset.versions[-1].snapshot if dataset.versions else None
+        blob_id = dataset.versions[-1].blob_id if dataset.versions else None
+
         dataset.add_quality(
             downloads_count=dataset.downloads_count,
             api_calls_count=dataset.api_calls_count,
@@ -104,6 +106,7 @@ class QualityAssessmentService:
             is_slug_valid=dataset.slug.is_valid(),
             evaluation_results=eval_data,
             previous_raw=previous_raw,
+            evaluated_blob_id=blob_id,
         )
 
         self.uow.datasets.add(dataset)

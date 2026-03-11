@@ -984,9 +984,21 @@ function QualityTab({
 }) {
   const results = dataset.quality?.evaluation_results;
   const score = results?.overall_score ?? 0;
+  const isObsolete =
+    dataset.currentSnapshot &&
+    dataset.quality?.evaluated_blob_id &&
+    dataset.currentSnapshot.blob_id !== dataset.quality.evaluated_blob_id;
 
   return (
     <div className="fr-py-4w">
+      {isObsolete && (
+        <Alert
+          severity="warning"
+          title="Audit obsolète"
+          description="Les métadonnées du jeu de données ont été mises à jour depuis le dernier audit IA. Les résultats ci-dessous peuvent ne plus être totalement exacts."
+          className="fr-mb-2w"
+        />
+      )}
       <div
         style={{
           display: "flex",

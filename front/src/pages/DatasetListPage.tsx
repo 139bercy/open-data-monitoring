@@ -46,6 +46,12 @@ export function DatasetListPage(): JSX.Element {
       createdTo: searchParams.get("createdTo") || undefined,
       modifiedFrom: searchParams.get("modifiedFrom") || undefined,
       modifiedTo: searchParams.get("modifiedTo") || undefined,
+      minHealth: searchParams.has("minHealth")
+        ? Number(searchParams.get("minHealth"))
+        : undefined,
+      maxHealth: searchParams.has("maxHealth")
+        ? Number(searchParams.get("maxHealth"))
+        : undefined,
     };
   }, [searchParams]);
 
@@ -69,6 +75,10 @@ export function DatasetListPage(): JSX.Element {
     if (query.createdTo) params.set("createdTo", query.createdTo);
     if (query.modifiedFrom) params.set("modifiedFrom", query.modifiedFrom);
     if (query.modifiedTo) params.set("modifiedTo", query.modifiedTo);
+    if (query.minHealth !== undefined)
+      params.set("minHealth", String(query.minHealth));
+    if (query.maxHealth !== undefined)
+      params.set("maxHealth", String(query.maxHealth));
 
     // Only update if search-params string actually changed to avoid loop
     const newSearchStr = params.toString();
@@ -174,6 +184,8 @@ export function DatasetListPage(): JSX.Element {
     query.modifiedTo,
     query.q,
     query.isDeleted,
+    query.minHealth,
+    query.maxHealth,
   ]);
 
   const handleOpenDetails = async (datasetId: string) => {
