@@ -26,3 +26,21 @@ class LLMEvaluator(ABC):
             MetadataEvaluation with scores and suggestions
         """
         raise NotImplementedError
+
+
+class MetadataMapper(ABC):
+    """Abstract interface for mapping platform-specific raw metadata to a standard LLM context."""
+
+    @abstractmethod
+    def map_to_llm_context(self, dataset: Dataset, raw_data: dict) -> dict:
+        """
+        Extract relevant metadata from raw platform data for LLM processing.
+
+        Args:
+            dataset: The dataset aggregate
+            raw_data: Raw metadata from the platform
+
+        Returns:
+            Standardized dictionary for the LLM prompt
+        """
+        raise NotImplementedError

@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from application.services.dataset import DatasetMonitoring
 from application.services.platform import PlatformMonitoring
 from domain.unit_of_work import UnitOfWork
+from infrastructure.adapters.quality.metadata_mappers import DatagouvMetadataMapper, OpendatasoftMetadataMapper
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.llm.openai_evaluator import OpenAIEvaluator
 from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
@@ -39,6 +40,10 @@ class App:
         self.platform = PlatformMonitoring(repository=uow.platforms)
         self.dataset = DatasetMonitoring(repository=uow.datasets)
         self.evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
+        self.mappers = {
+            "opendatasoft": OpendatasoftMetadataMapper(),
+            "datagouvfr": DatagouvMetadataMapper(),
+        }
 
 
 if ENV == "PROD":  # pragma: no cover

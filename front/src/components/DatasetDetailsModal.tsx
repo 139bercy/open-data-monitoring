@@ -1356,7 +1356,7 @@ export function DatasetDetailsModal({
       );
     }
 
-    const showQualityTab = !platformName?.toLowerCase().includes("data.gouv");
+    const showQualityTab = true; // Enabled for all platforms now that DataGouv is supported
 
     return (
       <div style={{ position: "relative" }}>

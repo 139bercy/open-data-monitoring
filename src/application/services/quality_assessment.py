@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import UUID
 
 from domain.quality.evaluation import MetadataEvaluation
-from domain.quality.ports import LLMEvaluator
+from domain.quality.ports import LLMEvaluator, MetadataMapper
 from domain.unit_of_work import UnitOfWork
 from logger import logger
 
@@ -12,16 +12,18 @@ from logger import logger
 class QualityAssessmentService:
     """Service for assessing metadata quality using LLM."""
 
-    def __init__(self, evaluator: LLMEvaluator, uow: UnitOfWork):
+    def __init__(self, evaluator: LLMEvaluator, uow: UnitOfWork, mappers: dict[str, MetadataMapper] | None = None):
         """
         Initialize quality assessment service.
 
         Args:
             evaluator: LLM evaluator implementation
             uow: Unit of work for data access
+            mappers: Dictionary of platform_type -> MetadataMapper
         """
         self.evaluator = evaluator
         self.uow = uow
+        self.mappers = mappers or {}
 
     def evaluate_dataset(
         self,
@@ -54,7 +56,20 @@ class QualityAssessmentService:
         raw_dataset = dataset_obj.raw
         if dataset_obj.versions:
             raw_dataset = dataset_obj.versions[-1].snapshot
-        return self._prepare_llm_context(dataset_obj, raw_dataset)
+
+        # Use the injected mapper based on platform type
+        platform = self.uow.platforms.get(dataset_obj.platform_id)
+        platform_type = platform.type if platform else "opendatasoft"
+
+        mapper = self.mappers.get(platform_type)
+        if mapper:
+            llm_context = mapper.map_to_llm_context(dataset_obj, raw_dataset)
+        else:
+            # Fallback to legacy logic if no mapper found
+            llm_context = self._prepare_llm_context(dataset_obj, raw_dataset)
+
+        # Cleanup empty fields
+        return {k: v for k, v in llm_context.items() if v and (not isinstance(v, dict) or any(v.values()))}
 
     def _run_llm_evaluation(self, context, dcat, charter, out, p_type) -> MetadataEvaluation:
         return self.evaluator.evaluate_metadata(

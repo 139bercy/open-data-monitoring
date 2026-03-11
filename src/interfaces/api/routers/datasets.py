@@ -175,7 +175,7 @@ async def evaluate_dataset(dataset_id: UUID):
     """
     Déclenche une évaluation de qualité par LLM pour un dataset.
     """
-    use_case = EvaluateDatasetUseCase(uow=domain_app.uow, evaluator=domain_app.evaluator)
+    use_case = EvaluateDatasetUseCase(uow=domain_app.uow, evaluator=domain_app.evaluator, mappers=domain_app.mappers)
     command = EvaluateDatasetCommand(dataset_id=dataset_id)
     output = use_case.handle(command)
 
