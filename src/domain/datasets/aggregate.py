@@ -174,6 +174,8 @@ class Dataset:
             health_freshness_score=health_freshness_score,
             health_engagement_score=health_engagement_score,
         )
+        # Recalculate health scores immediately to ensure consistency (Domain as source of truth)
+        self.calculate_health_scores()
 
     def calculate_discoverability_kpi(self, evaluation_results: dict | None = None) -> DiscoverabilityKPI:  # noqa: C901
         """
@@ -270,6 +272,14 @@ class Dataset:
         if not self.quality:
             return
 
+        # Skip if restricted or not published
+        if self.restricted or self.published is False:
+            self.quality.health_score = None
+            self.quality.health_quality_score = None
+            self.quality.health_freshness_score = None
+            self.quality.health_engagement_score = None
+            return
+
         # 1. Quality Score (0-100)
         self.quality.health_quality_score = self._calculate_quality_score()
 
@@ -307,8 +317,7 @@ class Dataset:
         if self.quality.evaluation_results:
             raw = self.quality.evaluation_results.get("overall_score")
             if raw is not None:
-                # overall_score is stored as 0.0-1.0 → scale to 0-100
-                llm_score = float(raw) * 100
+                llm_score = float(raw)
 
         if llm_score is not None:
             quality_pts = 0.0
