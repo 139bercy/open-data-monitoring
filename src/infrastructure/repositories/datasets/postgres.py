@@ -803,8 +803,11 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             where_clauses.append("d.platform_id = %s")
             params.append(platform_id)
         if publisher:
-            where_clauses.append("d.publisher = %s")
-            params.append(publisher)
+            if publisher == "Inconnu":
+                where_clauses.append("(d.publisher IS NULL OR d.publisher = '' OR d.publisher = 'Inconnu')")
+            else:
+                where_clauses.append("d.publisher = %s")
+                params.append(publisher)
         if q:
             where_clauses.append("d.slug ILIKE %s")
             params.append(f"%{q}%")

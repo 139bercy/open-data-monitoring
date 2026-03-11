@@ -38,7 +38,9 @@ export function DatasetFilters(props: DatasetFiltersProps): JSX.Element {
   const publisherOptions = useMemo(
     () => [
       { value: "", label: "Tous les producteurs" },
+      { value: "Inconnu", label: "Sans producteur" },
       ...[...publishers]
+        .filter((p) => p !== "Inconnu") // Avoid duplicates if Inconnu is already in the list
         .sort((a, b) => a.localeCompare(b))
         .map((p) => ({ value: p, label: p })),
     ],

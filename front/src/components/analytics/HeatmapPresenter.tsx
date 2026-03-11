@@ -139,10 +139,7 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
                 x={x + width / 2}
                 y={startY + i * lineHeight}
                 fill="#444444"
-                style={{
-                  fontWeight: "bold",
-                  fill: "#444444",
-                }}
+                style={{ fontWeight: "bold", fill: "#444444" }}
               >
                 {i === 0 ? `${getIcon(score)} ${line}` : line}
               </tspan>
@@ -153,10 +150,7 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
               fontSize={12}
               fontWeight="bold"
               fill="#444444"
-              style={{
-                opacity: 0.9,
-                fill: "#444444",
-              }}
+              style={{ opacity: 0.9, fill: "#444444" }}
             >
               {Math.round(score)}%
             </tspan>
@@ -214,9 +208,7 @@ const HeatmapPresenter: React.FC<HeatmapPresenterProps> = ({
                   return (
                     <div
                       className="fr-card fr-p-2w"
-                      style={{
-                        borderRadius: "2px",
-                      }}
+                      style={{ borderRadius: "2px" }}
                     >
                       <p className="fr-text--bold fr-mb-1w">{item.direction}</p>
                       <div className="fr-grid-row fr-grid-row--gutters fr-grid-row--sm">
