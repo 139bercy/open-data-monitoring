@@ -67,6 +67,7 @@ raw_scores AS (
     SELECT
         d.id,
         d.normalized_publisher as direction,
+        v.blob_id,
         -- Quality Score (0-100)
         (
             CASE WHEN q.has_description THEN 40 ELSE 0 END +
@@ -112,6 +113,7 @@ dataset_scores AS (
         engagement_score,
         (quality_score * 0.5 + freshness_score * 0.3 + engagement_score * 0.2) as global_score
     FROM raw_scores
+    WHERE blob_id IS NOT NULL  -- Exclure les datasets sans version connue (scores non fiables)
 )
 SELECT
     direction,
