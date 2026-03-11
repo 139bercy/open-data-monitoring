@@ -349,3 +349,7 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
         counts = Counter(publishers)
         sorted_publishers = [p for p, count in counts.most_common(limit)]
         return sorted_publishers
+
+    def refresh_materialized_views(self) -> None:
+        """In-memory implementation does nothing."""
+        pass

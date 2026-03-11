@@ -1,28 +1,7 @@
--- View: normalized_datasets
-CREATE OR REPLACE VIEW normalized_datasets AS
-SELECT
-    id,
-    slug,
-    CASE
-        WHEN publisher IS NULL OR publisher = '' THEN 'Inconnu'
-        ELSE publisher
-    END AS normalized_publisher,
-    modified,
-    published,
-    deleted,
-    restricted
-FROM datasets;
+-- Drop the dynamic view
+DROP VIEW IF EXISTS direction_health_stats_view;
 
--- View: direction_health_stats_view
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'direction_health_stats_view') THEN
-        DROP MATERIALIZED VIEW direction_health_stats_view;
-    ELSIF EXISTS (SELECT 1 FROM pg_views WHERE viewname = 'direction_health_stats_view') THEN
-        DROP VIEW direction_health_stats_view;
-    END IF;
-END $$;
-
+-- Create the Materialized View
 CREATE MATERIALIZED VIEW direction_health_stats_view AS
 WITH latest_version_info AS (
     SELECT DISTINCT ON (dataset_id)
@@ -75,18 +54,8 @@ raw_scores AS (
         ) as quality_score,
         -- Freshness Score (0-100) - Relative to expected frequency
         CASE
-            WHEN (EXTRACT(EPOCH FROM (NOW() -
-                COALESCE(
-                    NULLIF(b.data->'metas'->'default'->>'modified', '')::timestamptz,
-                    d.modified
-                )
-            )) / 86400) <= t.days_limit THEN 100
-            WHEN (EXTRACT(EPOCH FROM (NOW() -
-                COALESCE(
-                    NULLIF(b.data->'metas'->'default'->>'modified', '')::timestamptz,
-                    d.modified
-                )
-            )) / 86400) <= t.days_limit * 2 THEN 50
+            WHEN (EXTRACT(EPOCH FROM (NOW() - d.modified)) / 86400) <= t.days_limit THEN 100
+            WHEN (EXTRACT(EPOCH FROM (NOW() - d.modified)) / 86400) <= t.days_limit * 2 THEN 50
             ELSE 0
         END as freshness_score,
         -- Engagement Score (0-100) - Log weighted
@@ -101,7 +70,6 @@ raw_scores AS (
     LEFT JOIN latest_quality q ON d.id = q.dataset_id
     LEFT JOIN latest_version_info v ON d.id = v.dataset_id
     LEFT JOIN dataset_thresholds t ON d.id = t.dataset_id
-    LEFT JOIN dataset_blobs b ON v.blob_id = b.id
     WHERE d.deleted IS FALSE AND d.published IS TRUE AND d.restricted IS FALSE
 ),
 dataset_scores AS (
@@ -124,4 +92,5 @@ SELECT
 FROM dataset_scores
 GROUP BY direction;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_direction_health_stats_view_direction ON direction_health_stats_view (direction);
+-- Create a unique index to allow CONCURRENTLY refresh
+CREATE UNIQUE INDEX idx_direction_health_stats_view_direction ON direction_health_stats_view (direction);

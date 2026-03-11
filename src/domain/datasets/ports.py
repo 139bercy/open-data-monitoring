@@ -84,3 +84,8 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
     def list_publishers(self, platform_id: UUID | None = None, q: str | None = None, limit: int = 50) -> list[str]:
         """Get a list of distinct publishers, optionally filtered by platform or name."""
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def refresh_materialized_views(self) -> None:
+        """Refresh all materialized views used for analytics."""
+        raise NotImplementedError

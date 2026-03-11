@@ -1,11 +1,15 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import HeatmapPresenter from "../../components/analytics/HeatmapPresenter";
 import { useDirectionHealth } from "../../hooks/useDirectionHealth";
 
-const HeatmapContainer: React.FC = () => {
+interface HeatmapContainerProps {
+  onDirectionSelect?: (direction: string) => void;
+}
+
+const HeatmapContainer: React.FC<HeatmapContainerProps> = ({
+  onDirectionSelect,
+}) => {
   const { data, loading, error } = useDirectionHealth();
-  const navigate = useNavigate();
 
   if (loading)
     return <div className="fr-p-4w">Chargement du Radar de Santé...</div>;
@@ -13,7 +17,9 @@ const HeatmapContainer: React.FC = () => {
     return <div className="fr-alert fr-alert--error fr-m-4w">{error}</div>;
 
   const handleClusterClick = (direction: string) => {
-    navigate(`/datasets?publisher=${encodeURIComponent(direction)}`);
+    if (onDirectionSelect) {
+      onDirectionSelect(direction);
+    }
   };
 
   return (

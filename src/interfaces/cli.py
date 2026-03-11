@@ -69,7 +69,9 @@ def cli_get_all_platforms():
 def cli_sync_platform(id):
     """Sync platform and project stats"""
     platform_id = UUID(id)
-    use_case = SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow)
+    use_case = SyncPlatformUseCase(
+        repository=app.platform.repository, dataset_repository=app.dataset.repository, uow=app.uow
+    )
     command = SyncPlatformCommand(platform_id=platform_id)
     use_case.handle(command)
     result = app.platform.get(platform_id=platform_id)

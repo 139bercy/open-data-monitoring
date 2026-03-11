@@ -1084,3 +1084,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         ]
 
         return items, total
+
+    def refresh_materialized_views(self) -> None:
+        """Refresh all materialized views used for analytics."""
+        self.client.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY direction_health_stats_view")
