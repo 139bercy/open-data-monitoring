@@ -8,6 +8,7 @@ Les données ainsi récupérées sont fusionnées et servent à peupler la base 
 
 import json
 import os
+import time
 
 import requests
 from dotenv import load_dotenv
@@ -65,10 +66,10 @@ def fetch_and_save_data(url: str, params: dict, filename: str) -> dict:
         with open(os.path.join(OUTPUT_DIR, filename), "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"✅ {filename} - {len(results)} éléments sauvegardés")
+        logger.info(f"📥 {filename} - {len(results)} items saved")
         return results
     except requests.exceptions.RequestException as e:
-        logger.error(f"❌ Erreur pour {filename}: {e}")
+        logger.error(f"❌ Error fetching {filename}: {e}")
         return []
 
 
@@ -80,7 +81,7 @@ def load_json_by_id(filename: str, key: str = "dataset_id") -> dict:
             data = json.load(f)
             return {item[key]: item for item in data}
     except FileNotFoundError:
-        logger.error(f"⚠️ Fichier {filename} non trouvé")
+        logger.warning(f"⚠️ File {filename} not found")
         return {}
 
 
@@ -111,11 +112,11 @@ def merge_data_eco_datasets():
     catalog = load_json_by_id("data-eco-catalog.json", "dataset_id")
 
     merged_data = merge_datasets(automation, monitoring, catalog)
-    logger.info(f"🔀 {len(merged_data)} datasets fusionnés")
+    logger.info(f"🔀 {len(merged_data)} datasets merged")
 
     with open(os.path.join(OUTPUT_DIR, "data-eco.json"), "w", encoding="utf-8") as f:
         json.dump(merged_data, f, ensure_ascii=False, indent=2)
-    logger.info("💾 Fichier final data-eco.json sauvegardé")
+    logger.info("💾 Final data-eco.json saved")
 
 
 def get_data_gouv_datasets():
@@ -131,41 +132,72 @@ def get_data_gouv_datasets():
 
 
 def process_data_gouv():
+    start_time = time.perf_counter()
+    logger.info("🚀 Starting data.gouv.fr processing...")
+    
     get_data_gouv_datasets()
     platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
+    
+    stats = {"success": 0, "failed": 0, "skipped": 0}
+    
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         for dataset in data:
             try:
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
+                stats["success"] += 1
             except DatasetUnreachableError:
-                pass
+                stats["skipped"] += 1
+            except Exception as e:
+                stats["failed"] += 1
+                logger.error(f"❌ Failed to upsert {dataset.get('id', 'unknown')}: {e}")
 
+    if platform:
+        logger.info(f"🔄 Syncing platform metadata: {platform.slug}")
+        SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
+    
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
-        if platform:
-            logger.info(f"🔄 Syncing platform: {platform.slug}")
-            SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
         check_deleted_datasets(app=app, platform=platform, datasets=data)
+
+    duration = time.perf_counter() - start_time
+    logger.info(f"✅ data.gouv.fr completed in {duration:.2f}s")
+    logger.info(f"📊 Stats: {stats['success']} successes, {stats['failed']} failures, {stats['skipped']} skipped")
 
 
 def process_data_eco():
+    start_time = time.perf_counter()
+    logger.info("🚀 Starting data.economie.gouv.fr processing...")
+    
     merge_data_eco_datasets()
+    
+    stats = {"success": 0, "failed": 0, "skipped": 0}
+    
     with open(os.path.join(OUTPUT_DIR, "data-eco.json")) as file:
         data = json.load(file)
         platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
         if platform:
-            logger.info(f"🔄 Syncing platform: {platform.slug}")
+            logger.info(f"🔄 Syncing platform metadata: {platform.slug}")
             SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
+        
         check_deleted_datasets(app=app, platform=platform, datasets=data)
+        
         for dataset in data:
             try:
                 if platform is None:
+                    stats["skipped"] += 1
                     continue
                 upsert_dataset(app=app, platform=platform, dataset=dataset)
-
+                stats["success"] += 1
+            except DatasetUnreachableError:
+                stats["skipped"] += 1
             except Exception as e:
-                logger.debug(f"OPENDATASOFT - {dataset['dataset_id']} - {e}")
+                stats["failed"] += 1
+                logger.debug(f"OPENDATASOFT - {dataset.get('dataset_id', 'unknown')} - {e}")
+
+    duration = time.perf_counter() - start_time
+    logger.info(f"✅ data.economie.gouv.fr completed in {duration:.2f}s")
+    logger.info(f"📊 Stats: {stats['success']} successes, {stats['failed']} failures, {stats['skipped']} skipped")
 
 
 if __name__ == "__main__":
