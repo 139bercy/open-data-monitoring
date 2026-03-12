@@ -39,12 +39,19 @@ vi.mock("recharts", async () => {
                     width: 100,
                     height: 100,
                   });
-            return <g key={index} data-testid={`cluster-${item.direction}`}>{result}</g>;
+            return (
+              <g
+                key={index}
+                data-testid={`cluster-${item.direction}`}
+              >
+                {result}
+              </g>
+            );
           })}
         </svg>
       );
     },
-    // Mock Tooltip content to be rendered immediately for testing if needed, 
+    // Mock Tooltip content to be rendered immediately for testing if needed,
     // but usually we test the custom content logic instead.
   };
 });
@@ -67,7 +74,7 @@ describe("HeatmapPresenter", () => {
 
   it("applies continuous color scaling based on score", () => {
     const { getByTestId } = render(<HeatmapPresenter data={mockData} />);
-    
+
     const dgipRect = getByTestId("cluster-DGFiP").querySelector("rect");
     const customsRect = getByTestId("cluster-Customs").querySelector("rect");
 
@@ -83,18 +90,29 @@ describe("HeatmapPresenter", () => {
 
   it("calculates health attributes for data testing", () => {
     const { getByTestId } = render(<HeatmapPresenter data={mockData} />);
-    
-    expect(getByTestId("cluster-DGFiP").firstChild).toHaveAttribute("data-health", "excellent");
-    expect(getByTestId("cluster-Customs").firstChild).toHaveAttribute("data-health", "critical");
+
+    expect(getByTestId("cluster-DGFiP").firstChild).toHaveAttribute(
+      "data-health",
+      "excellent"
+    );
+    expect(getByTestId("cluster-Customs").firstChild).toHaveAttribute(
+      "data-health",
+      "critical"
+    );
   });
 
   it("calls onClusterClick when a rect is clicked", () => {
     const handleClick = vi.fn();
-    const { getByTestId } = render(<HeatmapPresenter data={mockData} onClusterClick={handleClick} />);
-    
+    const { getByTestId } = render(
+      <HeatmapPresenter
+        data={mockData}
+        onClusterClick={handleClick}
+      />
+    );
+
     const dgipCluster = getByTestId("cluster-DGFiP").firstChild;
     if (dgipCluster) fireEvent.click(dgipCluster);
-    
+
     expect(handleClick).toHaveBeenCalledWith("DGFiP");
   });
 

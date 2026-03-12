@@ -25,9 +25,12 @@ class CreatePlatformOutput:
 
 
 class CreatePlatformUseCase:
-    def __init__(self, repository: PlatformRepository, uow):
-        self.repository = repository
+    def __init__(self, uow):
         self.uow = uow
+
+    @property
+    def repository(self) -> PlatformRepository:
+        return self.uow.platforms
 
     def handle(self, command: CreatePlatformCommand) -> CreatePlatformOutput:
         """

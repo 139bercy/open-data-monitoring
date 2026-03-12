@@ -21,11 +21,17 @@ class SyncPlatformOutput:
 
 
 class SyncPlatformUseCase:
-    def __init__(self, repository: PlatformRepository, dataset_repository: AbstractDatasetRepository, uow):
-        self.repository = repository
-        self.dataset_repository = dataset_repository
+    def __init__(self, uow):
         self.uow = uow
         self.factory = PlatformAdapterFactory()
+
+    @property
+    def repository(self) -> PlatformRepository:
+        return self.uow.platforms
+
+    @property
+    def dataset_repository(self) -> AbstractDatasetRepository:
+        return self.uow.datasets
 
     def handle(self, command: SyncPlatformCommand) -> SyncPlatformOutput:
         """

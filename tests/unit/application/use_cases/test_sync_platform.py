@@ -9,34 +9,34 @@ from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatfor
 @pytest.fixture
 def sync_p_deps():
     with patch("application.use_cases.sync_platform.PlatformAdapterFactory") as af:
-        repo, dataset_repo, uow = MagicMock(), MagicMock(), MagicMock()
+        uow = MagicMock()
         adapter = af.return_value.create.return_value
-        yield repo, dataset_repo, uow, adapter
+        yield uow, adapter
 
 
 @pytest.fixture
 def use_case(sync_p_deps):
-    repo, dataset_repo, uow, _ = sync_p_deps
-    return SyncPlatformUseCase(repository=repo, dataset_repository=dataset_repo, uow=uow)
+    uow, _ = sync_p_deps
+    return SyncPlatformUseCase(uow=uow)
 
 
 def test_sync_platform_success(use_case, sync_p_deps):
     # Arrange
-    repo, dataset_repo, _, adapter = sync_p_deps
-    repo.get.return_value = MagicMock(type="t", url="https://v.com", key="k", slug="s")
+    uow, adapter = sync_p_deps
+    uow.platforms.get.return_value = MagicMock(type="t", url="https://v.com", key="k", slug="s")
     adapter.fetch.return_value = {"timestamp": "t", "status": "s", "datasets_count": 1}
     # Act
     result = use_case.handle(SyncPlatformCommand(uuid4()))
     # Assert
     assert result.status == "success"
-    repo.save_sync.assert_called_once()
-    dataset_repo.refresh_materialized_views.assert_called_once()
+    uow.platforms.save_sync.assert_called_once()
+    uow.datasets.refresh_materialized_views.assert_called_once()
 
 
 def test_sync_platform_not_found(use_case, sync_p_deps):
     # Arrange
-    repo, _, _, _ = sync_p_deps
-    repo.get.return_value = None
+    uow, _ = sync_p_deps
+    uow.platforms.get.return_value = None
     # Act
     result = use_case.handle(SyncPlatformCommand(uuid4()))
     # Assert

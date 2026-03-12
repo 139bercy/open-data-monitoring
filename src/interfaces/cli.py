@@ -51,7 +51,7 @@ def cli_platform():
 @click.option("-k", "--key", required=False, help="API Key")
 def cli_create_platform(name, slug, organization_id, type, url, key):
     """Create new platform"""
-    use_case = CreatePlatformUseCase(repository=app.platform.repository, uow=app.uow)
+    use_case = CreatePlatformUseCase(uow=app.uow)
     command = CreatePlatformCommand(name=name, slug=slug, organization_id=organization_id, type=type, url=url, key=key)
     output = use_case.handle(command)
     logger.info(f"{type} - {name} - Platform created with id {output.platform_id}")
@@ -69,9 +69,7 @@ def cli_get_all_platforms():
 def cli_sync_platform(id):
     """Sync platform and project stats"""
     platform_id = UUID(id)
-    use_case = SyncPlatformUseCase(
-        repository=app.platform.repository, dataset_repository=app.dataset.repository, uow=app.uow
-    )
+    use_case = SyncPlatformUseCase(uow=app.uow)
     command = SyncPlatformCommand(platform_id=platform_id)
     use_case.handle(command)
     result = app.platform.get(platform_id=platform_id)
@@ -94,7 +92,7 @@ def cli_add_dataset(url, output):
         logger.warning(f"Dataset not found for url: {url}")
         return
     try:
-        use_case = SyncDatasetUseCase(repository=app.dataset.repository, uow=app.uow)
+        use_case = SyncDatasetUseCase(uow=app.uow)
         command = SyncDatasetCommand(platform=platform, platform_dataset_id=dataset_id)
         output = use_case.handle(command)
         if output.status == "failed":

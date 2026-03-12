@@ -145,9 +145,7 @@ def process_data_gouv():
         data = json.load(file)
         if platform:
             logger.info(f"🔄 Syncing platform: {platform.slug}")
-            SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow).handle(
-                SyncPlatformCommand(platform_id=platform.id)
-            )
+            SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
         check_deleted_datasets(app=app, platform=platform, datasets=data)
 
 
@@ -158,9 +156,7 @@ def process_data_eco():
         platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
         if platform:
             logger.info(f"🔄 Syncing platform: {platform.slug}")
-            SyncPlatformUseCase(repository=app.platform.repository, uow=app.uow).handle(
-                SyncPlatformCommand(platform_id=platform.id)
-            )
+            SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
         check_deleted_datasets(app=app, platform=platform, datasets=data)
         for dataset in data:
             try:

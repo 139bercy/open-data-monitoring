@@ -27,10 +27,13 @@ class SyncDatasetOutput:
 
 
 class SyncDatasetUseCase:
-    def __init__(self, repository: AbstractDatasetRepository, uow):
-        self.repository = repository
+    def __init__(self, uow):
         self.uow = uow
         self.adapter_factory = DatasetAdapterFactory()
+
+    @property
+    def repository(self) -> AbstractDatasetRepository:
+        return self.uow.datasets
 
     def handle(self, command: SyncDatasetCommand) -> SyncDatasetOutput:
         """

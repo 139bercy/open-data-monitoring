@@ -37,7 +37,7 @@ async def create_platform_endpoint(platform: PlatformCreateDTO):
     Register a new open data platform in the system.
     Requires a unique slug and valid base URL.
     """
-    use_case = CreatePlatformUseCase(repository=domain_app.platform.repository, uow=domain_app.uow)
+    use_case = CreatePlatformUseCase(uow=domain_app.uow)
     command = CreatePlatformCommand(
         name=platform.name,
         slug=platform.slug,
@@ -64,9 +64,7 @@ async def sync_platform_endpoint(id: UUID):
     Trigger a manual synchronization for a specific platform.
     This process will discover new datasets and update existing ones.
     """
-    use_case = SyncPlatformUseCase(
-        repository=domain_app.platform.repository, dataset_repository=domain_app.dataset.repository, uow=domain_app.uow
-    )
+    use_case = SyncPlatformUseCase(uow=domain_app.uow)
     command = SyncPlatformCommand(platform_id=id)
     output = use_case.handle(command)
 
