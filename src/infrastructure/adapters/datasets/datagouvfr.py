@@ -62,6 +62,7 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             modified=last_update,
             published=True if is_archived else not is_private,
             restricted=is_archived,
+            description=kwargs.get("description"),
             downloads_count=metrics.get("resources_downloads", None),
             api_calls_count=None,
             views_count=metrics.get("views", None),

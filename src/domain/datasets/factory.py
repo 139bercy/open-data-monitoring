@@ -37,6 +37,7 @@ class DatasetFactory:
             followers_count=dto.followers_count,
             popularity_score=dto.popularity_score,
             raw=raw_data,
+            description=dto.description,
         )
 
         if dto.quality:

@@ -46,6 +46,7 @@ class Dataset:
         last_version_timestamp: datetime | None = None,
         checksum: str | None = None,
         linked_dataset_id: UUID | None = None,
+        description: str | None = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -80,6 +81,7 @@ class Dataset:
         self.quality = None
         self.is_deleted = is_deleted
         self.linked_dataset_id = linked_dataset_id
+        self.description = description
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -100,6 +102,7 @@ class Dataset:
             "published": self.published,
             "restricted": self.restricted,
             "publisher": self.publisher,
+            "description": self.description,
         }
 
         state_str = json.dumps(state, sort_keys=True)
@@ -620,6 +623,7 @@ class Dataset:
                 if data.get("linked_dataset_id") and not isinstance(data["linked_dataset_id"], UUID)
                 else data.get("linked_dataset_id")
             ),
+            description=data.get("description"),
         )
 
     def to_dict(self) -> dict:

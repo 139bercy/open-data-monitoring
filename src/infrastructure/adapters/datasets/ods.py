@@ -110,6 +110,9 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             modified_raw = modified_val or kwargs.get("modified")
 
         modified = OpendatasoftDatasetAdapter._parse_modified_date(modified_raw, updated_at)
+        description = default_metas.get("description")
+        if isinstance(description, dict):
+            description = description.get("value")
 
         dataset = DatasetDTO(
             buid=uid,
@@ -121,6 +124,7 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             modified=modified,
             published=is_published,
             restricted=is_restricted,
+            description=description,
             downloads_count=kwargs.get("download_count", None),
             api_calls_count=kwargs.get("api_call_count", None),
             reuses_count=kwargs.get("reuse_count", None),

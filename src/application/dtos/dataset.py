@@ -18,6 +18,7 @@ class DatasetDTO:
     modified: datetime
     published: bool
     restricted: bool
+    description: str | None
     quality: DatasetQuality
     downloads_count: int | None = None
     api_calls_count: int | None = None
