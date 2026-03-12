@@ -13,6 +13,7 @@ from application.handlers import (
     find_platform_from_url,
 )
 from application.use_cases.create_platform import CreatePlatformCommand, CreatePlatformUseCase
+from application.use_cases.get_publishers_stats import GetPublishersStatsUseCase
 from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
 from domain.auth.aggregate import User
@@ -121,20 +122,17 @@ def cli_common():
 
 @cli_common.command("get-publishers")
 def cli_get_publishers():
-    query = """
-    SELECT publisher, COUNT(*) AS dataset_count
-    FROM datasets
-    WHERE publisher IS NOT NULL
-    GROUP BY publisher
-    ORDER BY publisher;
-    """
-    datasets = app.dataset.repository.client.fetchall(query)
+    """Get publisher statistics and save to CSV"""
+    use_case = GetPublishersStatsUseCase(uow=app.uow)
+    output = use_case.handle()
+    datasets = output.stats
+
     if not datasets:
         click.echo("Aucun dataset trouvé.")
         return
     filename = f"{datetime.today().strftime('%Y-%m-%d')}-publishers.csv"
-    with open(filename, "w", newline="") as output:
-        writer = csv.DictWriter(output, fieldnames=datasets[0].keys(), delimiter=",")
+    with open(filename, "w", newline="") as output_file:
+        writer = csv.DictWriter(output_file, fieldnames=datasets[0].keys(), delimiter=",")
         writer.writeheader()
         writer.writerows(datasets)
 

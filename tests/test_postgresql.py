@@ -4,21 +4,29 @@ from uuid import UUID
 import pytest
 from freezegun import freeze_time
 
-from application.commands.platform import SyncPlatform
-from application.handlers import check_deleted_datasets, create_platform, upsert_dataset
+from application.use_cases.check_deleted_datasets import (
+    CheckDeletedDatasetsCommand,
+    CheckDeletedDatasetsUseCase,
+)
+from application.use_cases.create_platform import CreatePlatformCommand, CreatePlatformUseCase
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
+from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 from tests.fixtures.fixtures import platform_1
 
 
 def test_postgresql_create_platform(pg_app):
-    platform_id = create_platform(pg_app, platform_1)
+    use_case = CreatePlatformUseCase(uow=pg_app.uow)
+    command = CreatePlatformCommand(**platform_1)
+    output = use_case.handle(command)
+    platform_id = output.platform_id
     platform = pg_app.platform.get(platform_id=platform_id)
     assert isinstance(platform.id, UUID)
 
 
 def test_postgresql_get_platform_by_domain(pg_app):
     # Arrange
-    create_platform(pg_app, platform_1)
+    CreatePlatformUseCase(uow=pg_app.uow).handle(CreatePlatformCommand(**platform_1))
     # Act
     result = pg_app.platform.repository.get_by_domain("mydomain.net")
     # Assert
@@ -27,10 +35,9 @@ def test_postgresql_get_platform_by_domain(pg_app):
 
 def test_postgresl_sync_platform(pg_app):
     # Arrange
-    platform_id = create_platform(pg_app, platform_1)
+    platform_id = CreatePlatformUseCase(uow=pg_app.uow).handle(CreatePlatformCommand(**platform_1)).platform_id
     # Act
-    cmd = SyncPlatform(id=platform_id)
-    pg_app.platform.sync_platform(platform_id=cmd.id)
+    SyncPlatformUseCase(uow=pg_app.uow).handle(SyncPlatformCommand(platform_id=platform_id))
     # Assert
     result = pg_app.platform.repository.get(platform_id)
     assert isinstance(result.last_sync, datetime)
@@ -39,9 +46,8 @@ def test_postgresl_sync_platform(pg_app):
 @freeze_time("2025-01-01 12:00:00")
 def test_postgresl_retrieve_platform_with_syncs(pg_app):
     # Arrange
-    platform_id = create_platform(pg_app, platform_1)
-    cmd = SyncPlatform(id=platform_id)
-    pg_app.platform.sync_platform(platform_id=cmd.id)
+    platform_id = CreatePlatformUseCase(uow=pg_app.uow).handle(CreatePlatformCommand(**platform_1)).platform_id
+    SyncPlatformUseCase(uow=pg_app.uow).handle(SyncPlatformCommand(platform_id=platform_id))
     # Act
     result = pg_app.platform.repository.get(platform_id)
     # Assert
@@ -51,11 +57,10 @@ def test_postgresl_retrieve_platform_with_syncs(pg_app):
 
 def test_postgresql_create_dataset(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(
-        app=pg_app,
-        platform=pg_ods_platform,
-        dataset=ods_dataset,
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
+    dataset_id = result.dataset_id
     # Act
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
@@ -67,10 +72,8 @@ def test_postgresql_create_dataset(pg_app, pg_ods_platform, ods_dataset):
 
 def test_postgresql_get_dataset_checksum_by_buid(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    upsert_dataset(
-        app=pg_app,
-        platform=pg_ods_platform,
-        dataset=ods_dataset,
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
     # Act
     checksum = pg_app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
@@ -80,11 +83,10 @@ def test_postgresql_get_dataset_checksum_by_buid(pg_app, pg_ods_platform, ods_da
 
 def test_postgresql_dataset_has_changed(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(
-        app=pg_app,
-        platform=pg_ods_platform,
-        dataset=ods_dataset,
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
+    dataset_id = result.dataset_id
     # Act - Change title to trigger checksum change
     new = {
         **ods_dataset,
@@ -96,7 +98,9 @@ def test_postgresql_dataset_has_changed(pg_app, pg_ods_platform, ods_dataset):
             },
         },
     }
-    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=new)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=new)
+    )
     # Assert
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
     assert result.id == dataset_id
@@ -105,13 +109,18 @@ def test_postgresql_dataset_has_changed(pg_app, pg_ods_platform, ods_dataset):
 
 def test_postgresql_should_handle_unreachable_dataset(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
     dataset = pg_app.dataset.repository.get(dataset_id=dataset_id)
     # Act
-    upsert_dataset(
-        app=pg_app,
-        platform=pg_ods_platform,
-        dataset={"slug": dataset.slug, "sync_status": "failed"},
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_ods_platform,
+            platform_dataset_id=dataset.slug,
+            raw_data={"slug": dataset.slug, "sync_status": "failed"},
+        )
     )
     # Assert
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
@@ -131,9 +140,14 @@ def test_postgresql_add_dataset_should_raise_an_error_on_fk_violation(pg_app, pg
 
 def test_postgres_dataset_has_been_deleted_on_platform(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
     # Act
-    check_deleted_datasets(app=pg_app, platform=pg_ods_platform, datasets=[])
+    CheckDeletedDatasetsUseCase(uow=pg_app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=pg_ods_platform, datasets=[])
+    )
     # Assert
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is True
@@ -142,7 +156,12 @@ def test_postgres_dataset_has_been_deleted_on_platform(pg_app, pg_ods_platform, 
 def test_postgresql_upsert_supports_null_quality_counts(pg_app, pg_ods_platform, ods_dataset):
     # Arrange: Dataset with NULL counts
     incomplete_dataset = {**ods_dataset, "api_call_count": None, "download_count": None}
-    dataset_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=incomplete_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_ods_platform, platform_dataset_id=incomplete_dataset["uid"], raw_data=incomplete_dataset
+        )
+    )
+    dataset_id = result.dataset_id
 
     # Act
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
@@ -154,10 +173,15 @@ def test_postgresql_upsert_supports_null_quality_counts(pg_app, pg_ods_platform,
 
 def test_postgresql_upsert_restores_and_updates_deleted_dataset(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
 
     # Delete it
-    check_deleted_datasets(app=pg_app, platform=pg_ods_platform, datasets=[])
+    CheckDeletedDatasetsUseCase(uow=pg_app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=pg_ods_platform, datasets=[])
+    )
 
     # Act: Upsert with CHANGES
     new_data = {
@@ -167,7 +191,9 @@ def test_postgresql_upsert_restores_and_updates_deleted_dataset(pg_app, pg_ods_p
             "default": {**ods_dataset["metadata"]["default"], "title": "Updated SQL Title"},
         },
     }
-    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=new_data)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=new_data)
+    )
 
     # Assert
     result = pg_app.dataset.repository.get(dataset_id=dataset_id)
@@ -177,7 +203,9 @@ def test_postgresql_upsert_restores_and_updates_deleted_dataset(pg_app, pg_ods_p
 
 def test_postgresql_check_deletions_isolation_between_platforms(pg_app, pg_ods_platform, ods_dataset):
     # Arrange: Create dataset for Platform A (pg_ods_platform)
-    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
 
     # Create Platform B
     platform_b_data = {
@@ -187,14 +215,20 @@ def test_postgresql_check_deletions_isolation_between_platforms(pg_app, pg_ods_p
         "url": "http://platform-b.com",
         "type": "opendatasoft",
     }
-    platform_b_id = create_platform(pg_app, platform_b_data)
+    res_b = CreatePlatformUseCase(uow=pg_app.uow).handle(CreatePlatformCommand(**platform_b_data))
+    platform_b_id = res_b.platform_id
     platform_b = pg_app.platform.get(platform_id=platform_b_id)
 
     dataset_b_data = {**ods_dataset, "uid": "dataset-b", "dataset_id": "dataset-b"}
-    dataset_b_id = upsert_dataset(app=pg_app, platform=platform_b, dataset=dataset_b_data)
+    result_b = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=platform_b, platform_dataset_id=dataset_b_data["uid"], raw_data=dataset_b_data)
+    )
+    dataset_b_id = result_b.dataset_id
 
     # Act: Sync deletions for Platform A only
-    check_deleted_datasets(app=pg_app, platform=pg_ods_platform, datasets=[ods_dataset])
+    CheckDeletedDatasetsUseCase(uow=pg_app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=pg_ods_platform, datasets=[ods_dataset])
+    )
 
     # Assert: Platform B dataset should be UNTOUCHED
     result_b = pg_app.dataset.repository.get(dataset_id=dataset_b_id)
@@ -203,7 +237,10 @@ def test_postgresql_check_deletions_isolation_between_platforms(pg_app, pg_ods_p
 
 def test_postgresql_get_id_by_slug_globally_with_suffix(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
     clean_slug = ods_dataset["dataset_id"]
     suffix_slug = f"{clean_slug}-571796"
 
@@ -218,7 +255,9 @@ def test_postgresql_get_id_by_slug_globally_with_suffix(pg_app, pg_ods_platform,
 
 def test_postgresql_search_by_platform_id(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
 
     # Act
     items, total = pg_app.dataset.repository.search(platform_id=str(pg_ods_platform.id))
@@ -231,7 +270,9 @@ def test_postgresql_search_by_platform_id(pg_app, pg_ods_platform, ods_dataset):
 
 def test_postgresql_search_sorting(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
-    upsert_dataset(app=pg_app, platform=pg_ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(platform=pg_ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
 
     # Act
     # Sort by 'modified' which is present in multiple tables (datasets d, datasets ld)
@@ -247,25 +288,40 @@ def test_postgresql_search_sorting(pg_app, pg_ods_platform, ods_dataset):
 def test_postgresql_search_sorting_health_nulls_last(pg_app, pg_ods_platform, ods_dataset):
     # Arrange
     # Dataset 1: Health Score 100
-    d1_id = upsert_dataset(
-        app=pg_app, platform=pg_ods_platform, dataset={**ods_dataset, "uid": "d1", "dataset_id": "d1"}
+    res1 = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_ods_platform,
+            platform_dataset_id="d1",
+            raw_data={**ods_dataset, "uid": "d1", "dataset_id": "d1"},
+        )
     )
+    d1_id = res1.dataset_id
     pg_app.dataset.repository.client.execute(
         "UPDATE dataset_quality SET health_score = 100 WHERE dataset_id = %s", (str(d1_id),)
     )
 
     # Dataset 2: Health Score 50
-    d2_id = upsert_dataset(
-        app=pg_app, platform=pg_ods_platform, dataset={**ods_dataset, "uid": "d2", "dataset_id": "d2"}
+    res2 = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_ods_platform,
+            platform_dataset_id="d2",
+            raw_data={**ods_dataset, "uid": "d2", "dataset_id": "d2"},
+        )
     )
+    d2_id = res2.dataset_id
     pg_app.dataset.repository.client.execute(
         "UPDATE dataset_quality SET health_score = 50 WHERE dataset_id = %s", (str(d2_id),)
     )
 
     # Dataset 3: No Health Score (NULL)
-    d3_id = upsert_dataset(
-        app=pg_app, platform=pg_ods_platform, dataset={**ods_dataset, "uid": "d3", "dataset_id": "d3"}
+    res3 = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_ods_platform,
+            platform_dataset_id="d3",
+            raw_data={**ods_dataset, "uid": "d3", "dataset_id": "d3"},
+        )
     )
+    d3_id = res3.dataset_id
     pg_app.dataset.repository.client.execute(
         "UPDATE dataset_quality SET health_score = NULL WHERE dataset_id = %s", (str(d3_id),)
     )

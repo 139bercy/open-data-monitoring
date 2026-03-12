@@ -13,7 +13,12 @@ import time
 import requests
 from dotenv import load_dotenv
 
-from application.handlers import check_deleted_datasets, find_platform_from_url, upsert_dataset
+from application.handlers import find_platform_from_url
+from application.use_cases.check_deleted_datasets import (
+    CheckDeletedDatasetsCommand,
+    CheckDeletedDatasetsUseCase,
+)
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
 from domain.datasets.exceptions import DatasetUnreachableError
 from logger import logger
@@ -134,17 +139,19 @@ def get_data_gouv_datasets():
 def process_data_gouv():
     start_time = time.perf_counter()
     logger.info("🚀 Starting data.gouv.fr processing...")
-    
+
     get_data_gouv_datasets()
     platform = find_platform_from_url(app=app, url="https://www.data.gouv.fr/")
-    
+
     stats = {"success": 0, "failed": 0, "skipped": 0}
-    
+
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
         for dataset in data:
             try:
-                upsert_dataset(app=app, platform=platform, dataset=dataset)
+                SyncDatasetUseCase(uow=app.uow).handle(
+                    SyncDatasetCommand(platform=platform, platform_dataset_id=dataset.get("id"), raw_data=dataset)
+                )
                 stats["success"] += 1
             except DatasetUnreachableError:
                 stats["skipped"] += 1
@@ -155,10 +162,10 @@ def process_data_gouv():
     if platform:
         logger.info(f"🔄 Syncing platform metadata: {platform.slug}")
         SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
-    
+
     with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
         data = json.load(file)
-        check_deleted_datasets(app=app, platform=platform, datasets=data)
+        CheckDeletedDatasetsUseCase(uow=app.uow).handle(CheckDeletedDatasetsCommand(platform=platform, datasets=data))
 
     duration = time.perf_counter() - start_time
     logger.info(f"✅ data.gouv.fr completed in {duration:.2f}s")
@@ -168,26 +175,31 @@ def process_data_gouv():
 def process_data_eco():
     start_time = time.perf_counter()
     logger.info("🚀 Starting data.economie.gouv.fr processing...")
-    
+
     merge_data_eco_datasets()
-    
+
     stats = {"success": 0, "failed": 0, "skipped": 0}
-    
+
     with open(os.path.join(OUTPUT_DIR, "data-eco.json")) as file:
         data = json.load(file)
         platform = find_platform_from_url(app=app, url="https://data.economie.gouv.fr")
         if platform:
             logger.info(f"🔄 Syncing platform metadata: {platform.slug}")
             SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
-        
-        check_deleted_datasets(app=app, platform=platform, datasets=data)
-        
+
+        CheckDeletedDatasetsUseCase(uow=app.uow).handle(CheckDeletedDatasetsCommand(platform=platform, datasets=data))
+
         for dataset in data:
             try:
                 if platform is None:
                     stats["skipped"] += 1
                     continue
-                upsert_dataset(app=app, platform=platform, dataset=dataset)
+
+                SyncDatasetUseCase(uow=app.uow).handle(
+                    SyncDatasetCommand(
+                        platform=platform, platform_dataset_id=dataset.get("dataset_id"), raw_data=dataset
+                    )
+                )
                 stats["success"] += 1
             except DatasetUnreachableError:
                 stats["skipped"] += 1

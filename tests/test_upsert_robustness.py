@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock
 
-from application.handlers import upsert_dataset
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 
 
 def test_upsert_dataset_sync_failed_new_dataset(app, ods_platform):
     """
-    Test that upsert_dataset handles a 'failed' sync status correctly
+    Test that SyncDatasetUseCase handles a 'failed' sync status correctly
     when the dataset does not yet exist in the database (regression test for 500 error).
     """
     # 1. Arrange: Dataset with sync_status="failed" that is NOT in DB
@@ -17,17 +17,18 @@ def test_upsert_dataset_sync_failed_new_dataset(app, ods_platform):
     app.dataset.repository.update_dataset_sync_status = MagicMock()
 
     # 2. Act
-    # This should NOT raise TypeError: 'NoneType' object is not subscriptable
-    result = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_payload)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id="non-existent-yet", raw_data=dataset_payload)
+    )
 
     # 3. Assert
-    assert result is None
+    assert result.dataset_id is None
     app.dataset.repository.update_dataset_sync_status.assert_not_called()
 
 
 def test_upsert_dataset_sync_failed_existing_dataset(app, ods_platform):
     """
-    Test that upsert_dataset handles a 'failed' sync status correctly
+    Test that SyncDatasetUseCase handles a 'failed' sync status correctly
     when the dataset already exists in the database.
     """
     # 1. Arrange: Dataset with sync_status="failed" that IS in DB
@@ -38,7 +39,9 @@ def test_upsert_dataset_sync_failed_existing_dataset(app, ods_platform):
     app.dataset.repository.update_dataset_sync_status = MagicMock()
 
     # 2. Act
-    upsert_dataset(app=app, platform=ods_platform, dataset=dataset_payload)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id="existing-dataset", raw_data=dataset_payload)
+    )
 
     # 3. Assert
     app.dataset.repository.update_dataset_sync_status.assert_called_once_with(

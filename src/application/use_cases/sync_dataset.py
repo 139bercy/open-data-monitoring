@@ -17,6 +17,7 @@ from logger import logger
 class SyncDatasetCommand:
     platform: Platform
     platform_dataset_id: str
+    raw_data: Optional[dict] = None
 
 
 @dataclass(frozen=True)
@@ -39,9 +40,14 @@ class SyncDatasetUseCase:
         """
         Main orchestration for dataset synchronization.
         """
-        raw_data = self._fetch_raw_data(command.platform, command.platform_dataset_id)
-        if isinstance(raw_data, SyncDatasetOutput):
-            return raw_data
+        if command.raw_data:
+            raw_data = command.raw_data
+            if raw_data.get("sync_status") == "failed":
+                return self._handle_injected_failure(command.platform, raw_data)
+        else:
+            raw_data = self._fetch_raw_data(command.platform, command.platform_dataset_id)
+            if isinstance(raw_data, SyncDatasetOutput):
+                return raw_data
 
         instance = self._create_dataset_instance(command.platform, raw_data)
         if isinstance(instance, SyncDatasetOutput):
@@ -131,3 +137,20 @@ class SyncDatasetUseCase:
         self.repository.update_linking(d1)
         self.repository.update_linking(d2)
         logger.info(f"Link established (Bidirectional): {d1.slug} <-> {d2.slug}")
+
+    def _handle_injected_failure(self, platform: Platform, raw_data: dict) -> SyncDatasetOutput:
+        slug = raw_data.get("slug") or raw_data.get("dataset_id")
+        if not slug:
+            return SyncDatasetOutput(dataset_id=None, status="failed", message="Missing slug for failure update")
+
+        with self.uow:
+            dataset_id = self.repository.get_id_by_slug(platform_id=platform.id, slug=slug)
+            if dataset_id:
+                self.repository.update_dataset_sync_status(
+                    platform_id=platform.id, dataset_id=dataset_id, status="failed"
+                )
+        return SyncDatasetOutput(
+            dataset_id=dataset_id if "dataset_id" in locals() else None,
+            status="failed",
+            message="Injected failure recorded",
+        )

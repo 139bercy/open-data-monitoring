@@ -35,7 +35,7 @@ async def add_dataset(url: str):
         raise DatasetNotFoundError(f"Could not extract dataset ID from URL: {url}")
 
     # Pattern Strict Command: InputDTO -> Handle
-    use_case = SyncDatasetUseCase(repository=domain_app.dataset.repository, uow=domain_app.uow)
+    use_case = SyncDatasetUseCase(uow=domain_app.uow)
     command = SyncDatasetCommand(platform=platform, platform_dataset_id=dataset_id)
     output = use_case.handle(command)
 

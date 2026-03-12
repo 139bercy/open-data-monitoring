@@ -8,7 +8,7 @@ import uuid
 import psycopg2
 import pytest
 
-from application.handlers import create_platform
+from application.use_cases.create_platform import CreatePlatformCommand, CreatePlatformUseCase
 from domain.platform.aggregate import Platform
 from infrastructure.database.postgres import PostgresClient
 from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
@@ -165,7 +165,10 @@ def pg_app(db_transaction):
 
 @pytest.fixture
 def pg_platform(pg_app):
-    platform_id = create_platform(pg_app, platform_1)
+    use_case = CreatePlatformUseCase(uow=pg_app.uow)
+    command = CreatePlatformCommand(**platform_1)
+    output = use_case.handle(command)
+    platform_id = output.platform_id
     platform = pg_app.platform.get(platform_id=platform_id)
     return platform
 

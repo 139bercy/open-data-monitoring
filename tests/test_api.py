@@ -94,7 +94,7 @@ def test_api_list_platforms(mock_platforms_router):
 def test_get_publishers_stats_mock():
     with patch("interfaces.api.routers.common.domain_app") as mock_app:
         # Arrange
-        mock_app.dataset.repository.get_publishers_stats.return_value = [{"publisher": "P", "dataset_count": 5}]
+        mock_app.uow.datasets.get_publishers_stats.return_value = [{"publisher": "P", "dataset_count": 5}]
         # Act
         res = client.get("/api/v1/common/publishers")
         # Assert
@@ -203,3 +203,24 @@ def test_get_audit_report(mock_datasets_router):
     # Assert
     assert res.status_code == 200
     assert res.content.startswith(b"%PDF")
+
+
+def test_api_add_dataset(mock_datasets_router):
+    # Arrange
+    mock_app = mock_datasets_router
+    with (
+        patch("interfaces.api.routers.datasets.find_platform_from_url") as mock_find_p,
+        patch("interfaces.api.routers.datasets.find_dataset_id_from_url") as mock_find_d,
+        patch("interfaces.api.routers.datasets.SyncDatasetUseCase") as mock_uc,
+    ):
+        mock_find_p.return_value = MagicMock(id=uuid4())
+        mock_find_d.return_value = "dataset-id"
+        mock_uc.return_value.handle.return_value = MagicMock(status="success", dataset_id=uuid4())
+
+        # Act
+        res = client.post("/api/v1/datasets/add?url=https://dummy.com/dataset")
+
+        # Assert
+        assert res.status_code == 200
+        # Check that use case was instantiated with ONLY uow (not repository)
+        mock_uc.assert_called_once_with(uow=mock_app.uow)

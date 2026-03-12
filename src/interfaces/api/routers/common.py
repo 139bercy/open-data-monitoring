@@ -4,7 +4,7 @@ Router pour les endpoints common
 
 from fastapi import APIRouter
 
-from application.handlers import get_publishers_stats
+from application.use_cases.get_publishers_stats import GetPublishersStatsUseCase
 from interfaces.api.schemas.publishers import PublishersResponse, PublisherStats
 from settings import PROCONNECT_FEATURE_LEVEL
 from settings import app as domain_app
@@ -28,8 +28,9 @@ async def get_publishers_endpoint():
     Équivalent de la commande CLI: `app common get-publishers`
     Mais retourne les données au format JSON au lieu de créer un fichier CSV.
     """
-    # Utilise le handler DDD-compliant avec la nouvelle méthode repository
-    publishers_data = get_publishers_stats(domain_app)
+    use_case = GetPublishersStatsUseCase(uow=domain_app.uow)
+    output = use_case.handle()
+    publishers_data = output.stats
 
     # Transform raw data to Pydantic models
     publishers = [

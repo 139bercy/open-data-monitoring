@@ -4,7 +4,7 @@ import json
 import pytest
 from psycopg2._json import Json
 
-from application.handlers import upsert_dataset
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from infrastructure.repositories.datasets.postgres import strip_volatile_fields
 
 
@@ -90,7 +90,12 @@ def test_hashing_stability():
 def test_postgresql_deduplication(pg_app, pg_datagouv_platform, datagouv_dataset):
     # Arrange
     # First sync: create first version and blob
-    dataset_1_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_1_id = result.dataset_id
 
     # Act
     # Second sync: change ONLY volatile fields that are stripped (last_modified, time-series)
@@ -100,7 +105,11 @@ def test_postgresql_deduplication(pg_app, pg_datagouv_platform, datagouv_dataset
     # For DataGouv, 'last_update' maps to 'modified' which is in the domain checksum
     datagouv_dataset_v2["last_update"] = "2024-02-01T12:00:00Z"
 
-    upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset_v2)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v2["id"], raw_data=datagouv_dataset_v2
+        )
+    )
 
     # Assert
     client = pg_app.uow.client
@@ -116,7 +125,12 @@ def test_postgresql_reconstruction(pg_app, pg_datagouv_platform, datagouv_datase
     # Arrange: Add some volatile fields that should be stripped then reconstructed
     datagouv_dataset["harvest"] = {"last_id": "123", "status": "ok", "last_update": "2024-01-01T12:00:00Z"}
     datagouv_dataset["metrics"]["reuses_by_months"] = {"2024-01": 5}
-    dataset_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_id = result.dataset_id
 
     # Act
     # Get the dataset back from repository
@@ -143,7 +157,12 @@ def test_postgresql_reconstruction(pg_app, pg_datagouv_platform, datagouv_datase
 
 def test_postgresql_legacy_compatibility(pg_app, pg_datagouv_platform, datagouv_dataset):
     # Arrange: Manually insert a legacy version with snapshot but no blob_id
-    dataset_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_id = result.dataset_id
     client = pg_app.uow.client
 
     # Clear auto-created version and insert a legacy one
@@ -167,7 +186,12 @@ def test_postgresql_legacy_compatibility(pg_app, pg_datagouv_platform, datagouv_
 
 def test_migration_logic(pg_app, pg_datagouv_platform, datagouv_dataset):
     # Arrange: Manually insert multiple legacy versions
-    dataset_1_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_1_id = result.dataset_id
     client = pg_app.uow.client
     client.execute("DELETE FROM dataset_versions")
     client.execute("DELETE FROM dataset_blobs")
@@ -239,13 +263,22 @@ def test_migration_logic(pg_app, pg_datagouv_platform, datagouv_dataset):
 
 def test_version_diff_tracking(pg_app, pg_datagouv_platform, datagouv_dataset):
     # Arrange
-    dataset_1_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_1_id = result.dataset_id
 
     # Act: Second sync with a title change AND modified change (structural)
     datagouv_dataset_v2 = datagouv_dataset.copy()
     datagouv_dataset_v2["title"] = "Updated Title"
     datagouv_dataset_v2["last_update"] = "2026-01-01T12:00:00Z"
-    upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset_v2)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v2["id"], raw_data=datagouv_dataset_v2
+        )
+    )
 
     # Assert
     dataset = pg_app.dataset.repository.get(dataset_1_id)
@@ -265,7 +298,11 @@ def test_version_diff_tracking(pg_app, pg_datagouv_platform, datagouv_dataset):
     datagouv_dataset_v3 = datagouv_dataset_v2.copy()
     datagouv_dataset_v3["metrics"]["views"] = 20000
     datagouv_dataset_v3["last_update"] = "2026-01-01T13:00:00Z"  # Structural change!
-    upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset_v3)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v3["id"], raw_data=datagouv_dataset_v3
+        )
+    )
 
     # Assert 2
     dataset = pg_app.dataset.repository.get(dataset_1_id)
@@ -280,7 +317,12 @@ def test_version_diff_tracking(pg_app, pg_datagouv_platform, datagouv_dataset):
 @pytest.mark.skip(reason="Cooldown is disabled (hours=0) for now")
 def test_versioning_cooldown_noise_reduction(pg_app, pg_datagouv_platform, datagouv_dataset):
     # 1. First sync
-    dataset_id = upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset)
+    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_id = result.dataset_id
     ds = pg_app.dataset.repository.get(dataset_id)
     assert len(ds.versions) == 1
 
@@ -288,7 +330,11 @@ def test_versioning_cooldown_noise_reduction(pg_app, pg_datagouv_platform, datag
     datagouv_dataset_v2 = datagouv_dataset.copy()
     datagouv_dataset_v2["metrics"]["views"] = (datagouv_dataset.get("metrics", {}).get("views") or 0) + 1
 
-    upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset_v2)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v2["id"], raw_data=datagouv_dataset_v2
+        )
+    )
 
     # ASSERT: Still only 1 version because of 24h cooldown
     ds_after = pg_app.dataset.repository.get(dataset_id)
@@ -300,7 +346,11 @@ def test_versioning_cooldown_noise_reduction(pg_app, pg_datagouv_platform, datag
     # For DataGouv, 'last_update' is mapped to 'modified'
     datagouv_dataset_v3["last_update"] = "2025-01-01T12:00:00"
 
-    upsert_dataset(pg_app, pg_datagouv_platform, datagouv_dataset_v3)
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v3["id"], raw_data=datagouv_dataset_v3
+        )
+    )
 
     # ASSERT: 2 versions (Initial + Structural)
     ds_final = pg_app.dataset.repository.get(dataset_id)

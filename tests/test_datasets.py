@@ -1,18 +1,21 @@
 from datetime import datetime
 from uuid import UUID
 
-from application.handlers import check_deleted_datasets, upsert_dataset
+from application.use_cases.check_deleted_datasets import (
+    CheckDeletedDatasetsCommand,
+    CheckDeletedDatasetsUseCase,
+)
+from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from domain.platform.aggregate import Platform
 from infrastructure.adapters.datasets.ods import OpendatasoftDatasetAdapter
 
 
 def test_create_opendatasoft_dataset(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(
-        app=app,
-        platform=ods_platform,
-        dataset=ods_dataset,
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
+    dataset_id = result.dataset_id
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
@@ -24,13 +27,18 @@ def test_create_opendatasoft_dataset(app, ods_platform, ods_dataset):
 
 def test_should_handle_unreachable_dataset(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
     # Act
-    upsert_dataset(
-        app=app,
-        platform=ods_platform,
-        dataset={"slug": dataset.slug, "sync_status": "failed"},
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=ods_platform,
+            platform_dataset_id=dataset.slug,
+            raw_data={"slug": dataset.slug, "sync_status": "failed"},
+        )
     )
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -39,11 +47,10 @@ def test_should_handle_unreachable_dataset(app, ods_platform, ods_dataset):
 
 def test_dataset_schema(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(
-        app=app,
-        platform=ods_platform,
-        dataset=ods_dataset,
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
+    dataset_id = result.dataset_id
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
@@ -55,11 +62,10 @@ def test_dataset_schema(app, ods_platform, ods_dataset):
 
 def test_create_opendatasoft_dataset_platform_does_not_exist(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(
-        app=app,
-        platform=ods_platform,
-        dataset=ods_dataset,
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
+    dataset_id = result.dataset_id
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
@@ -88,11 +94,12 @@ def test_find_dataset_id_from_url_if_ends():
 
 def test_create_datagouv_dataset(app, datagouv_platform, datagouv_dataset):
     # Arrange
-    dataset_id = upsert_dataset(
-        app=app,
-        platform=datagouv_platform,
-        dataset=datagouv_dataset,
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
     )
+    dataset_id = result.dataset_id
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
     # Assert
@@ -102,11 +109,10 @@ def test_create_datagouv_dataset(app, datagouv_platform, datagouv_dataset):
 
 def test_hash_dataset(app, ods_platform, ods_dataset):
     # Arrange & Act
-    dataset_id = upsert_dataset(
-        app=app,
-        platform=ods_platform,
-        dataset=ods_dataset,
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
     )
+    dataset_id = result.dataset_id
     # Act
     dataset = app.dataset.repository.get(dataset_id=dataset_id)
     assert len(dataset.checksum) == 64  # SHA-256 hash length
@@ -135,7 +141,9 @@ def test_hash_changes_with_data_changes(app, ods_platform, ods_dataset):
 
 def test_get_checksum_by_buid(app, ods_platform, ods_dataset):
     # Arrange
-    upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
     # Act
     checksum = app.dataset.repository.get_checksum_by_buid(dataset_buid=ods_dataset["uid"])
     # Assert
@@ -145,16 +153,22 @@ def test_get_checksum_by_buid(app, ods_platform, ods_dataset):
 
 def test_dataset_version_has_not_changed(app, ods_platform, ods_dataset):
     # Arrange
-    upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
     # Act & Assert
-    upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
     assert len(app.dataset.repository.db) == 1
     assert len(app.dataset.repository.versions) == 1
 
 
 def test_dataset_version_has_changed(app, ods_platform, ods_dataset):
     # Arrange
-    upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
     # Act & Assert - Change title to trigger checksum change
     new = {
         **ods_dataset,
@@ -166,17 +180,24 @@ def test_dataset_version_has_changed(app, ods_platform, ods_dataset):
             },
         },
     }
-    upsert_dataset(app=app, platform=ods_platform, dataset=new)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=new)
+    )
     assert len(app.dataset.repository.db) == 1
     assert len(app.dataset.repository.versions) == 2
 
 
 def test_dataset_has_been_deleted_on_platform(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
     # Act
     crawler = []
-    check_deleted_datasets(app=app, platform=ods_platform, datasets=crawler)
+    CheckDeletedDatasetsUseCase(uow=app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=ods_platform, datasets=crawler)
+    )
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is True
@@ -184,15 +205,20 @@ def test_dataset_has_been_deleted_on_platform(app, ods_platform, ods_dataset):
 
 def test_upsert_restores_deleted_dataset(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
 
     # Delete it
-    check_deleted_datasets(app=app, platform=ods_platform, datasets=[])
+    CheckDeletedDatasetsUseCase(uow=app.uow).handle(CheckDeletedDatasetsCommand(platform=ods_platform, datasets=[]))
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is True
 
     # Act: Upsert again
-    upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
 
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -201,15 +227,20 @@ def test_upsert_restores_deleted_dataset(app, ods_platform, ods_dataset):
 
 def test_upsert_restores_and_updates_deleted_dataset(app, ods_platform, ods_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
-    check_deleted_datasets(app=app, platform=ods_platform, datasets=[])
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_id = result.dataset_id
+    CheckDeletedDatasetsUseCase(uow=app.uow).handle(CheckDeletedDatasetsCommand(platform=ods_platform, datasets=[]))
 
     # Act: Upsert with CHANGES (inspired by data-eco.json structure)
     new_data = {
         **ods_dataset,
         "metas": {**ods_dataset["metas"], "default": {**ods_dataset["metas"]["default"], "title": "Updated Title"}},
     }
-    upsert_dataset(app=app, platform=ods_platform, dataset=new_data)
+    SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=new_data["uid"], raw_data=new_data)
+    )
 
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -220,7 +251,10 @@ def test_upsert_restores_and_updates_deleted_dataset(app, ods_platform, ods_data
 def test_check_deletions_isolation_between_platforms(app, ods_platform, ods_dataset):
     # Arrange: Create dataset for Platform A
     ods_platform.id = UUID("11111111-1111-1111-1111-111111111111")
-    dataset_a_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    dataset_a_id = result.dataset_id
 
     # Create Platform B
     platform_b = Platform(
@@ -233,10 +267,15 @@ def test_check_deletions_isolation_between_platforms(app, ods_platform, ods_data
         key="key-b",
     )
     dataset_b_data = {**ods_dataset, "uid": "dataset-b", "dataset_id": "dataset-b"}
-    dataset_b_id = upsert_dataset(app=app, platform=platform_b, dataset=dataset_b_data)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=platform_b, platform_dataset_id=dataset_b_data["uid"], raw_data=dataset_b_data)
+    )
+    dataset_b_id = result.dataset_id
 
     # Act: Sync deletions for Platform A only (passing its dataset)
-    check_deleted_datasets(app=app, platform=ods_platform, datasets=[ods_dataset])
+    CheckDeletedDatasetsUseCase(uow=app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=ods_platform, datasets=[ods_dataset])
+    )
 
     # Assert: Platform B dataset should be UNTOUCHED (still active)
     # even if not present in the crawler results of Platform A
@@ -246,18 +285,27 @@ def test_check_deletions_isolation_between_platforms(app, ods_platform, ods_data
 
 def test_check_deletions_supports_datagouv_id_format(app, datagouv_platform, datagouv_dataset):
     # Arrange
-    dataset_id = upsert_dataset(app=app, platform=datagouv_platform, dataset=datagouv_dataset)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    dataset_id = result.dataset_id
 
     # Act: Sync using "id" key in crawler result
     crawler_results = [{"id": datagouv_dataset["id"]}]
-    check_deleted_datasets(app=app, platform=datagouv_platform, datasets=crawler_results)
+    CheckDeletedDatasetsUseCase(uow=app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=datagouv_platform, datasets=crawler_results)
+    )
 
     # Assert
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is False
 
     # Verify deletion works with "id" key too
-    check_deleted_datasets(app=app, platform=datagouv_platform, datasets=[])
+    CheckDeletedDatasetsUseCase(uow=app.uow).handle(
+        CheckDeletedDatasetsCommand(platform=datagouv_platform, datasets=[])
+    )
     result = app.dataset.repository.get(dataset_id=dataset_id)
     assert result.is_deleted is True
 
@@ -265,7 +313,12 @@ def test_check_deletions_supports_datagouv_id_format(app, datagouv_platform, dat
 def test_upsert_supports_null_quality_counts(app, ods_platform, ods_dataset):
     # Arrange
     incomplete_dataset = {**ods_dataset, "api_call_count": None, "download_count": None}
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=incomplete_dataset)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=ods_platform, platform_dataset_id=incomplete_dataset["uid"], raw_data=incomplete_dataset
+        )
+    )
+    dataset_id = result.dataset_id
 
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -277,7 +330,14 @@ def test_upsert_supports_null_quality_counts(app, ods_platform, ods_dataset):
 def test_ods_underscore_quality_check(app, ods_platform, ods_dataset):
     # Arrange: Dataset ID with underscores
     dataset_with_underscore = {**ods_dataset, "dataset_id": "my_dataset_with_underscores"}
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_with_underscore)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=ods_platform,
+            platform_dataset_id=dataset_with_underscore["dataset_id"],
+            raw_data=dataset_with_underscore,
+        )
+    )
+    dataset_id = result.dataset_id
 
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -289,7 +349,12 @@ def test_ods_underscore_quality_check(app, ods_platform, ods_dataset):
 def test_ods_clean_slug_quality_check(app, ods_platform, ods_dataset):
     # Arrange: Dataset ID without underscores
     dataset_clean = {**ods_dataset, "dataset_id": "my-clean-dataset"}
-    dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=dataset_clean)
+    result = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=ods_platform, platform_dataset_id=dataset_clean["dataset_id"], raw_data=dataset_clean
+        )
+    )
+    dataset_id = result.dataset_id
 
     # Act
     result = app.dataset.repository.get(dataset_id=dataset_id)
@@ -303,8 +368,16 @@ def test_link_datasets(app, ods_platform, ods_dataset, datagouv_platform, datago
     ods_dataset["metadata"] = {
         "default": {"source": f"https://www.data.gouv.fr/fr/datasets/{datagouv_dataset['slug']}/"}
     }
-    ods_dataset_id = upsert_dataset(app=app, platform=ods_platform, dataset=ods_dataset)
-    datagouv_dataset_id = upsert_dataset(app=app, platform=datagouv_platform, dataset=datagouv_dataset)
+    result1 = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(platform=ods_platform, platform_dataset_id=ods_dataset["uid"], raw_data=ods_dataset)
+    )
+    ods_dataset_id = result1.dataset_id
+    result2 = SyncDatasetUseCase(uow=app.uow).handle(
+        SyncDatasetCommand(
+            platform=datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
+        )
+    )
+    datagouv_dataset_id = result2.dataset_id
     # 4. Trigger linking
     app.dataset.link_datasets(dataset_or_id=ods_dataset_id)
 
