@@ -1069,6 +1069,32 @@ function QualityTab({
           small
         />
       )}
+      {(evaluating || syncing) && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "4rem",
+            backgroundColor: "rgba(255, 255, 255, 0.7)",
+            borderRadius: "8px",
+            marginBottom: "2rem",
+            border: "1px dashed var(--border-default-blue-france)",
+          }}
+        >
+          <span
+            className="ri-loader-4-line ri-xl ri-spin"
+            style={{ color: "var(--text-title-blue-france)", fontSize: "3rem" }}
+          />
+          <p className="fr-mt-2w fr-text--bold fr-mb-0">
+            {syncing ? "Sychronisation des données..." : "Analyse IA en cours..."}
+          </p>
+          <p className="fr-text--xs fr-mt-1w" style={{ opacity: 0.7 }}>
+            Cela peut prendre quelques secondes (appel LLM en cours)
+          </p>
+        </div>
+      )}
 
       {results ? (
         <>
