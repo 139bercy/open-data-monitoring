@@ -1088,9 +1088,14 @@ function QualityTab({
             style={{ color: "var(--text-title-blue-france)", fontSize: "3rem" }}
           />
           <p className="fr-mt-2w fr-text--bold fr-mb-0">
-            {syncing ? "Sychronisation des données..." : "Analyse IA en cours..."}
+            {syncing
+              ? "Sychronisation des données..."
+              : "Analyse IA en cours..."}
           </p>
-          <p className="fr-text--xs fr-mt-1w" style={{ opacity: 0.7 }}>
+          <p
+            className="fr-text--xs fr-mt-1w"
+            style={{ opacity: 0.7 }}
+          >
             Cela peut prendre quelques secondes (appel LLM en cours)
           </p>
         </div>
