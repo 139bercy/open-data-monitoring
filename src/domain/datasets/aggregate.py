@@ -98,7 +98,6 @@ class Dataset:
             "title": self.title,
             "page": str(self.page),
             "created": self.created.isoformat() if isinstance(self.created, datetime) else self.created,
-            "modified": self.modified.isoformat() if isinstance(self.modified, datetime) else self.modified,
             "published": self.published,
             "restricted": self.restricted,
             "publisher": self.publisher,

@@ -76,7 +76,9 @@ class AbstractDatasetRepository(abc.ABC):  # pragma: no cover
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_versions(self, dataset_id: UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
+    def get_versions(
+        self, dataset_id: UUID, page: int = 1, page_size: int = 50, include_data: bool = False
+    ) -> tuple[list[dict], int]:
         """Get paginated version history for a dataset."""
         raise NotImplementedError
 

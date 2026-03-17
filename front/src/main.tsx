@@ -17,7 +17,6 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import authService from "./api/auth";
 import api from "./api/api";
 import { loadGlobalFeatures } from "./utils/featureFlags";
-// ...existing code...
 
 startReactDsfr({ defaultColorScheme: "system" });
 

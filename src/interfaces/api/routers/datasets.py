@@ -161,7 +161,7 @@ async def get_dataset_versions(dataset_id: UUID, page: int = 1, page_size: int =
     """
     Liste paginée des versions (snapshots) d'un dataset.
     """
-    items, total = domain_app.dataset.repository.get_versions(dataset_id, page, page_size)
+    items, total = domain_app.dataset.repository.get_versions(dataset_id, page, page_size, include_data)
     return {"versions": items, "total_versions": total, "page": page, "page_size": page_size}
 
 

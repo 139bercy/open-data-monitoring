@@ -20,6 +20,7 @@ import {
 } from "./CompareSnapshotsModal";
 import { calculateDownloadsPerDay } from "../utils/calculations";
 import { computeDiff, DiffSummary, parseBackendDiff } from "../utils/diff";
+import TrafficChart from "./analytics/TrafficChart";
 
 /**
  * Constants & Utils
@@ -123,8 +124,8 @@ function useHistoryManager(datasetId?: string) {
     try {
       const res = await getDatasetVersions(datasetId, {
         page: 1,
-        pageSize: 90,
-        includeData: true,
+        pageSize: 100, // Augmenté pour couvrir potentiellement plus de 90 jours si synchro multiple/jour
+        includeData: false,
       });
       setVersions(res.items);
     } catch (e: any) {
@@ -705,7 +706,7 @@ function SnapshotItem({
                   color: "var(--text-mention-grey)",
                 }}
               >
-                JSON non chargé
+                Snapshot léger (métadonnées complètes non chargées)
               </span>
             )}
           </div>
@@ -1372,9 +1373,9 @@ export function DatasetDetailsModal({
     return snapA && snapB ? { snapA, snapB } : null;
   }, [selectedSnapshots, versions]);
 
-  const [activeTab, setActiveTab] = useState<"info" | "quality" | "history">(
-    "info"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "info" | "quality" | "history" | "traffic"
+  >("info");
 
   const content = useMemo(() => {
     if (!dataset) {
@@ -1556,6 +1557,17 @@ export function DatasetDetailsModal({
                 Historique
               </button>
             </li>
+            <li role="presentation">
+              <button
+                className="fr-tabs__tab"
+                tabIndex={activeTab === "traffic" ? 0 : -1}
+                role="tab"
+                aria-selected={activeTab === "traffic"}
+                onClick={() => setActiveTab("traffic")}
+              >
+                Fréquentation (90j)
+              </button>
+            </li>
           </ul>
 
           <div
@@ -1619,9 +1631,29 @@ export function DatasetDetailsModal({
                 refresh={fetchVersions}
                 selectedSnapshots={selectedSnapshots}
                 toggleSelection={toggleSelection}
-                onCompare={compareSnapshotsModal.open}
+                onCompare={() => compareSnapshotsModal.open()}
                 baseline={dataset.currentSnapshot}
               />
+            )}
+          </div>
+          <div
+            className={`fr-tabs__panel ${activeTab === "traffic" ? "fr-tabs__panel--selected" : ""}`}
+            role="tabpanel"
+            tabIndex={0}
+          >
+            {activeTab === "traffic" && (
+              <div className="fr-py-4w">
+                <h6 className="fr-h6">
+                  Évolution de la fréquentation (90 derniers jours)
+                </h6>
+                <TrafficChart
+                  versions={versions || []}
+                  datasetTitle={dataset.title || undefined}
+                  datasetSlug={dataset.slug || undefined}
+                  platformName={platformName || undefined}
+                  datasetUrl={dataset.page || undefined}
+                />
+              </div>
             )}
           </div>
         </div>
@@ -1655,17 +1687,29 @@ export function DatasetDetailsModal({
 
   return (
     <>
+      <style>{`
+        /* Surcharge globale pour la modale de détails */
+        #dataset-details-modal .fr-modal__dialog {
+          max-width: 95vw !important;
+          width: 95vw !important;
+        }
+                body #dataset-details-modal.fr-modal .fr-modal__content {
+            max-height: 85vh !important;
+            overflow-y: auto !important;
+            padding-bottom: 4rem !important;
+          }
+        #dataset-details-modal .fr-container {
+          max-width: 100% !important;
+          width: 100% !important;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .ri-spin { animation: spin 1s linear infinite; display: inline-block; }
+      `}</style>
+
       <Modal
         title={undefined}
         size="large"
-        style={{ minWidth: "85%" }}
       >
-        <style>{`
-          #dataset-details-modal .fr-modal__dialog { max-width: 85vw !important; }
-          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-          .ri-spin { animation: spin 1s linear infinite; display: inline-block; }
-        `}</style>
-
         {content}
       </Modal>
 

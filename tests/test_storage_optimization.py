@@ -116,9 +116,32 @@ def test_postgresql_deduplication(pg_app, pg_datagouv_platform, datagouv_dataset
     versions = client.fetchall("SELECT * FROM dataset_versions WHERE dataset_id = %s", (str(dataset_1_id),))
     blobs = client.fetchall("SELECT * FROM dataset_blobs")
 
-    assert len(versions) == 2
-    assert len(blobs) == 1, "Only one blob should exist as only volatile fields changed"
-    assert versions[0]["blob_id"] == versions[1]["blob_id"]
+    assert len(versions) == 1, "Should NOT create a new version as only volatile/technical fields changed"
+    assert len(blobs) == 1
+
+    # Act 2: Third sync: change a CORE metric (views)
+    # But FIRST, we must bypass the 12h cooldown by aging the first version
+    client.execute(
+        "UPDATE dataset_versions SET timestamp = timestamp - interval '13 hours' WHERE dataset_id = %s",
+        (str(dataset_1_id),),
+    )
+
+    datagouv_dataset_v3 = datagouv_dataset_v2.copy()
+    datagouv_dataset_v3["metrics"] = datagouv_dataset_v3["metrics"].copy()
+    datagouv_dataset_v3["metrics"]["views"] += 100
+
+    SyncDatasetUseCase(uow=pg_app.uow).handle(
+        SyncDatasetCommand(
+            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v3["id"], raw_data=datagouv_dataset_v3
+        )
+    )
+
+    # Assert 2
+    versions_final = client.fetchall(
+        "SELECT * FROM dataset_versions WHERE dataset_id = %s ORDER BY timestamp ASC", (str(dataset_1_id),)
+    )
+    assert len(versions_final) == 2, "Should create a new version when a core metric changes"
+    assert versions_final[1]["views_count"] == datagouv_dataset_v3["metrics"]["views"]
 
 
 def test_postgresql_reconstruction(pg_app, pg_datagouv_platform, datagouv_dataset):
@@ -295,9 +318,16 @@ def test_version_diff_tracking(pg_app, pg_datagouv_platform, datagouv_dataset):
     assert v2.diff["title"]["old"] == datagouv_dataset["title"]
 
     # Act 2: Third sync with only a metric change
+    # Bypass cooldown
+    client = pg_app.uow.client
+    client.execute(
+        "UPDATE dataset_versions SET timestamp = timestamp - interval '13 hours' WHERE dataset_id = %s",
+        (str(dataset_1_id),),
+    )
+
     datagouv_dataset_v3 = datagouv_dataset_v2.copy()
     datagouv_dataset_v3["metrics"]["views"] = 20000
-    datagouv_dataset_v3["last_update"] = "2026-01-01T13:00:00Z"  # Structural change!
+    datagouv_dataset_v3["last_update"] = "2026-01-01T13:00:00Z"  # Technical change, won't trigger version on its own
     SyncDatasetUseCase(uow=pg_app.uow).handle(
         SyncDatasetCommand(
             platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset_v3["id"], raw_data=datagouv_dataset_v3

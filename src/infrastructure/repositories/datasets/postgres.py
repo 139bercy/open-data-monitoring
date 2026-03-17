@@ -1036,7 +1036,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             "health_engagement_score": health_scores["engagement"] if health_scores else None,
         }
 
-    def get_versions(self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
+    def get_versions(
+        self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50, include_data: bool = False
+    ) -> tuple[list[dict], int]:
         """Get paginated version history for a dataset."""
         offset = (max(1, page) - 1) * page_size
 
@@ -1046,16 +1048,28 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         )
         total = int(cnt_rows[0]["cnt"]) if cnt_rows else 0
 
-        rows = self.client.fetchall(
-            """
-            SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, db.data as blob_data,
-                   COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
-            FROM dataset_versions dv
-            LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
-            WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT %s OFFSET %s
-            """,
-            (str(dataset_id), page_size, offset),
-        )
+        if include_data:
+            rows = self.client.fetchall(
+                """
+                SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, db.data as blob_data,
+                       COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
+                FROM dataset_versions dv
+                LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
+                WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT %s OFFSET %s
+                """,
+                (str(dataset_id), page_size, offset),
+            )
+        else:
+            rows = self.client.fetchall(
+                """
+                SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.metadata_volatile, NULL as blob_data,
+                       dv.title AS derived_title
+                FROM dataset_versions dv
+                WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT %s OFFSET %s
+                """,
+                (str(dataset_id), page_size, offset),
+            )
+
         items = [
             {
                 "id": r["id"],
@@ -1069,7 +1083,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 "popularity_score": r.get("popularity_score"),
                 "title": r.get("derived_title"),
                 "diff": r.get("diff"),
-                "data": deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {}),
+                "data": (
+                    deep_merge(r.get("blob_data") or {}, r.get("metadata_volatile") or {}) if include_data else None
+                ),
             }
             for r in rows
         ]

@@ -304,7 +304,9 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
             "snapshots": snapshots,
         }
 
-    def get_versions(self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
+    def get_versions(
+        self, dataset_id: uuid.UUID, page: int = 1, page_size: int = 50, include_data: bool = False
+    ) -> tuple[list[dict], int]:
         """Get paginated version history for a dataset (In-memory implementation)."""
         dataset_versions = [v for v in self.versions if v["dataset_id"] == dataset_id]
         dataset_versions.sort(key=lambda v: v["timestamp"], reverse=True)
@@ -325,7 +327,7 @@ class InMemoryDatasetRepository(AbstractDatasetRepository):
                 "popularity_score": v.get("popularity_score"),
                 "title": v.get("title"),
                 "diff": v.get("diff"),
-                "data": v.get("snapshot"),
+                "data": v.get("snapshot") if include_data else None,
             }
             for v in paginated
         ]
