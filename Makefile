@@ -50,6 +50,7 @@ lint: ## Run all linters and formatters
 	ruff format .
 	black .
 	cd front && npx prettier --write "src/**/*.{ts,tsx,json,css,scss,md}"
+	git add .
 
 generate-service: ## Generate systemd user service (params: PATH=/abs/path)
 	bash ./deployment/generate_service.sh -p $(PATH)

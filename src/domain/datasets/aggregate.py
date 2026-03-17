@@ -496,11 +496,19 @@ class Dataset:
 
     def should_version(self, new_instance: Dataset) -> bool:
         """Determine if a new version should be created based on changes."""
+        # 1. Structural changes (Checksum includes title, description, page, etc. BUT NOT 'modified')
         if self.checksum != new_instance.checksum:
             return True
+
+        # 2. Status changes (Deleted/Restored)
         if self.is_deleted != new_instance.is_deleted:
             return True
 
+        # 3. Heartbeat: Force snapshot if the last one is > 24h old (Ensures continuity)
+        if self.is_cooldown_active(hours=24) is False:
+            return True
+
+        # 4. Metric changes: Reactive immediately (cooldown=0 by default)
         if self.has_metrics_changed(new_instance):
             return not self.is_cooldown_active()
 

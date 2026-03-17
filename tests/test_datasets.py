@@ -1,4 +1,3 @@
-from datetime import datetime
 from uuid import UUID
 
 from application.use_cases.check_deleted_datasets import (
@@ -133,10 +132,10 @@ def test_hash_changes_with_data_changes(app, ods_platform, ods_dataset):
     dataset = app.dataset.add_dataset(platform=ods_platform, dataset=ods_dataset, adapter=OpendatasoftDatasetAdapter())
     # Act
     hash1 = dataset.calculate_hash()
-    dataset.modified = datetime.fromisoformat("2024-01-01T00:00:00+00:00")
+    dataset.title = "New Title"
     hash2 = dataset.calculate_hash()
     # Assert
-    assert hash1 != hash2  # Hash should change when data changes
+    assert hash1 != hash2  # Hash should change when structural data changes
 
 
 def test_get_checksum_by_buid(app, ods_platform, ods_dataset):
