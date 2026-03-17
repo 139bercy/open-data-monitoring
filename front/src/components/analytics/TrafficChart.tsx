@@ -36,12 +36,29 @@ const TrafficChart: React.FC<TrafficChartProps> = ({
 
   const chartData = useMemo(() => {
     // 1. Trier par date croissante
-    const sorted = [...versions].sort(
+    const sortedRaw = [...versions].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // 2. Filtrer pour les 90 derniers jours (en incluant toute la journée de début)
+    // DEDUPLICATION: Filtrer les snapshots "stagnants" (métriques identiques au précédent)
+    // Cela crée des "trous" artificiels que l'interpolation viendra lisser.
+    const sorted: SnapshotVersion[] = [];
+    for (let i = 0; i < sortedRaw.length; i++) {
+      const current = sortedRaw[i];
+      const previous = i > 0 ? sortedRaw[i - 1] : null;
+
+      if (previous && i < sortedRaw.length - 1) {
+        const isStale =
+          current.viewsCount === previous.viewsCount &&
+          current.apiCallsCount === previous.apiCallsCount &&
+          current.downloadsCount === previous.downloadsCount;
+        if (isStale) continue;
+      }
+      sorted.push(current);
+    }
+
+    // 2. Filtrer pour les 90 derniers jours
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     ninetyDaysAgo.setHours(0, 0, 0, 0);
@@ -105,32 +122,112 @@ const TrafficChart: React.FC<TrafficChartProps> = ({
     };
 
     if (aggregation === "daily") {
-      // Regroupement par jour ISO pour éviter les sauts de fuseau horaire
+      // 1. Regroupement par jour ISO
       const dailyMap = new Map<string, SnapshotVersion>();
       filtered.forEach((v) => {
-        const d = new Date(v.timestamp).toISOString().split("T")[0];
+        const dStr = new Date(v.timestamp).toISOString().split("T")[0];
         if (
-          !dailyMap.has(d) ||
-          new Date(v.timestamp) > new Date(dailyMap.get(d)!.timestamp)
+          !dailyMap.has(dStr) ||
+          new Date(v.timestamp) > new Date(dailyMap.get(dStr)!.timestamp)
         ) {
-          dailyMap.set(d, v);
+          dailyMap.set(dStr, v);
         }
       });
 
-      const dailySorted = Array.from(dailyMap.values()).sort(
+      // 2. Préparation des points calendaires
+      const points: any[] = [];
+      const cursor = new Date(ninetyDaysAgo);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+
+      // snapshots ordonnés pour l'interpolation
+      const timelineSnaps = Array.from(dailyMap.values()).sort(
         (a, b) =>
           new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
 
-      return dailySorted.map((v, idx) => {
-        // Pour le delta du premier point affiché, on cherche le snapshot juste avant dans la liste complète
-        const prev =
-          idx > 0
-            ? dailySorted[idx - 1]
-            : sorted[sorted.findIndex((s) => s.id === v.id) - 1];
-        return formatDataPoint(v, prev);
-      });
-    } else {
+      // Snapshot juste avant la fenêtre pour calcul du 1er delta
+      const startRefIndex = sorted.findIndex(
+        (v) => new Date(v.timestamp) >= ninetyDaysAgo
+      );
+      let globalLastKnown: SnapshotVersion | undefined =
+        startRefIndex > 0 ? sorted[startRefIndex - 1] : undefined;
+
+      while (cursor <= today) {
+        const dStr = cursor.toISOString().split("T")[0];
+        const nextSnapIndex = timelineSnaps.findIndex(
+          (s) => new Date(s.timestamp).toISOString().split("T")[0] >= dStr
+        );
+        const nextSnap =
+          nextSnapIndex !== -1 ? timelineSnaps[nextSnapIndex] : undefined;
+        const prevSnap =
+          nextSnapIndex > 0
+            ? timelineSnaps[nextSnapIndex - 1]
+            : globalLastKnown;
+
+        let currentData: SnapshotVersion;
+
+        if (dailyMap.has(dStr)) {
+          currentData = dailyMap.get(dStr)!;
+        } else if (prevSnap && nextSnap) {
+          // INTERPOLATION GÉNÉRALE
+          const tStart = new Date(prevSnap.timestamp).getTime();
+          const tEnd = new Date(nextSnap.timestamp).getTime();
+          const tCurrent = cursor.getTime();
+          const ratio = (tCurrent - tStart) / (tEnd - tStart);
+
+          const interpolate = (
+            start: number | null | undefined,
+            end: number | null | undefined
+          ) => {
+            if (start === undefined || start === null) return null;
+            if (end === undefined || end === null) return null;
+            return Math.round(start + (end - start) * ratio);
+          };
+
+          currentData = {
+            ...nextSnap,
+            timestamp: cursor.toISOString(),
+            viewsCount: interpolate(prevSnap.viewsCount, nextSnap.viewsCount),
+            apiCallsCount: interpolate(
+              prevSnap.apiCallsCount,
+              nextSnap.apiCallsCount
+            ),
+            downloadsCount: interpolate(
+              prevSnap.downloadsCount,
+              nextSnap.downloadsCount
+            ),
+          };
+        } else {
+          // LOCF (Si pas de "Next", on reste sur le dernier connu)
+          currentData = prevSnap
+            ? { ...prevSnap, timestamp: cursor.toISOString() }
+            : ({} as SnapshotVersion);
+        }
+
+        if (currentData.timestamp) {
+          const prevForDelta =
+            points.length > 0 ? points[points.length - 1]._raw : globalLastKnown;
+          const formatted = formatDataPoint(currentData, prevForDelta);
+
+          points.push({
+            ...formatted,
+            date: cursor.toLocaleDateString("fr-FR", {
+              day: "numeric",
+              month: "short",
+            }),
+            fullDate: cursor.toLocaleDateString("fr-FR"),
+            _raw: currentData,
+            _isInterpolated: !dailyMap.has(dStr),
+          });
+        }
+
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      return points;
+    }
+ else {
       // Agrégation par semaine
       const weeklyGroups: SnapshotVersion[] = [];
       filtered.forEach((v) => {
