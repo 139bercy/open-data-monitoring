@@ -207,7 +207,9 @@ const TrafficChart: React.FC<TrafficChartProps> = ({
 
         if (currentData.timestamp) {
           const prevForDelta =
-            points.length > 0 ? points[points.length - 1]._raw : globalLastKnown;
+            points.length > 0
+              ? points[points.length - 1]._raw
+              : globalLastKnown;
           const formatted = formatDataPoint(currentData, prevForDelta);
 
           points.push({
@@ -226,8 +228,7 @@ const TrafficChart: React.FC<TrafficChartProps> = ({
       }
 
       return points;
-    }
- else {
+    } else {
       // Agrégation par semaine
       const weeklyGroups: SnapshotVersion[] = [];
       filtered.forEach((v) => {

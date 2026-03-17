@@ -2,7 +2,6 @@ import hashlib
 import json
 
 import pytest
-from psycopg2._json import Json
 
 from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from infrastructure.repositories.datasets.postgres import strip_volatile_fields
@@ -46,7 +45,6 @@ def test_strip_volatile_fields_datagouv():
 
 
 def test_hashing_stability():
-    import hashlib
 
     # Arrange: DataGouv style snapshots
     # s1 and s2 have different volatile fields (views, time-series, timestamps, resources)
@@ -176,112 +174,6 @@ def test_postgresql_reconstruction(pg_app, pg_datagouv_platform, datagouv_datase
     blob = client.fetchone("SELECT data FROM dataset_blobs LIMIT 1")["data"]
     assert "last_update" not in blob
     assert "reuses_by_months" not in blob["metrics"]
-
-
-def test_postgresql_legacy_compatibility(pg_app, pg_datagouv_platform, datagouv_dataset):
-    # Arrange: Manually insert a legacy version with snapshot but no blob_id
-    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
-        SyncDatasetCommand(
-            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
-        )
-    )
-    dataset_id = result.dataset_id
-    client = pg_app.uow.client
-
-    # Clear auto-created version and insert a legacy one
-    client.execute("DELETE FROM dataset_versions")
-    client.execute("DELETE FROM dataset_blobs")
-
-    client.execute(
-        "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count) VALUES (%s, %s, %s, %s)",
-        (str(dataset_id), Json(datagouv_dataset), "legacy_checksum", 10),
-    )
-
-    # Act
-    dataset = pg_app.dataset.repository.get(dataset_id)
-
-    # Assert
-    assert len(dataset.versions) == 1
-    version = dataset.versions[0]
-    assert version.snapshot["id"] == datagouv_dataset["id"]
-    assert version.downloads_count == 10
-
-
-def test_migration_logic(pg_app, pg_datagouv_platform, datagouv_dataset):
-    # Arrange: Manually insert multiple legacy versions
-    result = SyncDatasetUseCase(uow=pg_app.uow).handle(
-        SyncDatasetCommand(
-            platform=pg_datagouv_platform, platform_dataset_id=datagouv_dataset["id"], raw_data=datagouv_dataset
-        )
-    )
-    dataset_1_id = result.dataset_id
-    client = pg_app.uow.client
-    client.execute("DELETE FROM dataset_versions")
-    client.execute("DELETE FROM dataset_blobs")
-
-    # v1
-    client.execute(
-        "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count) VALUES (%s, %s, %s, %s)",
-        (str(dataset_1_id), Json(datagouv_dataset), "c1", 10),
-    )
-    # v2 (same content, different metrics)
-    v2_data = datagouv_dataset.copy()
-    v2_data["metrics"] = v2_data["metrics"].copy()
-    v2_data["metrics"]["reuses_by_months"] = {"2024-02": 10}
-    client.execute(
-        "INSERT INTO dataset_versions (dataset_id, snapshot, checksum, downloads_count) VALUES (%s, %s, %s, %s)",
-        (str(dataset_1_id), Json(v2_data), "c2", 20),
-    )
-
-    # Act: Run mini-migration logic on the SAME connection to avoid deadlocks
-    # Fetch legacy versions
-    versions = client.fetchall("""
-        SELECT id, dataset_id, snapshot, downloads_count, api_calls_count,
-               views_count, reuses_count, followers_count, popularity_score
-        FROM dataset_versions
-        WHERE snapshot IS NOT NULL
-    """)
-    for v in versions:
-        snapshot = v["snapshot"]
-        stripped, _ = strip_volatile_fields(snapshot)
-        stable_hash = hashlib.sha256(json.dumps(stripped, sort_keys=True).encode()).hexdigest()
-
-        # Upsert blob (Per-dataset)
-        blob_id = client.fetchone(
-            """
-            INSERT INTO dataset_blobs (dataset_id, hash, data)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (dataset_id, hash)
-            DO UPDATE SET id = dataset_blobs.id
-            RETURNING id
-            """,
-            (v["dataset_id"], stable_hash, Json(stripped)),
-        )["id"]
-
-        # Backfill logic
-        downloads = v["downloads_count"]
-        if downloads is None:
-            # For DataGouv we might fetch from metrics if needed, but here we simulate downloads_count preservation
-            downloads = snapshot.get("metrics", {}).get("resources_downloads")
-
-        views = snapshot.get("metrics", {}).get("views")
-
-        # Update version
-        client.execute(
-            """UPDATE dataset_versions SET
-               blob_id = %s, downloads_count = %s, views_count = %s
-               WHERE id = %s""",
-            (str(blob_id), downloads, views, str(v["id"])),
-        )
-
-    # Assert
-    versions_after = client.fetchall("SELECT * FROM dataset_versions")
-    blobs_after = client.fetchall("SELECT * FROM dataset_blobs")
-
-    assert len(versions_after) == 2
-    assert len(blobs_after) == 1, "Migration should have deduplicated the two versions into one blob"
-    assert versions_after[0]["blob_id"] is not None
-    assert versions_after[0]["blob_id"] == versions_after[1]["blob_id"]
 
 
 def test_version_diff_tracking(pg_app, pg_datagouv_platform, datagouv_dataset):

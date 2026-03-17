@@ -39,6 +39,7 @@ export async function getDatasets(
     order = "desc",
     page = 1,
     pageSize = 25,
+    includeColdStorage = false,
   } = query;
 
   const apiQuery: Record<string, unknown> = {
@@ -50,6 +51,7 @@ export async function getDatasets(
     modified_to: modifiedTo,
     q,
     is_deleted: isDeleted,
+    include_cold_storage: includeColdStorage,
     min_health: minHealth,
     max_health: maxHealth,
     sort_by: sortBy,
@@ -71,6 +73,7 @@ export async function getDatasets(
     id: it.id,
     platformId: it.platform_id,
     platformName: it.platform_name,
+    slug: it.slug,
     publisher: it.publisher ?? null,
     title: it.title ?? null,
     created: it.created,
@@ -90,6 +93,7 @@ export async function getDatasets(
     lastSyncStatus: it.last_sync_status,
     hasDescription: it.quality?.has_description ?? false,
     isDeleted: it.deleted ?? null,
+    deletedAt: it.deleted_at ?? null,
     linkedDatasetId: it.linked_dataset_id,
     linkedDatasetSlug: it.linked_dataset_slug,
     linkedPlatformName: it.linked_platform_name,
@@ -183,6 +187,7 @@ export async function getDatasetDetail(
       : undefined,
     hasDescription: data.quality?.has_description ?? false,
     isDeleted: data.deleted ?? null,
+    deletedAt: data.deleted_at ?? null,
     linkedDatasetId: data.linked_dataset_id,
     linkedDatasetSlug: data.linked_dataset_slug,
     linkedPlatformName: data.linked_platform_name,

@@ -52,6 +52,7 @@ class DatasetAPI(BaseModel):
     published: bool
     restricted: bool
     deleted: bool = False  # Soft delete flag
+    deleted_at: datetime.datetime | None = None
 
     # Metrics (populated when include_counts=true)
     downloads_count: PositiveInt | None = None

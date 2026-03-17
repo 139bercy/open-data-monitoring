@@ -34,6 +34,7 @@ export type DatasetSummary = {
   platformId: UUID;
   platformName?: string;
   platformType?: string;
+  slug: string;
   publisher: Publisher;
   title: DatasetTitle;
   created: ISO8601Date;
@@ -51,6 +52,7 @@ export type DatasetSummary = {
   lastSyncStatus: string;
   hasDescription: boolean;
   isDeleted: boolean | null;
+  deletedAt?: ISO8601Date | null;
   quality?: QualityIndicators;
   healthScore?: number;
   healthQualityScore?: number;
@@ -103,6 +105,7 @@ export type DatasetDetail = {
   restricted: boolean | null;
   hasDescription: boolean;
   isDeleted: boolean | null;
+  deletedAt?: ISO8601Date | null;
   linkedDatasetId?: UUID;
   linkedDatasetSlug?: string;
   linkedPlatformName?: string;
@@ -135,6 +138,7 @@ export type DatasetListQuery = {
   publisher?: string; // Partial match
   q?: string; // Searches slug only
   isDeleted?: boolean;
+  includeColdStorage?: boolean;
 
   // Date ranges
   createdFrom?: ISO8601Date;

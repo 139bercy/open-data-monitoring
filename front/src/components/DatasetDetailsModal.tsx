@@ -1402,8 +1402,21 @@ export function DatasetDetailsModal({
 
     const showQualityTab = true; // Enabled for all platforms now that DataGouv is supported
 
+    const isColdStorage =
+      dataset.deletedAt &&
+      new Date().getTime() - new Date(dataset.deletedAt).getTime() >
+        30 * 24 * 60 * 60 * 1000;
+
     return (
       <div style={{ position: "relative" }}>
+        {isColdStorage && (
+          <Alert
+            severity="info"
+            title="Jeu de données en Cold Storage"
+            description="Ce jeu de données a été supprimé de la plateforme source il y a plus de 30 jours. Il est conservé ici pour archive mais n'est plus synchronisé."
+            className="fr-mb-2w"
+          />
+        )}
         {(syncing || loading) && (
           <div
             style={{
@@ -1438,7 +1451,22 @@ export function DatasetDetailsModal({
           style={{ marginTop: "-1rem" }}
         >
           <div className="fr-col">
-            <h1 className="fr-h3 fr-mb-1w">{dataset.title ?? dataset.slug}</h1>
+            <h1 className="fr-h3 fr-mb-1w">
+              {dataset.title ?? dataset.slug}
+              {dataset.deletedAt &&
+                new Date().getTime() - new Date(dataset.deletedAt).getTime() >
+                  30 * 24 * 60 * 60 * 1000 && (
+                  <Badge
+                    severity="warning"
+                    noIcon
+                    small
+                    className="fr-ml-1w"
+                    style={{ verticalAlign: "middle" }}
+                  >
+                    Cold Storage
+                  </Badge>
+                )}
+            </h1>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               <Badge
                 noIcon
@@ -1461,6 +1489,18 @@ export function DatasetDetailsModal({
                   severity="info"
                 >
                   {dataset.platformId}
+                </Badge>
+              )}
+              {dataset.isDeleted && (
+                <Badge
+                  severity="error"
+                  noIcon
+                  small
+                >
+                  Supprimé{" "}
+                  {dataset.deletedAt
+                    ? `le ${new Date(dataset.deletedAt).toLocaleDateString()}`
+                    : ""}
                 </Badge>
               )}
             </div>

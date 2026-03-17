@@ -205,7 +205,7 @@ def process_data_eco():
                 stats["skipped"] += 1
             except Exception as e:
                 stats["failed"] += 1
-                logger.debug(f"OPENDATASOFT - {dataset.get('dataset_id', 'unknown')} - {e}")
+                logger.error(f"OPENDATASOFT - {dataset.get('dataset_id', 'unknown')} - {e}")
 
     duration = time.perf_counter() - start_time
     logger.info(f"✅ data.economie.gouv.fr completed in {duration:.2f}s")

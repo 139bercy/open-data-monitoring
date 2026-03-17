@@ -375,12 +375,32 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                     }}
                   >
                     <span>{item.title ?? "—"}</span>
+                    {item.isDeleted && (
+                      <Badge
+                        severity={
+                          item.deletedAt &&
+                          new Date().getTime() -
+                            new Date(item.deletedAt).getTime() >
+                            30 * 24 * 60 * 60 * 1000
+                            ? "info"
+                            : "error"
+                        }
+                        small
+                        noIcon
+                      >
+                        {item.deletedAt &&
+                        new Date().getTime() -
+                          new Date(item.deletedAt).getTime() >
+                          30 * 24 * 60 * 60 * 1000
+                          ? "Archive / Cold Storage"
+                          : "Supprimé"}
+                      </Badge>
+                    )}
                     {item.slug?.toLowerCase().includes("admin") && (
                       <Badge
                         severity="info"
                         small
                         noIcon
-                        title="Admin"
                       >
                         Admin
                       </Badge>
@@ -462,19 +482,32 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                   >
                     <span
                       className={`fr-badge fr-badge--sm ${
-                        item.lastSyncStatus === "success"
-                          ? "fr-badge--success"
-                          : item.lastSyncStatus === "pending"
-                            ? "fr-badge--info"
-                            : "fr-badge--error"
+                        item.isDeleted
+                          ? "fr-badge--error"
+                          : item.lastSyncStatus === "success"
+                            ? "fr-badge--success"
+                            : item.lastSyncStatus === "pending"
+                              ? "fr-badge--info"
+                              : "fr-badge--error"
                       }`}
-                      title="Synchronisation"
+                      title={
+                        item.isDeleted
+                          ? "Supprimé de la source"
+                          : "Synchronisation"
+                      }
                     >
-                      {item.lastSyncStatus === "success"
-                        ? "🟢"
-                        : item.lastSyncStatus === "pending"
-                          ? "🟡"
-                          : "🔴"}
+                      {item.isDeleted
+                        ? item.deletedAt &&
+                          new Date().getTime() -
+                            new Date(item.deletedAt).getTime() >
+                            30 * 24 * 60 * 60 * 1000
+                          ? "❄️" // Cold Storage icon
+                          : "❌" // Recently deleted icon
+                        : item.lastSyncStatus === "success"
+                          ? "🟢"
+                          : item.lastSyncStatus === "pending"
+                            ? "🟡"
+                            : "🔴"}
                     </span>
                     <span
                       className={`fr-badge fr-badge--sm ${

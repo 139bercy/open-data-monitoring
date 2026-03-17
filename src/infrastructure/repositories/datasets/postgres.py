@@ -197,8 +197,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         self.client.execute(
             """
             INSERT INTO datasets (
-                id, platform_id, buid, slug, title, page, publisher, created, modified, published, restricted, deleted, linked_dataset_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                id, platform_id, buid, slug, title, page, publisher, created, modified, published, restricted, deleted, deleted_at, linked_dataset_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 platform_id = EXCLUDED.platform_id,
                 buid = EXCLUDED.buid,
@@ -211,6 +211,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 published = EXCLUDED.published,
                 restricted = EXCLUDED.restricted,
                 deleted = EXCLUDED.deleted,
+                deleted_at = EXCLUDED.deleted_at,
                 linked_dataset_id = EXCLUDED.linked_dataset_id
             """,
             (
@@ -226,6 +227,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 dataset.published,
                 dataset.restricted,
                 dataset.is_deleted,
+                dataset.deleted_at,
                 str(dataset.linked_dataset_id) if dataset.linked_dataset_id else None,
             ),
         )
@@ -360,7 +362,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             SELECT d.*, dv.downloads_count, dv.api_calls_count, dv.views_count,
                    dv.reuses_count, dv.followers_count, dv.popularity_score,
                    dv.timestamp as last_version_timestamp, dv.checksum,
-                   db.data as blob_data, dv.metadata_volatile
+                   db.data as blob_data, dv.metadata_volatile, d.deleted_at
             FROM datasets d
             LEFT JOIN LATERAL (
                 SELECT downloads_count, api_calls_count, views_count,
@@ -475,7 +477,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
         versions = self.client.fetchall(
             """
-            SELECT dv.dataset_id, dv.blob_id, db.data as blob_data, dv.metadata_volatile, dv.snapshot,
+            SELECT dv.dataset_id, dv.blob_id, db.data as blob_data, dv.metadata_volatile,
                    dv.checksum, dv.downloads_count, dv.api_calls_count, dv.views_count,
                    dv.reuses_count, dv.followers_count, dv.popularity_score, dv.diff, dv.timestamp
             FROM dataset_versions dv
@@ -490,13 +492,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             # Reconstruct the full snapshot
             blob_data = version_row.pop("blob_data")
             volatile = version_row.pop("metadata_volatile")
-            legacy_snapshot = version_row.pop("snapshot")  # For backward compatibility
 
-            # Use legacy snapshot if blob_data is None (old data before migration)
-            if blob_data is None and legacy_snapshot is not None:
-                snapshot = legacy_snapshot
-            else:
-                snapshot = deep_merge(blob_data or {}, volatile or {})
+            snapshot = deep_merge(blob_data or {}, volatile or {})
 
             version_row["snapshot"] = snapshot
             version_row["metadata_volatile"] = volatile
@@ -600,10 +597,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         return result
 
     def update_dataset_state(self, dataset: Dataset) -> None:
-        print(dataset.id, dataset.is_deleted)
         self.client.execute(
-            """UPDATE datasets SET deleted = %s WHERE id = %s;""",
-            (dataset.is_deleted, str(dataset.id)),
+            """UPDATE datasets SET deleted = %s, deleted_at = %s WHERE id = %s;""",
+            (dataset.is_deleted, dataset.deleted_at, str(dataset.id)),
         )
 
     def search(
@@ -622,6 +618,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         page_size: int = 25,
         min_health: float | None = None,
         max_health: float | None = None,
+        include_cold_storage: bool = False,
     ) -> tuple[list[dict], int]:
         """Search datasets with filters, sorting and pagination."""
         where_sql, params = self._build_where_clause(
@@ -635,6 +632,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             is_deleted,
             min_health=min_health,
             max_health=max_health,
+            include_cold_storage=include_cold_storage,
         )
 
         # Count total
@@ -794,6 +792,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         is_deleted: bool | None,
         min_health: float | None = None,
         max_health: float | None = None,
+        include_cold_storage: bool = False,
     ) -> tuple[str, list]:
         """Build WHERE clause and params for dataset filtering."""
         where_clauses = ["TRUE"]
@@ -817,6 +816,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         if is_deleted is not None:
             where_clauses.append("d.deleted = %s")
             params.append(is_deleted)
+        elif not include_cold_storage:
+            # Default behavior: hide datasets deleted more than 30 days ago
+            where_clauses.append("(d.deleted = FALSE OR d.deleted_at > NOW() - INTERVAL '30 days')")
 
         if min_health is not None:
             where_clauses.append("dq.health_score >= %s")

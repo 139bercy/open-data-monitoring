@@ -47,6 +47,7 @@ class Dataset:
         checksum: str | None = None,
         linked_dataset_id: UUID | None = None,
         description: str | None = None,
+        deleted_at: datetime | None = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -82,6 +83,9 @@ class Dataset:
         self.is_deleted = is_deleted
         self.linked_dataset_id = linked_dataset_id
         self.description = description
+        self.deleted_at = (
+            deleted_at if deleted_at is None or isinstance(deleted_at, datetime) else datetime.fromisoformat(deleted_at)
+        )
 
     def is_modified_since(self, date: datetime) -> bool:
         return self.modified > date
@@ -413,12 +417,14 @@ class Dataset:
         if self.is_deleted:
             raise DatasetAlreadyDeletedError(f"Dataset {self.id} is already marked as deleted")
         self.is_deleted = True
+        self.deleted_at = datetime.now(timezone.utc)
 
     def restore(self) -> None:
         """Restore a previously deleted dataset."""
         if not self.is_deleted:
             raise DatasetNotDeletedError(f"Dataset {self.id} is not deleted")
         self.is_deleted = False
+        self.deleted_at = None
 
     def update_metrics(
         self,
@@ -631,6 +637,7 @@ class Dataset:
                 else data.get("linked_dataset_id")
             ),
             description=data.get("description"),
+            deleted_at=data.get("deleted_at"),
         )
 
     def to_dict(self) -> dict:
