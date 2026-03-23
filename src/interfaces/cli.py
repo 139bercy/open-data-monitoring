@@ -20,6 +20,7 @@ from domain.auth.aggregate import User
 from domain.datasets.exceptions import DatasetUnreachableError
 from infrastructure.security import get_password_hash
 from interfaces.cli_quality import cli_quality
+from interfaces.cli_impact import cli_impact
 from logger import logger
 from settings import app
 
@@ -31,6 +32,7 @@ def cli():
 
 # Register quality commands
 cli.add_command(cli_quality)
+cli.add_command(cli_impact)
 
 
 @cli.group("platform")

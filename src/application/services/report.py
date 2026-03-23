@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Any
 
@@ -241,10 +241,44 @@ class ReportGenerator:
         buffer.seek(0)
         return buffer
 
-    def _add_report_title(self, story: list, dataset: Dataset, styles: Any):
+    def generate_impact_report(self, dataset: Dataset) -> BytesIO:
+        """Entry point for a business-oriented Dataset Impact Report."""
+        buffer = BytesIO()
+        doc = AuditReportTemplate(buffer)  # Reuse template for consistent header/footer
+        styles = self._get_styles()
+        story = []
+
+        # 1. Title & Identity
+        self._add_report_title(story, dataset, styles, subtitle="RAPPORT D'IMPACT BUSINESS")
+        self._add_metadata_card(story, dataset, styles)
+
+        # 2. Key Impact KPIs
+        impact_score = dataset.quality.health_engagement_score if dataset.quality else 0
+        self._add_impact_score_banner(story, impact_score, styles)
+
+        # 3. Consumption vs Notoriety
+        self._add_impact_vitals(story, dataset, styles)
+
+        # 4. Temporal Trends (Evolution)
+        self._add_evolution_trends(story, dataset, styles)
+
+        # 5. Engagement & Reuses
+        self._add_engagement_details(story, dataset, styles)
+
+        # 6. Actionable recommendations
+        if dataset.quality and dataset.quality.evaluation_results.get("suggestions"):
+            self._add_improvement_suggestions(story, dataset.quality.evaluation_results["suggestions"], styles)
+
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+
+    def _add_report_title(self, story: list, dataset: Dataset, styles: Any, subtitle: str = None):
         """Adds the main dataset title."""
         title_text = dataset.title or str(dataset.slug)
         story.append(Paragraph(title_text, styles["ReportTitle"]))
+        if subtitle:
+            story.append(Paragraph(subtitle, styles["SubSectionHeader"]))
         story.append(Spacer(1, 0.5 * cm))
 
     def _add_metadata_card(self, story: list, dataset: Dataset, styles: Any):
@@ -503,3 +537,140 @@ class ReportGenerator:
                 )
             )
             story.append(ot)
+
+    # --- Impact Specific Methods ---
+
+    def _add_impact_score_banner(self, story: list, score: float, styles: Any):
+        """Large color banner for impact score."""
+        level_map = [
+            (80, "Impact Critique (Élite)", colors.gold),
+            (60, "Impact Majeur", colors.green),
+            (30, "Impact Modéré", colors.orange),
+            (0, "Impact Faible", colors.grey),
+        ]
+        level_label, bg_color = next((label, color) for limit, label, color in level_map if score >= limit)
+
+        score_data = [
+            [
+                Paragraph("SCORE D'IMPACT BUSINESS", styles["MetadataLabel"]),
+                Paragraph(f"{round(score)}/100", styles["ScoreValue"]),
+                Paragraph(level_label, styles["MetadataLabel"]),
+            ]
+        ]
+        score_table = Table(score_data, colWidths=[16 * cm])
+        score_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), bg_color),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("PADDING", (0, 0), (-1, -1), 15),
+                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.white),
+                ]
+            )
+        )
+        story.append(score_table)
+        story.append(Spacer(1, 1 * cm))
+
+    def _add_impact_vitals(self, story: list, dataset: Dataset, styles: Any):
+        """Highlights raw usage metrics."""
+        story.append(Paragraph("Vitalité de l'Usage (Cumulé)", styles["SectionHeader"]))
+        vitals_data = [
+            [
+                Paragraph(f"{dataset.views_count or 0:,}", styles["StatValue"]),
+                Paragraph(f"{dataset.downloads_count or 0:,}", styles["StatValue"]),
+                Paragraph(f"{dataset.api_calls_count or 0:,}", styles["StatValue"]),
+            ],
+            [
+                Paragraph("Consultations", styles["StatLabel"]),
+                Paragraph("Téléchargements", styles["StatLabel"]),
+                Paragraph("Appels API", styles["StatLabel"]),
+            ],
+        ]
+        v_table = Table(vitals_data, colWidths=[5.3 * cm] * 3)
+        v_table.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        story.append(v_table)
+        story.append(Spacer(1, 0.8 * cm))
+
+    def _add_evolution_trends(self, story: list, dataset: Dataset, styles: Any):
+        """Shows evolution of metrics over historical versions."""
+        story.append(Paragraph("Dynamique Temporelle (Deltas)", styles["SectionHeader"]))
+
+        # Filter versions with valid timestamps
+        valid_versions = [v for v in dataset.versions if v.timestamp is not None]
+
+        if len(valid_versions) < 2:
+            story.append(Paragraph("Données historiques insuffisantes pour calculer les tendances.", styles["SmallText"]))
+            story.append(Spacer(1, 0.5 * cm))
+            return
+
+        # Sort versions by timestamp
+        versions = sorted(valid_versions, key=lambda v: v.timestamp)
+        latest = versions[-1]
+        
+        # Calculate deltas for 7 days and 30 days if possible
+        from datetime import timezone
+        now = datetime.now(timezone.utc)
+        
+        def get_version_at_days_ago(days):
+            target = now - timedelta(days=days)
+            # Find the closest version that is at least 'days' old
+            for v in reversed(versions):
+                v_ts = v.timestamp if v.timestamp.tzinfo else v.timestamp.replace(tzinfo=timezone.utc)
+                if v_ts <= target:
+                    return v
+            return versions[0]
+
+        v_7d = get_version_at_days_ago(7)
+        v_30d = get_version_at_days_ago(30)
+
+        def get_delta_text(current, previous):
+            if current is None or previous is None: return "N/A"
+            delta = current - previous
+            color = "green" if delta > 0 else "grey"
+            return f'<font color="{color}">+{delta:,}</font>' if delta > 0 else f"{delta:,}"
+
+        trends_data = [
+            ["Metric", "Derniers 7 jours", "Derniers 30 jours"],
+            ["Consultations", Paragraph(get_delta_text(latest.views_count, v_7d.views_count), styles["NormalText"]), Paragraph(get_delta_text(latest.views_count, v_30d.views_count), styles["NormalText"])],
+            ["Téléchargements", Paragraph(get_delta_text(latest.downloads_count, v_7d.downloads_count), styles["NormalText"]), Paragraph(get_delta_text(latest.downloads_count, v_30d.downloads_count), styles["NormalText"])],
+            ["Appels API", Paragraph(get_delta_text(latest.api_calls_count, v_7d.api_calls_count), styles["NormalText"]), Paragraph(get_delta_text(latest.api_calls_count, v_30d.api_calls_count), styles["NormalText"])]
+        ]
+
+        t_table = Table(trends_data, colWidths=[6 * cm, 5 * cm, 5 * cm])
+        t_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), DSFR_BLUE_LIGHT),
+            ('TEXTCOLOR', (0, 0), (-1, 0), DSFR_BLUE_FRANCE),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 0.5, DSFR_GREY_900),
+            ('PADDING', (0, 0), (-1, -1), 8),
+        ]))
+        story.append(t_table)
+        story.append(Spacer(1, 0.8 * cm))
+
+    def _add_engagement_details(self, story: list, dataset: Dataset, styles: Any):
+        """Focus on Reuses and Followers."""
+        story.append(Paragraph("Notoriété & Appropriation", styles["SectionHeader"]))
+        
+        engagement_data = [
+            [
+                Paragraph(f"{dataset.reuses_count or 0}", styles["StatValue"]),
+                Paragraph(f"{dataset.followers_count or 0}", styles["StatValue"]),
+            ],
+            [
+                Paragraph("Réutilisations déclarées", styles["StatLabel"]),
+                Paragraph("Abonnés (Followers)", styles["StatLabel"]),
+            ],
+        ]
+        e_table = Table(engagement_data, colWidths=[8 * cm, 8 * cm])
+        e_table.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
+        story.append(e_table)
+        
+        # Summary description
+        engagement_rate = 0
+        if dataset.views_count and dataset.views_count > 0:
+            engagement_rate = (dataset.reuses_count or 0) / dataset.views_count
+        
+        story.append(Spacer(1, 0.4 * cm))
+        story.append(Paragraph(f"Taux de transformation (vues -> réutilisation) : <b>{engagement_rate:.2%}</b>", styles["NormalText"]))
+        story.append(Spacer(1, 0.8 * cm))

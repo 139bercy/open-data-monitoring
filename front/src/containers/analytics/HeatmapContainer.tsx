@@ -37,7 +37,7 @@ const HeatmapContainer: React.FC<HeatmapContainerProps> = ({
         className="fr-h4 fr-mt-4w"
         style={{ display: "flex", alignItems: "center", gap: "8px" }}
       >
-        Radar de Santé par Direction
+        Radar de Santé des jeux de données par Direction
         {selectedDirection && (
           <Link
             to={datasetsUrl}
