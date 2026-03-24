@@ -18,51 +18,72 @@ def cleanup_today(target_date: date = None):
     logger.info(f"🧹 Starting cleanup for datasets added on {target_str}")
 
     with app.uow:
-        # 1. Identify datasets added on target_date
+        # 1. Platform Sync Histories (No dependencies)
+        logger.info(f"🗑️ Removing platform sync histories from {target_str}...")
+        app.uow.datasets.client.execute(
+            "DELETE FROM platform_sync_histories WHERE timestamp >= %s AND timestamp < (%s::date + '1 day'::interval)",
+            (target_str, target_str),
+        )
+
+        # 2. Identify full datasets added on target_date
         query_find = (
             "SELECT id, slug FROM datasets WHERE timestamp >= %s AND timestamp < (%s::date + '1 day'::interval)"
         )
-        datasets = app.uow.datasets.client.fetchall(query_find, (target_str, target_str))
+        new_datasets = app.uow.datasets.client.fetchall(query_find, (target_str, target_str))
+        new_dataset_ids = [str(d["id"]) for d in new_datasets]
 
-        if not datasets:
-            logger.info("✨ No datasets found for this day.")
-            return
+        # 3. Security prompt (Show context)
+        # We also count total versions/blobs to remove
+        count_v = app.uow.datasets.client.fetchone(
+            "SELECT count(*) FROM dataset_versions WHERE timestamp >= %s AND timestamp < (%s::date + '1 day'::interval)",
+            (target_str, target_str),
+        )["count"]
+        count_b = app.uow.datasets.client.fetchone(
+            "SELECT count(*) FROM dataset_blobs WHERE created_at >= %s AND created_at < (%s::date + '1 day'::interval)",
+            (target_str, target_str),
+        )["count"]
 
-        dataset_ids = [str(d["id"]) for d in datasets]
-        logger.info(f"📋 Found {len(dataset_ids)} datasets to remove.")
+        print("\n⚠️  ATTENTION: Vous allez supprimer définitivement :")
+        print(f"   - {len(new_dataset_ids)} nouveaux jeux de données")
+        print(f"   - {count_v} nouvelles versions")
+        print(f"   - {count_b} nouveaux blobs")
+        print("   - Tous les historiques de sync de la journée")
 
-        # Security prompt
-        print(
-            f"\n⚠️  ATTENTION: Vous allez supprimer définitivement {len(dataset_ids)} jeux de données du {target_str}."
-        )
-        confirm = input(f"👉 Pour confirmer, veuillez saisir la date cible ({target_str}) : ")
+        confirm = input(f"👉 Pour confirmer le nettoyage du {target_str}, veuillez saisir la date cible : ")
 
         if confirm != target_str:
             logger.warning("❌ Confirmation incorrecte. Nettoyage annulé.")
             return
 
-        # 2. Delete in correct order to respect FKs
-        # Note: dataset_blobs should cascade from datasets if defined with ON DELETE CASCADE
-        # but dataset_versions might block it if it's not cascading.
-
+        # 4. Starting deletions
         try:
-            # Delete versions first
+            # Delete versions first (to free up blobs and datasets)
             logger.info("🗑️ Removing dataset versions...")
             app.uow.datasets.client.execute(
-                "DELETE FROM dataset_versions WHERE dataset_id = ANY(%s::uuid[])", (dataset_ids,)
+                "DELETE FROM dataset_versions WHERE timestamp >= %s AND timestamp < (%s::date + '1 day'::interval)",
+                (target_str, target_str),
             )
 
-            # Delete quality records
-            logger.info("🗑️ Removing dataset quality records...")
+            # Delete quality records added today
+            logger.info("🗑️ Removing dataset quality reports...")
             app.uow.datasets.client.execute(
-                "DELETE FROM dataset_quality WHERE dataset_id = ANY(%s::uuid[])", (dataset_ids,)
+                "DELETE FROM dataset_quality WHERE timestamp >= %s AND timestamp < (%s::date + '1 day'::interval)",
+                (target_str, target_str),
             )
 
-            # Delete datasets (this will cascade to blobs)
-            logger.info("🗑️ Removing dataset records (cascading to blobs)...")
-            app.uow.datasets.client.execute("DELETE FROM datasets WHERE id = ANY(%s::uuid[])", (dataset_ids,))
+            # Delete blobs added today
+            logger.info("🗑️ Removing dataset blobs...")
+            app.uow.datasets.client.execute(
+                "DELETE FROM dataset_blobs WHERE created_at >= %s AND created_at < (%s::date + '1 day'::interval)",
+                (target_str, target_str),
+            )
 
-            logger.info(f"✅ Cleanup completed successfully for {len(dataset_ids)} datasets.")
+            # Delete full datasets added today
+            if new_dataset_ids:
+                logger.info(f"🗑️ Removing {len(new_dataset_ids)} dataset records...")
+                app.uow.datasets.client.execute("DELETE FROM datasets WHERE id = ANY(%s::uuid[])", (new_dataset_ids,))
+
+            logger.info(f"✅ Cleanup completed successfully for {target_str}.")
         except Exception as e:
             logger.error(f"❌ Cleanup failed: {e}")
             raise e
