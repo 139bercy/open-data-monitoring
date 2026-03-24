@@ -600,18 +600,21 @@ class ReportGenerator:
         valid_versions = [v for v in dataset.versions if v.timestamp is not None]
 
         if len(valid_versions) < 2:
-            story.append(Paragraph("Données historiques insuffisantes pour calculer les tendances.", styles["SmallText"]))
+            story.append(
+                Paragraph("Données historiques insuffisantes pour calculer les tendances.", styles["SmallText"])
+            )
             story.append(Spacer(1, 0.5 * cm))
             return
 
         # Sort versions by timestamp
         versions = sorted(valid_versions, key=lambda v: v.timestamp)
         latest = versions[-1]
-        
+
         # Calculate deltas for 7 days and 30 days if possible
         from datetime import timezone
+
         now = datetime.now(timezone.utc)
-        
+
         def get_version_at_days_ago(days):
             target = now - timedelta(days=days)
             # Find the closest version that is at least 'days' old
@@ -625,33 +628,50 @@ class ReportGenerator:
         v_30d = get_version_at_days_ago(30)
 
         def get_delta_text(current, previous):
-            if current is None or previous is None: return "N/A"
+            if current is None or previous is None:
+                return "N/A"
             delta = current - previous
             color = "green" if delta > 0 else "grey"
             return f'<font color="{color}">+{delta:,}</font>' if delta > 0 else f"{delta:,}"
 
         trends_data = [
             ["Metric", "Derniers 7 jours", "Derniers 30 jours"],
-            ["Consultations", Paragraph(get_delta_text(latest.views_count, v_7d.views_count), styles["NormalText"]), Paragraph(get_delta_text(latest.views_count, v_30d.views_count), styles["NormalText"])],
-            ["Téléchargements", Paragraph(get_delta_text(latest.downloads_count, v_7d.downloads_count), styles["NormalText"]), Paragraph(get_delta_text(latest.downloads_count, v_30d.downloads_count), styles["NormalText"])],
-            ["Appels API", Paragraph(get_delta_text(latest.api_calls_count, v_7d.api_calls_count), styles["NormalText"]), Paragraph(get_delta_text(latest.api_calls_count, v_30d.api_calls_count), styles["NormalText"])]
+            [
+                "Consultations",
+                Paragraph(get_delta_text(latest.views_count, v_7d.views_count), styles["NormalText"]),
+                Paragraph(get_delta_text(latest.views_count, v_30d.views_count), styles["NormalText"]),
+            ],
+            [
+                "Téléchargements",
+                Paragraph(get_delta_text(latest.downloads_count, v_7d.downloads_count), styles["NormalText"]),
+                Paragraph(get_delta_text(latest.downloads_count, v_30d.downloads_count), styles["NormalText"]),
+            ],
+            [
+                "Appels API",
+                Paragraph(get_delta_text(latest.api_calls_count, v_7d.api_calls_count), styles["NormalText"]),
+                Paragraph(get_delta_text(latest.api_calls_count, v_30d.api_calls_count), styles["NormalText"]),
+            ],
         ]
 
         t_table = Table(trends_data, colWidths=[6 * cm, 5 * cm, 5 * cm])
-        t_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), DSFR_BLUE_LIGHT),
-            ('TEXTCOLOR', (0, 0), (-1, 0), DSFR_BLUE_FRANCE),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 0.5, DSFR_GREY_900),
-            ('PADDING', (0, 0), (-1, -1), 8),
-        ]))
+        t_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), DSFR_BLUE_LIGHT),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), DSFR_BLUE_FRANCE),
+                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, DSFR_GREY_900),
+                    ("PADDING", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
         story.append(t_table)
         story.append(Spacer(1, 0.8 * cm))
 
     def _add_engagement_details(self, story: list, dataset: Dataset, styles: Any):
         """Focus on Reuses and Followers."""
         story.append(Paragraph("Notoriété & Appropriation", styles["SectionHeader"]))
-        
+
         engagement_data = [
             [
                 Paragraph(f"{dataset.reuses_count or 0}", styles["StatValue"]),
@@ -665,12 +685,16 @@ class ReportGenerator:
         e_table = Table(engagement_data, colWidths=[8 * cm, 8 * cm])
         e_table.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
         story.append(e_table)
-        
+
         # Summary description
         engagement_rate = 0
         if dataset.views_count and dataset.views_count > 0:
             engagement_rate = (dataset.reuses_count or 0) / dataset.views_count
-        
+
         story.append(Spacer(1, 0.4 * cm))
-        story.append(Paragraph(f"Taux de transformation (vues -> réutilisation) : <b>{engagement_rate:.2%}</b>", styles["NormalText"]))
+        story.append(
+            Paragraph(
+                f"Taux de transformation (vues -> réutilisation) : <b>{engagement_rate:.2%}</b>", styles["NormalText"]
+            )
+        )
         story.append(Spacer(1, 0.8 * cm))

@@ -1,8 +1,10 @@
 """CLI commands for dataset impact reporting."""
 
+from uuid import UUID
+
 import click
 from rich.console import Console
-from uuid import UUID
+
 from application.services.report import ReportGenerator
 from logger import logger
 from settings import app
@@ -41,7 +43,7 @@ def cli_generate_impact_report(dataset_id: str, output: str | None):
                 console.print(f"[red]Error: Dataset {uid} not found in repository.[/red]")
                 return
 
-            # Note: The repository.get() should ideally include versions. 
+            # Note: The repository.get() should ideally include versions.
             # If not, we might need a specific method.
             # Let's check if versions are loaded.
             if not dataset.versions:

@@ -14,10 +14,6 @@ import requests
 from dotenv import load_dotenv
 
 from application.handlers import find_platform_from_url
-from application.use_cases.check_deleted_datasets import (
-    CheckDeletedDatasetsCommand,
-    CheckDeletedDatasetsUseCase,
-)
 from application.use_cases.sync_dataset import SyncDatasetCommand, SyncDatasetUseCase
 from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatformUseCase
 from domain.datasets.exceptions import DatasetUnreachableError
@@ -163,10 +159,6 @@ def process_data_gouv():
         logger.info(f"🔄 Syncing platform metadata: {platform.slug}")
         SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
 
-    with open(os.path.join(OUTPUT_DIR, "data-gouv.json")) as file:
-        data = json.load(file)
-        CheckDeletedDatasetsUseCase(uow=app.uow).handle(CheckDeletedDatasetsCommand(platform=platform, datasets=data))
-
     duration = time.perf_counter() - start_time
     logger.info(f"✅ data.gouv.fr completed in {duration:.2f}s")
     logger.info(f"📊 Stats: {stats['success']} successes, {stats['failed']} failures, {stats['skipped']} skipped")
@@ -186,8 +178,6 @@ def process_data_eco():
         if platform:
             logger.info(f"🔄 Syncing platform metadata: {platform.slug}")
             SyncPlatformUseCase(uow=app.uow).handle(SyncPlatformCommand(platform_id=platform.id))
-
-        CheckDeletedDatasetsUseCase(uow=app.uow).handle(CheckDeletedDatasetsCommand(platform=platform, datasets=data))
 
         for dataset in data:
             try:

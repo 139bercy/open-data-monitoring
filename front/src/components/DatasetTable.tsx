@@ -145,7 +145,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
       aria-live="polite"
     >
       <Table
-        caption="Liste des jeux de données"
+        caption={`Liste des jeux de données (${formatNumber(total)})`}
         headers={[
           <button
             key="h-title"

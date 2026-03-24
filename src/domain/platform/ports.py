@@ -31,7 +31,7 @@ class PlatformRepository(Protocol):  # pragma: no cover
 
 class PlatformAdapter(Protocol):
     def fetch(self) -> dict:  # pragma: no cover
-        """Fetch platform metadata from the source."""
+        """Fetch platform metadata and dataset IDs from the source."""
         ...
 
 

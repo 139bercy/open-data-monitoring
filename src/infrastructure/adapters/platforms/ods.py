@@ -13,14 +13,39 @@ class OpendatasoftPlatformAdapter(PlatformAdapter):
         self.slug = slug
 
     def fetch(self) -> dict:
-        response = requests.get(
-            f"{self.url}/api/v2/catalog/datasets",
-            headers={"Authorization": f"Apikey {self.key}"},
-            params={"offset+limit": 1000},
-        )
+        datasets = []
+        offset = 0
+        limit = 100
+        total_count = 0
+
+        while True:
+            response = requests.get(
+                f"{self.url}/api/v2/catalog/datasets",
+                headers={"Authorization": f"Apikey {self.key}"},
+                params={"limit": limit, "offset": offset},
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            total_count = data.get("total_count", total_count)
+
+            # ODS v2 returns datasets in a 'datasets' list, each containing a 'dataset' object
+            batch = [
+                {"uid": d["dataset"]["dataset_uid"], "dataset_id": d["dataset"]["dataset_id"]}
+                for d in data.get("datasets", [])
+                if "dataset" in d
+            ]
+            datasets.extend(batch)
+
+            if len(datasets) >= total_count or not batch:
+                break
+
+            offset += limit
+
         sync_data = {
             "timestamp": datetime.datetime.now(),
-            "status": "success" if response.status_code == 200 else "failed",
-            "datasets_count": response.json()["total_count"],
+            "status": "success",
+            "datasets_count": total_count,
+            "datasets": datasets,
         }
         return sync_data

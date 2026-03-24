@@ -19,8 +19,8 @@ from application.use_cases.sync_platform import SyncPlatformCommand, SyncPlatfor
 from domain.auth.aggregate import User
 from domain.datasets.exceptions import DatasetUnreachableError
 from infrastructure.security import get_password_hash
-from interfaces.cli_quality import cli_quality
 from interfaces.cli_impact import cli_impact
+from interfaces.cli_quality import cli_quality
 from logger import logger
 from settings import app
 
@@ -74,7 +74,12 @@ def cli_sync_platform(id):
     platform_id = UUID(id)
     use_case = SyncPlatformUseCase(uow=app.uow)
     command = SyncPlatformCommand(platform_id=platform_id)
-    use_case.handle(command)
+    output = use_case.handle(command)
+    if output.status == "failed":
+        click.echo(f"❌ Sync failed: {output.message}")
+    else:
+        click.echo(f"✅ Sync successful: {output.message}")
+
     result = app.platform.get(platform_id=platform_id)
     pprint(result.__dict__)
 
@@ -241,3 +246,7 @@ def cli_user_update_password(email, password):
         user.hashed_password = get_password_hash(password)
         app.uow.users.save(user)
         click.echo(f"Mot de passe de {email} mis à jour avec succès.")
+
+
+if __name__ == "__main__":
+    cli()

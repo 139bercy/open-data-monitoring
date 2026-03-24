@@ -80,16 +80,22 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
 
     @staticmethod
     def map(
-        uid,
-        dataset_id,
-        metadata,
-        created_at,
-        updated_at,
-        is_published,
-        is_restricted,
+        uid=None,
+        dataset_id=None,
+        metadata=None,
+        created_at=None,
+        updated_at=None,
+        is_published=True,
+        is_restricted=False,
         *args,
         **kwargs,
     ) -> DatasetDTO:
+        # Fallback for missing IDs
+        dataset_id = dataset_id or kwargs.get("datasetid")
+        uid = uid or dataset_id
+        metadata = metadata or {}
+        created_at = created_at or updated_at or datetime.now()
+        updated_at = updated_at or created_at
         quality = DatasetQuality(
             downloads_count=kwargs.get("download_count", None),
             api_calls_count=kwargs.get("api_call_count", None),
