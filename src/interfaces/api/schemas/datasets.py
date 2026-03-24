@@ -62,6 +62,8 @@ class DatasetAPI(BaseModel):
     followers_count: PositiveInt | None = None
     popularity_score: Score | None = None
     versions_count: PositiveInt = 0
+    records_count: PositiveInt | None = None
+    size_bytes: PositiveInt | None = None
 
     # Sync status
     last_sync: datetime.datetime | None = None

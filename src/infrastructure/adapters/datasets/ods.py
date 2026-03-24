@@ -135,6 +135,8 @@ class OpendatasoftDatasetAdapter(DatasetAdapter):
             api_calls_count=kwargs.get("api_call_count", None),
             reuses_count=kwargs.get("reuse_count", None),
             popularity_score=kwargs.get("popularity_score", None),
+            records_count=kwargs.get("records_count") or metadata.get("default", {}).get("records_count"),
+            size_bytes=kwargs.get("records_size"),
             quality=quality,
         )
         return dataset

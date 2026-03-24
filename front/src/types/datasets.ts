@@ -61,6 +61,8 @@ export type DatasetSummary = {
   linkedDatasetId?: UUID;
   linkedDatasetSlug?: string;
   linkedPlatformName?: string;
+  recordsCount?: number;
+  sizeBytes?: number;
 };
 
 // ----------------------------------------------------------------------------

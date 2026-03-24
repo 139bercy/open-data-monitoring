@@ -40,4 +40,6 @@ class DatasetVersionParams:
     reuses_count: Optional[int] = None
     followers_count: Optional[int] = None
     popularity_score: Optional[float] = None
+    records_count: Optional[int] = None
+    size_bytes: Optional[int] = None
     diff: Optional[dict] = None

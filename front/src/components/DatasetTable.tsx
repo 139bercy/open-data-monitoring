@@ -53,6 +53,14 @@ function formatNumber(value: number | null | undefined): string {
   }
 }
 
+function formatBytes(bytes: number | null | undefined): string {
+  if (bytes === null || bytes === undefined || bytes === 0) return "—";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
+
 export function DatasetTable(props: DatasetTableProps): JSX.Element {
   const {
     items,
@@ -114,6 +122,11 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
       />,
       <span
         key={`sk-ver-${i}`}
+        className="fr-skeleton fr-skeleton--text"
+        aria-hidden="true"
+      />,
+      <span
+        key={`sk-vol-${i}`}
         className="fr-skeleton fr-skeleton--text"
         aria-hidden="true"
       />,
@@ -359,6 +372,7 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 : "▼"
               : ""}
           </button>,
+          <span key="h-volume">Volume</span>,
           "Action",
         ]}
         data={
@@ -562,6 +576,17 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 <span style={{ fontSize: "0.9rem" }}>
                   {formatNumber(item.versionsCount)}
                 </span>,
+                <div style={{ fontSize: "0.80rem", whiteSpace: "nowrap" }}>
+                  <div style={{ fontWeight: "bold" }}>
+                    {formatBytes(item.sizeBytes)}
+                  </div>
+                  {item.recordsCount !== undefined &&
+                    item.recordsCount !== null && (
+                      <div style={{ color: "var(--text-mention-grey)" }}>
+                        {formatNumber(item.recordsCount)} lig.
+                      </div>
+                    )}
+                </div>,
                 <button
                   key={`view-${item.id}`}
                   className="fr-btn fr-btn--sm"

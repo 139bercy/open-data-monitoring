@@ -48,6 +48,8 @@ class Dataset:
         linked_dataset_id: UUID | None = None,
         description: str | None = None,
         deleted_at: datetime | None = None,
+        records_count: int | None = None,
+        size_bytes: int | None = None,
     ):
         self.id = id
         self.platform_id = platform_id
@@ -66,6 +68,8 @@ class Dataset:
         self.reuses_count = reuses_count
         self.followers_count = followers_count
         self.popularity_score = popularity_score
+        self.records_count = records_count
+        self.size_bytes = size_bytes
         self.raw = raw
         self.checksum = checksum
         self.versions: list[DatasetVersion] | None = []
@@ -106,6 +110,8 @@ class Dataset:
             "restricted": self.restricted,
             "publisher": self.publisher,
             "description": self.description,
+            "records_count": self.records_count,
+            "size_bytes": self.size_bytes,
         }
 
         state_str = json.dumps(state, sort_keys=True)
@@ -638,6 +644,8 @@ class Dataset:
             ),
             description=data.get("description"),
             deleted_at=data.get("deleted_at"),
+            records_count=data.get("records_count"),
+            size_bytes=data.get("size_bytes"),
         )
 
     def to_dict(self) -> dict:

@@ -311,6 +311,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                         "reuses_count": params.reuses_count,
                         "followers_count": params.followers_count,
                         "popularity_score": params.popularity_score,
+                        "records_count": params.records_count,
+                        "size_bytes": params.size_bytes,
                     }
                 )
 
@@ -437,6 +439,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "reuses_count": cur_row.get("reuses_count"),
                     "followers_count": cur_row.get("followers_count"),
                     "popularity_score": cur_row.get("popularity_score"),
+                    "records_count": cur_row.get("records_count")
+                    or (blob_data.get("metas", {}).get("default", {}).get("records_count")),
+                    "size_bytes": cur_row.get("size_bytes") or blob_data.get("records_size"),
                     "last_version_timestamp": cur_row.get("timestamp"),
                     "checksum": cur_row.get("checksum"),
                 }
@@ -651,7 +656,7 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         # Main query
         list_query = f"""
             WITH latest_versions AS (
-                SELECT DISTINCT ON (dataset_id) dataset_id, title, blob_id, downloads_count, api_calls_count, views_count, reuses_count, followers_count, popularity_score, timestamp
+                SELECT DISTINCT ON (dataset_id) dataset_id, title, blob_id, downloads_count, api_calls_count, views_count, reuses_count, followers_count, popularity_score, metadata_volatile, timestamp
                 FROM dataset_versions
                 ORDER BY dataset_id, timestamp DESC
             ),
@@ -689,6 +694,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                    lv.reuses_count AS reuses_count,
                    lv.followers_count AS followers_count,
                    lv.popularity_score AS popularity_score,
+                   COALESCE((lv.metadata_volatile ->> 'records_count')::int, (db.data -> 'metas' -> 'default' ->> 'records_count')::int) AS records_count,
+                   COALESCE((lv.metadata_volatile ->> 'size_bytes')::bigint, (db.data -> 'metas' -> 'default' ->> 'records_size')::bigint) AS size_bytes,
                    COALESCE(vc.versions_count, 0) AS versions_count,
                    d.last_sync,
                    d.last_sync_status,
@@ -751,6 +758,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                     "reuses_count": r.get("reuses_count"),
                     "followers_count": r.get("followers_count"),
                     "popularity_score": r.get("popularity_score"),
+                    "records_count": r.get("records_count"),
+                    "size_bytes": r.get("size_bytes"),
                     "versions_count": r.get("versions_count"),
                     "page": r.get("page"),
                     "last_sync": r.get("last_sync"),
@@ -943,7 +952,9 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         # Current snapshot
         cur_query = """
             SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data, dv.title,
-                   COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title
+                   COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title,
+                   COALESCE((dv.metadata_volatile ->> 'records_count')::int, (db.data -> 'metas' -> 'default' ->> 'records_count')::int) AS records_count,
+                   COALESCE((dv.metadata_volatile ->> 'size_bytes')::bigint, (db.data -> 'metas' -> 'default' ->> 'records_size')::bigint) AS size_bytes
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
             WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT 1
@@ -963,6 +974,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                 "reuses_count": r.get("reuses_count"),
                 "followers_count": r.get("followers_count"),
                 "popularity_score": r.get("popularity_score"),
+                "records_count": r.get("records_count"),
+                "size_bytes": r.get("size_bytes"),
                 "title": r.get("derived_title"),
                 "data": snapshot_data,
             }
@@ -1031,6 +1044,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             },
             "current_snapshot": current_snapshot,
             "snapshots": snapshots,
+            "records_count": current_snapshot.get("records_count") if current_snapshot else None,
+            "size_bytes": current_snapshot.get("size_bytes") if current_snapshot else None,
             "health_breakdown": health_scores,
             "health_score": health_scores["global"] if health_scores else None,
             "health_quality_score": health_scores["quality"] if health_scores else None,

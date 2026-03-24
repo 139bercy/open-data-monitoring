@@ -26,6 +26,8 @@ class DatasetDTO:
     reuses_count: int | None = None
     followers_count: int | None = None
     popularity_score: float | None = None
+    records_count: int | None = None
+    size_bytes: int | None = None
 
 
 @dataclass

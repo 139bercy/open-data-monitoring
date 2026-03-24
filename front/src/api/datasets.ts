@@ -102,6 +102,8 @@ export async function getDatasets(
     healthQualityScore: it.health_quality_score,
     healthFreshnessScore: it.health_freshness_score,
     healthEngagementScore: it.health_engagement_score,
+    recordsCount: it.records_count,
+    sizeBytes: it.size_bytes,
   }));
   return {
     items,

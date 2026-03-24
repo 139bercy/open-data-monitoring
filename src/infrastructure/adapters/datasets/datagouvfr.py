@@ -52,6 +52,11 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             has_description=True if kwargs.get("description", None) else False,
             is_slug_valid=True,
         )
+        # Calculate total size from resources
+        resources = kwargs.get("resources", [])
+        size_bytes = sum(res.get("size", 0) for res in resources if isinstance(res, dict) and res.get("size"))
+        records_count = None  # DataGouv doesn't provide this at dataset level easily
+
         dataset = DatasetDTO(
             buid=id,
             slug=slug,
@@ -68,6 +73,8 @@ class DatagouvDatasetAdapter(DatasetAdapter):
             views_count=metrics.get("views", None),
             reuses_count=metrics.get("reuses", None),
             followers_count=metrics.get("followers", None),
+            records_count=records_count,
+            size_bytes=size_bytes,
             quality=quality,
         )
         return dataset

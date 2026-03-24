@@ -104,6 +104,8 @@ class SyncDatasetUseCase:
             reuses_count=instance.reuses_count,
             followers_count=instance.followers_count,
             popularity_score=instance.popularity_score,
+            records_count=instance.records_count,
+            size_bytes=instance.size_bytes,
         )
         self.repository.add_version(params)
 
