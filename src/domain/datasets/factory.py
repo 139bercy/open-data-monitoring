@@ -36,6 +36,8 @@ class DatasetFactory:
             reuses_count=dto.reuses_count,
             followers_count=dto.followers_count,
             popularity_score=dto.popularity_score,
+            records_count=dto.records_count,
+            size_bytes=dto.size_bytes,
             raw=raw_data,
             description=dto.description,
         )

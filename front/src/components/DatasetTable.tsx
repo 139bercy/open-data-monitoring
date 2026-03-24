@@ -372,7 +372,28 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                 : "▼"
               : ""}
           </button>,
-          <span key="h-volume">Volume</span>,
+          <button
+            key="h-volume"
+            className="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
+            type="button"
+            disabled={!!loading}
+            onClick={() => {
+              const nextOrder =
+                props.order === "asc" && props.sortBy === "size_bytes"
+                  ? "desc"
+                  : "asc";
+              props.onSortChange?.("size_bytes", nextOrder as "asc" | "desc");
+            }}
+            aria-pressed={props.sortBy === "size_bytes"}
+            aria-label="Trier par volume"
+          >
+            Volume{" "}
+            {props.sortBy === "size_bytes"
+              ? props.order === "asc"
+                ? "▲"
+                : "▼"
+              : ""}
+          </button>,
           "Action",
         ]}
         data={

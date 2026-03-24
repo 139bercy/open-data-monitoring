@@ -270,6 +270,12 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
     def add_version(self, params: DatasetVersionParams) -> None:
         """Add a new version of a dataset using Parameter Object pattern."""
         stripped, volatile = strip_volatile_fields(params.snapshot)
+        if volatile is None:
+            volatile = {}
+
+        # Add metrics to volatile data for searchability without migration
+        volatile["records_count"] = params.records_count
+        volatile["size_bytes"] = params.size_bytes
 
         diff = params.diff  # Start with provided diff
 
@@ -693,9 +699,16 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
                    lv.views_count AS views_count,
                    lv.reuses_count AS reuses_count,
                    lv.followers_count AS followers_count,
-                   lv.popularity_score AS popularity_score,
-                   COALESCE((lv.metadata_volatile ->> 'records_count')::int, (db.data -> 'metas' -> 'default' ->> 'records_count')::int) AS records_count,
-                   COALESCE((lv.metadata_volatile ->> 'size_bytes')::bigint, (db.data -> 'metas' -> 'default' ->> 'records_size')::bigint) AS size_bytes,
+                   COALESCE(
+                       (lv.metadata_volatile ->> 'records_count')::int,
+                       (db.data ->> 'records_count')::int,
+                       (db.data -> 'metas' -> 'default' ->> 'records_count')::int
+                   ) AS records_count,
+                   COALESCE(
+                       (lv.metadata_volatile ->> 'size_bytes')::bigint,
+                       (db.data ->> 'records_size')::bigint,
+                       (db.data -> 'metas' -> 'default' ->> 'records_size')::bigint
+                   ) AS size_bytes,
                    COALESCE(vc.versions_count, 0) AS versions_count,
                    d.last_sync,
                    d.last_sync_status,
@@ -858,8 +871,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         order_sql = self._get_order_sql(sort_column)
         sort_dir = "DESC" if order.lower() != "asc" else "ASC"
 
-        # Add NULLS LAST for specific columns like health_score
-        if sort_column == "health_score":
+        # Add NULLS LAST for specific columns like health_score and size metrics
+        if sort_column in ("health_score", "size_bytes", "records_count"):
             sort_dir += " NULLS LAST"
 
         return order_sql, sort_dir
@@ -878,6 +891,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             "reuses_count",
             "followers_count",
             "health_score",
+            "size_bytes",
+            "records_count",
         )
         return sort_by if sort_by in valid else "modified"
 
@@ -893,6 +908,8 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
             "followers_count": "COALESCE(lv.followers_count, 0)",
             "publisher": "COALESCE(publisher, '')",
             "health_score": "dq.health_score",
+            "size_bytes": "size_bytes",
+            "records_count": "records_count",
         }
         return mapping.get(sort_column, sort_column)
 
@@ -953,8 +970,16 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
         cur_query = """
             SELECT dv.id, dv.blob_id, dv.timestamp, dv.downloads_count, dv.api_calls_count, dv.views_count, dv.reuses_count, dv.followers_count, dv.popularity_score, dv.metadata_volatile, db.data as blob_data, dv.title,
                    COALESCE(dv.title, db.data ->> 'title', db.data -> 'metas' -> 'default' ->> 'title') AS derived_title,
-                   COALESCE((dv.metadata_volatile ->> 'records_count')::int, (db.data -> 'metas' -> 'default' ->> 'records_count')::int) AS records_count,
-                   COALESCE((dv.metadata_volatile ->> 'size_bytes')::bigint, (db.data -> 'metas' -> 'default' ->> 'records_size')::bigint) AS size_bytes
+                   COALESCE(
+                       (dv.metadata_volatile ->> 'records_count')::int,
+                       (db.data ->> 'records_count')::int,
+                       (db.data -> 'metas' -> 'default' ->> 'records_count')::int
+                   ) AS records_count,
+                   COALESCE(
+                       (dv.metadata_volatile ->> 'size_bytes')::bigint,
+                       (db.data ->> 'records_size')::bigint,
+                       (db.data -> 'metas' -> 'default' ->> 'records_size')::bigint
+                   ) AS size_bytes
             FROM dataset_versions dv
             LEFT JOIN dataset_blobs db ON dv.blob_id = db.id
             WHERE dv.dataset_id = %s ORDER BY dv.timestamp DESC LIMIT 1

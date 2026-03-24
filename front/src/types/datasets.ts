@@ -164,7 +164,9 @@ export type DatasetListQuery = {
     | "popularity_score"
     | "views_count"
     | "reuses_count"
-    | "health_score";
+    | "health_score"
+    | "size_bytes"
+    | "records_count";
   order?: "asc" | "desc";
 
   // Pagination

@@ -101,7 +101,7 @@ async def list_datasets(
     q: str | None = None,
     sort_by: str = Query(  # noqa: B008
         "modified",
-        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count|popularity_score|views_count|reuses_count|followers_count|health_score)$",
+        pattern="^(created|modified|publisher|title|api_calls_count|downloads_count|versions_count|popularity_score|views_count|reuses_count|followers_count|health_score|size_bytes|records_count)$",
     ),
     order: str = Query("desc", pattern="^(asc|desc)$"),  # noqa: B008
     page: int = 1,
