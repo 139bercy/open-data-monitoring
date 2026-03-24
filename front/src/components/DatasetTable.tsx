@@ -7,6 +7,7 @@ import { Tooltip } from "@codegouvfr/react-dsfr/Tooltip";
 import { Button } from "@codegouvfr/react-dsfr/Button";
 import { Badge } from "@codegouvfr/react-dsfr/Badge";
 import type { DatasetSummary, DatasetListQuery } from "../types/datasets";
+import { exportDatasetsToCsv } from "../utils/export";
 
 export type DatasetTableProps = Readonly<{
   items: DatasetSummary[];
@@ -623,6 +624,17 @@ export function DatasetTable(props: DatasetTableProps): JSX.Element {
                   </option>
                 ))}
               </Select>
+            </div>
+            <div className="fr-col-auto">
+              <Button
+                priority="secondary"
+                iconId="fr-icon-download-line"
+                onClick={() => exportDatasetsToCsv(items)}
+                title="Exporter les données de la page actuelle en CSV (données élargies)"
+                disabled={!!loading || items.length === 0}
+              >
+                Exporter (CSV)
+              </Button>
             </div>
           </div>
         </div>
