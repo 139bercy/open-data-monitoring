@@ -7,5 +7,5 @@ SELECT
     score_global,
     dataset_count,
     unhealthy_count
-FROM direction_health_stats
+FROM direction_health_stats_view
 ORDER BY score_global DESC;

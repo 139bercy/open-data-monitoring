@@ -7,6 +7,8 @@ from datetime import date
 import requests
 from dotenv import load_dotenv
 
+# Ensure src/ is in path for logger import
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from logger import logger
 
 load_dotenv(".env")

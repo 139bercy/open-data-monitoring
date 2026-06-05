@@ -1,7 +1,7 @@
 services:
   db:
     container_name: open-data-monitoring-db
-    image: postgres:16.9
+    image: postgres:17
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
@@ -14,7 +14,7 @@ services:
 
   test:
     container_name: odm-test-db
-    image: postgres:16.9
+    image: postgres:17
     command: -p 5433
     environment:
       - POSTGRES_USER=postgres

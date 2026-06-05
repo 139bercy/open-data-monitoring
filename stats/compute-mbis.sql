@@ -4,7 +4,15 @@
 -- ============================================================================
 
 -- 1. Create a Dynamic View for Real-time Aggregation
-CREATE OR REPLACE VIEW direction_health_stats_view AS
+-- Drop existing materialized view if present (created by db/views.sql)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'direction_health_stats_view') THEN
+        DROP MATERIALIZED VIEW direction_health_stats_view;
+    END IF;
+END $$;
+
+CREATE MATERIALIZED VIEW direction_health_stats_view AS
 WITH latest_version_info AS (
     SELECT DISTINCT ON (dataset_id)
         dataset_id,
@@ -93,3 +101,6 @@ SELECT
     COUNT(*) FILTER (WHERE global_score < 50) as unhealthy_count
 FROM dataset_scores
 GROUP BY direction;
+
+-- Refresh to ensure data is up-to-date
+REFRESH MATERIALIZED VIEW direction_health_stats_view;
