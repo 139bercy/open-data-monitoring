@@ -102,5 +102,8 @@ SELECT
 FROM dataset_scores
 GROUP BY direction;
 
+-- Create unique index to allow CONCURRENTLY refresh
+CREATE UNIQUE INDEX IF NOT EXISTS idx_direction_health_stats_view_direction ON direction_health_stats_view (direction);
+
 -- Refresh to ensure data is up-to-date
 REFRESH MATERIALIZED VIEW direction_health_stats_view;
