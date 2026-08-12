@@ -1136,4 +1136,16 @@ class PostgresDatasetRepository(AbstractDatasetRepository):
 
     def refresh_materialized_views(self) -> None:
         """Refresh all materialized views used for analytics."""
-        self.client.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY direction_health_stats_view")
+        try:
+            self.client.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY direction_health_stats_view")
+        except Exception as e:
+            from logger import logger
+
+            logger.warning(
+                "Concurrent refresh of direction_health_stats_view failed (%s). Falling back to non-concurrent refresh.",
+                e,
+            )
+            try:
+                self.client.execute("REFRESH MATERIALIZED VIEW direction_health_stats_view")
+            except Exception as inner_e:
+                logger.error("Standard refresh of direction_health_stats_view failed: %s", inner_e)
