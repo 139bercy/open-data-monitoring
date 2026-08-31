@@ -1,4 +1,5 @@
 import subprocess
+import sys
 
 
 def test_push_stats_no_push_flag():
@@ -10,7 +11,7 @@ def test_push_stats_no_push_flag():
     # Actually, let's just check if it exits cleanly or prints 'skipping' if we add a log.
     # For now, we test the argument parser doesn't crash.
     result = subprocess.run(
-        ["python", "stats/push_stats.py", "--file", "nonexistent.csv", "--dataset_uid", "test", "--no-push"],
+        [sys.executable, "stats/push_stats.py", "--file", "nonexistent.csv", "--dataset_uid", "test", "--no-push"],
         capture_output=True,
         text=True,
     )

@@ -1,15 +1,24 @@
+import os
+
 import psycopg2
 import psycopg2.extras
 
 
 class PostgresClient:
-    def __init__(self, dbname, user, password, host="localhost", port=5432):
+    def __init__(
+        self,
+        dbname: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
+        host: str | None = None,
+        port: int | str | None = None,
+    ):
         self.conn_params = {
-            "dbname": dbname,
-            "user": user,
-            "password": password,
-            "host": host,
-            "port": port,
+            "dbname": dbname or os.environ.get("DB_NAME", "odm"),
+            "user": user or os.environ.get("DB_USER", "postgres"),
+            "password": password if password is not None else os.environ.get("DB_PASSWORD"),
+            "host": host or os.environ.get("DB_HOST", "localhost"),
+            "port": int(port or os.environ.get("DB_PORT", 5432)),
         }
         self.connection = None
         self._connect()

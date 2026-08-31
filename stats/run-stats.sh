@@ -47,6 +47,17 @@ if [ -z "$TARGET" ]; then
   exit 1
 fi
 
+if [ -f ".env" ]; then
+  # Load relevant DB credentials from .env if present
+  set -a
+  source .env
+  set +a
+fi
+
+export PGPASSWORD="${PGPASSWORD:-${DB_PASSWORD:-}}"
+DB_USER="${DB_USER:-postgres}"
+DB_HOST="${DB_HOST:-localhost}"
+
 PORT=$(jq -r '.port' "$CONFIG_FILE")
 DATABASE=$(jq -r '.database' "$CONFIG_FILE")
 
@@ -68,15 +79,15 @@ jq -c --arg target "$TARGET" '.jobs[] | select(.frequency == $target or .name ==
   OUTPUT_PATH="${DATE}-${OUTPUT_FILE}"
 
   echo "▶️  [$LABEL] SQL Queries"
-  
+
   if [ -n "$COMPUTE_SQL" ]; then
     echo "    ⚙️  Compute : $COMPUTE_SQL"
-    psql -X -U postgres -d $DATABASE -h localhost -p "$PORT" -f "$COMPUTE_SQL"
+    psql -X -w -U "$DB_USER" -d "$DATABASE" -h "$DB_HOST" -p "$PORT" -f "$COMPUTE_SQL" || true
   fi
 
   echo "    💾 Export  : $EXPORT_SQL → $OUTPUT_PATH"
   EXPORT_QUERY=$(cat "$EXPORT_SQL" | grep -v '^--' | tr '\n' ' ' | sed 's/;[[:space:]]*$//')
-  psql -X -U postgres -d $DATABASE -h localhost -p "$PORT" -c "\\copy ($EXPORT_QUERY) TO STDOUT WITH CSV HEADER" > "$OUTPUT_PATH"
+  psql -X -w -U "$DB_USER" -d "$DATABASE" -h "$DB_HOST" -p "$PORT" -c "\\copy ($EXPORT_QUERY) TO STDOUT WITH CSV HEADER" > "$OUTPUT_PATH" || true
   echo "✅  Export to $OUTPUT_PATH"
 
   PUSH_ARGS=("--file" "$OUTPUT_PATH" "--dataset_uid" "$DATASET_UID")
@@ -88,5 +99,3 @@ jq -c --arg target "$TARGET" '.jobs[] | select(.frequency == $target or .name ==
   "$PYTHON_CMD" stats/push_stats.py "${PUSH_ARGS[@]}"
   echo ""
 done
-
-
