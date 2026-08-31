@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from application.handlers import find_dataset_id_from_url, find_platform_from_url
 from application.use_cases.evaluate_dataset import EvaluateDatasetCommand, EvaluateDatasetUseCase
@@ -179,12 +179,20 @@ async def evaluate_dataset(dataset_id: UUID):
     """
     Déclenche une évaluation de qualité par LLM pour un dataset.
     """
+    if domain_app.evaluator is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Le service d'évaluation IA n'est pas initialisé (vérifiez la variable ALBERT_API_KEY dans votre fichier .env).",
+        )
     use_case = EvaluateDatasetUseCase(uow=domain_app.uow, evaluator=domain_app.evaluator, mappers=domain_app.mappers)
     command = EvaluateDatasetCommand(dataset_id=dataset_id)
     output = use_case.handle(command)
 
     if output.status == "failed":
-        raise ValueError(output.error)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Échec de l'évaluation IA : {output.error}",
+        )
 
     return output.evaluation
 

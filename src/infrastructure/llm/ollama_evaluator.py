@@ -244,11 +244,15 @@ class OllamaEvaluator(LLMEvaluator):
             for s in response.suggestions
         ]
 
+        # Compute overall_score deterministically if missing or 0 from LLM
+        computed_score = sum(score.score * score.weight for score in response.criteria_scores.values())
+        overall_score = response.overall_score if response.overall_score > 0 else computed_score
+
         return MetadataEvaluation(
             dataset_id=None,  # Will be set by service
             dataset_slug=None,  # Will be set by service
             evaluated_at=datetime.now(),
-            overall_score=response.overall_score,
+            overall_score=overall_score,
             criteria_scores=criteria_scores,
             suggestions=suggestions,
         )

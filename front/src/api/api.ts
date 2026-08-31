@@ -75,8 +75,13 @@ class ApiClient {
         : ((await res.text()) as unknown);
 
     if (!res.ok) {
-      const payload = await parseJson().catch(() => undefined);
-      const err = new Error(`HTTP ${res.status} ${res.statusText}`);
+      const payload = (await parseJson().catch(() => undefined)) as any;
+      const detail = payload?.detail ?? payload?.title ?? payload?.message;
+      const statusText = res.statusText ? ` ${res.statusText}` : "";
+      const message = detail
+        ? `HTTP ${res.status}${statusText}: ${detail}`
+        : `HTTP ${res.status}${statusText}`;
+      const err = new Error(message);
       (err as any).status = res.status;
       (err as any).payload = payload;
       throw err;

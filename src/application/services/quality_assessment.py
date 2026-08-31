@@ -151,6 +151,12 @@ class QualityAssessmentService:
     def _load_markdown(self, path: str) -> str:
         """Load markdown file content."""
         file_path = Path(path)
+        if not file_path.is_absolute():
+            # Check relative to CWD, then fallback to repo root
+            if not file_path.exists():
+                repo_root = Path(__file__).resolve().parents[3]
+                if (repo_root / path).exists():
+                    file_path = repo_root / path
         if not file_path.exists():
             raise FileNotFoundError(f"Reference file not found: {path}")
 

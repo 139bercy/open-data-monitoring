@@ -69,9 +69,9 @@ SYSTEM_PROMPT_TEMPLATE_JSON = """Tu es un expert en qualité de métadonnées po
 4. Priorise: high/medium/low
 
 # FORMAT JSON STRICT
-Réponds UNIQUEMENT avec ce JSON exact :
+Réponds UNIQUEMENT avec ce JSON exact (en calculant la note globale overall_score de 0 à 100 à partir de la somme pondérée des critères) :
 {{
-  "overall_score": 0.0,
+  "overall_score": 85.0,
   "criteria_scores": {{
     "title": {{"score": 0.0, "issues": [], "category": "descriptive", "weight": 0.10}},
     "description": {{"score": 0.0, "issues": [], "category": "descriptive", "weight": 0.15}},
