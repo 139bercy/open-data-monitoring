@@ -8,7 +8,7 @@ from application.services.platform import PlatformMonitoring
 from domain.unit_of_work import UnitOfWork
 from infrastructure.adapters.quality.metadata_mappers import DatagouvMetadataMapper, OpendatasoftMetadataMapper
 from infrastructure.database.postgres import PostgresClient
-from infrastructure.llm.openai_evaluator import OpenAIEvaluator
+from infrastructure.llm import AlbertEvaluator, OpenAIEvaluator
 from infrastructure.unit_of_work import InMemoryUnitOfWork, PostgresUnitOfWork
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,7 +39,19 @@ class App:
         self.uow = uow
         self.platform = PlatformMonitoring(repository=uow.platforms)
         self.dataset = DatasetMonitoring(repository=uow.datasets)
-        self.evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
+        provider = os.environ.get("LLM_PROVIDER", "albert").lower()
+        if provider == "albert":
+            try:
+                self.evaluator = AlbertEvaluator()
+            except Exception:
+                try:
+                    self.evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
+                except Exception:
+                    self.evaluator = None
+        elif provider == "openai":
+            self.evaluator = OpenAIEvaluator(model_name="gpt-4o-mini")
+        else:
+            self.evaluator = AlbertEvaluator()
         self.mappers = {
             "opendatasoft": OpendatasoftMetadataMapper(),
             "datagouvfr": DatagouvMetadataMapper(),

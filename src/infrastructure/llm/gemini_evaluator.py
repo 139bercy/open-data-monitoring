@@ -4,7 +4,10 @@ import json
 import os
 from datetime import datetime
 
-from google import genai
+try:
+    from google import genai
+except ImportError:
+    genai = None
 from pydantic import ValidationError
 
 from domain.datasets.aggregate import Dataset
@@ -26,6 +29,9 @@ class GeminiEvaluator(LLMEvaluator):
             api_key: Gemini API key (defaults to GEMINI_API_KEY env var)
             model_name: Gemini model to use
         """
+        if genai is None:
+            raise ImportError("The 'google-genai' package is required to use GeminiEvaluator. Install it via pip.")
+
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY must be set")

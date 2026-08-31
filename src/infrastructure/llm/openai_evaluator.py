@@ -18,19 +18,21 @@ from logger import logger
 class OpenAIEvaluator(LLMEvaluator):
     """OpenAI-based metadata quality evaluator."""
 
-    def __init__(self, api_key: str | None = None, model_name: str = "gpt-4o-mini"):
+    def __init__(self, api_key: str | None = None, model_name: str = "gpt-4o-mini", base_url: str | None = None):
         """
         Initialize OpenAI evaluator.
 
         Args:
             api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
             model_name: OpenAI model to use (default: gpt-4o-mini)
+            base_url: Base URL for OpenAI-compatible API (defaults to OPENAI_BASE_URL env var)
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY must be set. Get your key at https://platform.openai.com/api-keys")
 
-        self.client = OpenAI(api_key=self.api_key)
+        self.base_url = base_url or os.getenv("OPENAI_BASE_URL")
+        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         self.model_name = model_name
 
     def evaluate_metadata(
@@ -51,7 +53,7 @@ class OpenAIEvaluator(LLMEvaluator):
         """
         dataset_name = dataset.slug if hasattr(dataset, "slug") else dataset.get("title", "unknown")
         logger.info(
-            f"Evaluating metadata for dataset {dataset_name} with OpenAI (model: {self.model_name}, prompt: {prompt_type})"
+            f"Evaluating metadata for dataset {dataset_name} with {self.__class__.__name__} (model: {self.model_name}, prompt: {prompt_type})"
         )
 
         # Build prompts

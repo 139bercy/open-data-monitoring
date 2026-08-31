@@ -5,8 +5,7 @@ from rich.console import Console
 from rich.table import Table
 
 from application.services.quality_assessment import QualityAssessmentService
-from infrastructure.llm.ollama_evaluator import OllamaEvaluator
-from infrastructure.llm.openai_evaluator import OpenAIEvaluator
+from infrastructure.llm import AlbertEvaluator, GeminiEvaluator, OllamaEvaluator, OpenAIEvaluator
 from logger import logger
 from settings import app
 
@@ -25,11 +24,15 @@ def cli_quality():
 @click.option("--charter", default="docs/quality/charter_opendata.md", help="Path to Open Data charter markdown file")
 @click.option(
     "--provider",
-    type=click.Choice(["openai", "ollama"]),
-    default="openai",
-    help="LLM provider to use (default: openai)",
+    type=click.Choice(["openai", "ollama", "gemini", "albert"]),
+    default="albert",
+    help="LLM provider to use (default: albert)",
 )
-@click.option("--model", default=None, help="Model to use (default: gpt-4o-mini for OpenAI, llama3.1 for Ollama)")
+@click.option(
+    "--model",
+    default=None,
+    help="Model to use (default: gpt-4o-mini for OpenAI, llama3.1 for Ollama, gemini-1.5-pro for Gemini, AgentPublic/albert-light-rag-1.1 for Albert)",
+)
 @click.option(
     "--output",
     type=click.Choice(["text", "json"]),
@@ -63,6 +66,10 @@ def cli_evaluate_quality(
         # Initialize evaluator based on provider
         if provider == "openai":
             evaluator = OpenAIEvaluator(model_name=model or "gpt-4o-mini")
+        elif provider == "gemini":
+            evaluator = GeminiEvaluator(model_name=model or "gemini-1.5-pro")
+        elif provider == "albert":
+            evaluator = AlbertEvaluator(model_name=model)
         else:  # ollama
             evaluator = OllamaEvaluator(model_name=model or "llama3.1")
 
